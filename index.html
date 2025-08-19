@@ -1,26 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>あにあにの遊び場</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>あにあに遊び場 | 公式サイト</title>
+  <meta name="description" content="あにあにの実験・作品・ゲームを公開する遊び場の公式サイト。ブラウザで遊べるカードゲーム試作あり。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎮</text></svg>">
+  <meta property="og:title" content="あにあに遊び場 | 公式サイト" />
+  <meta property="og:description" content="ブラウザで遊べるカードゲーム試作あり。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://dummyimage.com/1200x630/d97706/ffffff&text=%E3%81%82%E3%81%AB%E3%81%82%E3%81%AB%E9%81%8A%E3%81%B3%E5%A0%B4" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 50px; }
-    h1 { color: #e91e63; }
-    a.button {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 20px;
-      background: #4CAF50;
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
+    :root{
+      --bg:#0b0f19; --pri:#f59e0b; --pri-2:#fde68a; --ink:#eef2ff; --mut:#9aa3b2; --card:#11162a; --glass:rgba(255,255,255,.06);
+      --radius:22px;
     }
-    a.button:hover { background: #388E3C; }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto; color:var(--ink); background:
+      radial-gradient(1200px 600px at 80% -10%, #1e293b 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, #111827 0%, transparent 60%), var(--bg);}
+    a{color:inherit; text-decoration:none}
+    .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
+    .nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:linear-gradient(to bottom, rgba(11,15,25,.9), rgba(11,15,25,.6)); border-bottom:1px solid rgba(255,255,255,.06)}
+    .navin{display:flex; align-items:center; justify-content:space-between; padding:14px 0}
+    .brand{display:flex; gap:10px; align-items:center; font-weight:800}
+    .brand .logo{width:34px; height:34px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg, var(--pri), #f97316); box-shadow:0 8px 24px #00000050}
+    .brand span{letter-spacing:.02em}
+    .hero{padding:64px 0 36px}
+    .hgrid{display:grid; grid-template-columns:1.2fr 1fr; gap:28px}
+    .title{font-size:clamp(28px,5.6vw,54px); font-weight:800; line-height:1.05}
+    .lead{color:var(--mut); margin-top:14px}
+    .cta{display:flex; gap:12px; margin-top:22px; flex-wrap:wrap}
+    .btn{padding:12px 18px; border-radius:14px; font-weight:700; border:1px solid transparent; transition:.2s; box-shadow:0 8px 24px #00000040}
+    .btn.primary{background:linear-gradient(135deg, var(--pri), #ef4444); color:white}
+    .btn.primary:hover{transform:translateY(-2px)}
+    .btn.ghost{background:transparent; border-color:rgba(255,255,255,.12); color:var(--ink)}
+    .btn.ghost:hover{border-color:rgba(255,255,255,.3)}
+    .card{background:var(--glass); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:18px}
+    .badge{display:inline-block; font-size:12px; color:#0b0f19; background:var(--pri-2); padding:4px 10px; border-radius:999px; font-weight:700}
+    .grid{display:grid; gap:18px}
+    .grid3{grid-template-columns:repeat(3,1fr)}
+    .grid2{grid-template-columns:repeat(2,1fr)}
+    @media (max-width:900px){ .hgrid{grid-template-columns:1fr} .grid3{grid-template-columns:1fr} .grid2{grid-template-columns:1fr} }
+    footer{border-top:1px solid rgba(255,255,255,.06); color:var(--mut); padding:28px 0; margin-top:40px}
   </style>
 </head>
 <body>
-  <h1>あにあにの遊び場</h1>
-  <p>ようこそ！ここでは「あにあに」と一緒に作ったゲームを遊べます。</p>
-  <a href="game.html" class="button">🎮 ゲームをプレイする</a>
+  <header class="nav">
+    <div class="wrap navin">
+      <a class="brand" href="#">
+        <div class="logo">🎮</div><span>あにあに遊び場</span>
+      </a>
+      <nav style="display:flex; gap:16px; color:var(--mut); font-weight:600;">
+        <a href="#works">作品</a><a href="#about">このサイト</a><a href="#contact">連絡</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hgrid">
+        <div>
+          <div class="badge">New</div>
+          <h1 class="title">ブラウザで遊べる<br>カードゲーム試作を公開中</h1>
+          <p class="lead">紙のプロトタイプから一歩進んで、スマホ/PCでサクッと試遊できます。フィードバック大歓迎！</p>
+          <div class="cta">
+            <a class="btn primary" href="game.html">🎲 Battle à la carte を遊ぶ</a>
+            <a class="btn ghost" href="#works">作品一覧を見る</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin:0 0 10px 0;">最新トピック</h3>
+          <ul style="margin:0; padding-left:18px; line-height:1.8; color:var(--mut)">
+            <li>試作 v0.1 公開（ランダムドロー＆ログ表示）</li>
+            <li>モバイル表示を最適化／OGP対応</li>
+            <li>見栄えアップ（ダークテーマ＋グラデ背景）</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="works" class="grid grid3">
+      <article class="card">
+        <div class="badge">ゲーム</div>
+        <h3 style="margin:.6rem 0 0 0;">Battle à la carte（デモ）</h3>
+        <p style="color:var(--mut); margin:.4rem 0 1rem 0;">ドローして遊ぶ簡易版。ログで進行を確認できます。</p>
+        <a class="btn primary" href="game.html">今すぐ遊ぶ</a>
+      </article>
+
+      <article class="card" style="opacity:.7">
+        <div class="badge">WIP</div>
+        <h3 style="margin:.6rem 0 0 0;">レシピ図鑑</h3>
+        <p style="color:var(--mut); margin:.4rem 0 1rem 0;">カードの組み合わせ研究ノート（準備中）。</p>
+        <a class="btn ghost" href="#about">くわしく</a>
+      </article>
+
+      <article class="card" style="opacity:.7">
+        <div class="badge">WIP</div>
+        <h3 style="margin:.6rem 0 0 0;">イラスト置き場</h3>
+        <p style="color:var(--mut); margin:.4rem 0 1rem 0;">カードアートを公開予定。</p>
+        <a class="btn ghost" href="#about">くわしく</a>
+      </article>
+    </section>
+
+    <section id="about" style="margin-top:28px" class="grid grid2">
+      <div class="card">
+        <h3 style="margin:0 0 .6rem 0;">このサイトについて</h3>
+        <p style="color:var(--mut); margin:0">「あにあに遊び場」は、作品をサクッと公開して反応をもらうための場所。まずはカードゲームのデモから。全部静的HTMLなので無料で公開できます。</p>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 .6rem 0;">技術メモ</h3>
+        <ul style="margin:0; padding-left:18px; color:var(--mut); line-height:1.8">
+          <li>GitHub Pages（無料）でホスティング</li>
+          <li>純HTML/CSSのみ（ビルド不要）</li>
+          <li>OGP・アイコン済／モバイル最適化</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="contact" class="card" style="margin-top:28px">
+      <h3 style="margin:0 0 .6rem 0;">連絡</h3>
+      <p style="color:var(--mut); margin:0">改善アイデア・不具合報告などは、いま話しているチャットに送ってもらえればOK。公開用メールやフォームも後で追加できます。</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap">
+      <div>© あにあに遊び場</div>
+      <div style="color:var(--mut)">v1.1 / static site</div>
+    </div>
+  </footer>
 </body>
 </html>

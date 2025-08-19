@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Battle À La Carte</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 30px; }
+    h1 { color: #3f51b5; }
+    #log { border: 1px solid #ccc; padding: 10px; margin: 20px auto; width: 90%; height: 200px; overflow-y: auto; text-align: left; }
+    button { margin: 5px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h1>Battle À La Carte - デモ版</h1>
+  <p>カードを引いて戦おう！</p>
+  <div>
+    <button onclick="drawCard()">カードを引く</button>
+    <button onclick="resetGame()">リセット</button>
+  </div>
+  <div id="log"></div>
+
+  <script>
+    const cards = ["🍎 アップル(攻撃+2)", "🍞 パン(回復+3)", "🍫 チョコ(攻撃+5)", "🥕 にんじん(防御+2)", "🍵 お茶(回復+2)"];
+    let log = document.getElementById("log");
+
+    function drawCard() {
+      const card = cards[Math.floor(Math.random() * cards.length)];
+      log.innerHTML += "あなたは " + card + " を引いた！<br>";
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function resetGame() {
+      log.innerHTML = "";
+    }
+  </script>
+
+  <p><a href="index.html">← ホームへ戻る</a></p>
+</body>
+</html>

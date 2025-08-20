@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>役・レシピ一覧 | Battle à la carte</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #fff7ed; }
+    .badge { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs border bg-white; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <header class="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
+    <a href="index.html" class="font-bold text-xl">← 戻る</a>
+    <div class="text-sm text-slate-500">役・レシピ一覧</div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4">
+    <section class="rounded-3xl p-5 md:p-6 bg-white/80 shadow">
+      <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+        <h1 class="text-2xl font-bold">役・レシピ</h1>
+        <input id="q" placeholder="材料名や役名で検索（例：ご飯、カレー、卵）"
+               class="flex-1 border rounded-xl px-3 py-2" />
+      </div>
+      <p class="text-xs text-slate-500 mt-2">材料を含む役が絞り込まれます。スマホでは横スクロールできます。</p>
+
+      <div class="overflow-x-auto mt-4">
+        <table id="tbl" class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left border-b">
+              <th class="py-2 pr-4">役名</th>
+              <th class="py-2 pr-4">材料</th>
+              <th class="py-2 pr-4">点数</th>
+              <th class="py-2">カテゴリ</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mt-6 grid md:grid-cols-2 gap-4">
+      <div class="bg-white/80 rounded-2xl p-4 shadow">
+        <h3 class="font-semibold mb-2">特殊勝利</h3>
+        <ul class="list-disc pl-5 text-sm leading-7">
+          <li><b>料理の鉄人：</b>全肉（鶏肉・豚肉・牛肉・魚肉）を材料に含む役をそれぞれ1つ以上作成し、合計7点以上で即勝利。</li>
+          <li><b>満腹の達人：</b>1ターンに3つ以上の料理役を同時に完成で即勝利。</li>
+        </ul>
+      </div>
+      <div class="bg-white/80 rounded-2xl p-4 shadow">
+        <h3 class="font-semibold mb-2">補足</h3>
+        <p class="text-sm leading-7">
+          イベントカードは各ターン1回まで。セットは2枚まで（冷凍庫で3枚まで）。加工カードは3点で購入（包丁/冷凍庫/まな板）。
+        </p>
+      </div>
+    </section>
+
+    <div class="mt-8">
+      <a class="px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:shadow-md" href="game.html">→ ブラウザ版を遊ぶ</a>
+    </div>
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
+    <p>© Battle à la carte</p>
+  </footer>
+
+  <script>
+    const RECIPES = [
+      // 1点
+      { name:"おにぎり", points:1, ing:{ "ご飯":1, "のり":1 }, cat:"一役" },
+      { name:"卵かけご飯", points:1, ing:{ "ご飯":1, "卵":1 }, cat:"一役" },
+      { name:"豚バラ大根", points:1, ing:{ "豚肉":1, "大根":1 }, cat:"一役" },
+      { name:"ブリ大根", points:1, ing:{ "魚肉":1, "大根":1 }, cat:"一役" },
+      { name:"ロールキャベツ", points:1, ing:{ "豚肉":1, "キャベツ":1 }, cat:"一役" },
+      { name:"バナナジュース", points:1, ing:{ "バナナ":1, "牛乳":1 }, cat:"一役" },
+      // 2点
+      { name:"鮭おにぎり", points:2, ing:{ "ご飯":1, "のり":1, "魚肉":1 }, cat:"二役" },
+      { name:"野菜炒め", points:2, ing:{ "キャベツ":1, "にんじん":1, "玉ねぎ":1 }, cat:"二役" },
+      { name:"チャーハン", points:2, ing:{ "ご飯":1, "玉ねぎ":1, "卵":1 }, cat:"二役" },
+      // 4点
+      { name:"豪華なチャーハン", points:4, ing:{ "ご飯":1, "玉ねぎ":1, "卵":1, "豚肉":1 }, cat:"四役" },
+      { name:"キーマカレー", points:4, ing:{ "ご飯":1, "玉ねぎ":1, "カレー粉":1, "牛肉":1 }, cat:"四役" },
+      { name:"オムライス", points:4, ing:{ "ご飯":1, "玉ねぎ":1, "卵":1, "鶏肉":1 }, cat:"四役" },
+      { name:"ハンバーグ", points:4, ing:{ "牛肉":1, "豚肉":1, "玉ねぎ":1, "牛乳":1 }, cat:"四役" },
+      { name:"肉じゃが", points:4, ing:{ "牛肉":1, "じゃがいも":1, "玉ねぎ":1, "にんじん":1 }, cat:"四役" },
+      // 7点
+      { name:"クリームシチュー", points:7, ing:{ "牛乳":1, "牛肉":1, "玉ねぎ":1, "にんじん":1, "じゃがいも":1 }, cat:"満貫" },
+      { name:"カレー", points:7, ing:{ "牛肉":1, "玉ねぎ":1, "にんじん":1, "じゃがいも":1, "カレー粉":1 }, cat:"満貫" },
+      // 10点
+      { name:"満腹カレー", points:10, ing:{ "ご飯":1, "牛肉":1, "玉ねぎ":1, "にんじん":1, "じゃがいも":1, "カレー粉":1 }, cat:"役満" },
+      { name:"爆弾おにぎり", points:10, ing:{ "ご飯":4, "のり":1, "魚肉":1 }, cat:"役満" },
+    ];
+
+    const tbody = document.getElementById('tbody');
+    const q = document.getElementById('q');
+
+    function render(list){
+      tbody.innerHTML = '';
+      for (const r of list){
+        const tr = document.createElement('tr');
+        tr.className = 'border-b last:border-0';
+        tr.innerHTML = `
+          <td class="py-2 pr-4 font-semibold">${r.name}</td>
+          <td class="py-2 pr-4">
+            ${Object.entries(r.ing).map(([k,v])=>`<span class="badge mr-1 mb-1">${k}×${v}</span>`).join('')}
+          </td>
+          <td class="py-2 pr-4 font-bold">${r.points}点</td>
+          <td class="py-2">${r.cat}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+    function filter(){
+      const v = q.value.trim();
+      if (!v) return render(RECIPES);
+      const w = v.split(/\s+/);
+      const L = RECIPES.filter(r=>{
+        const ingredients = Object.keys(r.ing).join(' ');
+        const hay = `${r.name} ${ingredients}`;
+        return w.every(term => hay.includes(term));
+      });
+      render(L);
+    }
+    q.addEventListener('input', filter);
+    render(RECIPES);
+  </script>
+</body>
+</html>

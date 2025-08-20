@@ -1,131 +1,331 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Battle à la carte — デモ</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#0b0f19; --card:#11162a; --mut:#a1a8b5; --ink:#eef2ff; --pri:#f59e0b; --good:#10b981; --bad:#ef4444;
-      --b:#1f2a44; --r:20px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:"Noto Sans JP",system-ui; background:radial-gradient(900px 400px at 90% -10%, #1e293b 0%, transparent 60%), var(--bg); color:var(--ink)}
-    a{color:inherit; text-decoration:none}
-    .wrap{max-width:960px; margin:0 auto; padding:22px}
-    .top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px}
-    .title{font-weight:800; letter-spacing:.02em}
-    .btn{padding:10px 16px; border-radius:12px; border:1px solid #ffffff24; background:#ffffff0f; color:var(--ink); font-weight:700; cursor:pointer}
-    .btn:hover{border-color:#ffffff55}
-    .btn.primary{background:linear-gradient(135deg, var(--pri), #ef4444); border:none; color:white; box-shadow:0 8px 24px #00000040}
-    .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px}
-    @media (max-width:860px){ .grid{grid-template-columns:1fr} }
-    .card{background:#ffffff0a; border:1px solid #ffffff14; border-radius:var(--r); padding:16px}
-    .pill{display:inline-block; padding:6px 10px; background:#ffffff12; border:1px solid #ffffff22; border-radius:999px; margin:0 6px 6px 0}
-    .log{height:240px; overflow:auto; background:#0c1224; border:1px dashed #ffffff22; border-radius:12px; padding:12px; font-size:14px}
-    .log b{color:#fff}
-    .stack{display:flex; gap:10px; flex-wrap:wrap}
-    .counter{font-weight:800; font-size:28px}
-    footer{color:var(--mut); text-align:center; margin-top:16px}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="top">
-      <h1 class="title">🎲 Battle à la carte — デモ</h1>
-      <div class="stack">
-        <button class="btn" onclick="resetGame()">リセット</button>
-        <a class="btn" href="index.html">← ホーム</a>
-        <button class="btn primary" onclick="drawCard()">カードを引く</button>
-      </div>
-    </div>
+import React, { useEffect, useMemo, useState } from "react";
 
-    <div class="grid">
-      <section class="card">
-        <h3 style="margin:0 0 8px 0;">山札</h3>
-        <div class="stack" id="deck"></div>
-        <div style="display:flex; align-items:center; gap:12px; margin-top:8px">
-          <div style="color:var(--mut)">残り</div>
-          <div class="counter" id="remain">0</div>
-        </div>
-      </section>
+/**
 
-      <section class="card">
-        <h3 style="margin:0 0 8px 0;">ログ</h3>
-        <div class="log" id="log"></div>
-      </section>
-    </div>
+Battle à la carte – ブラウザ版（v0.9 プロトタイプ）
 
-    <section class="card" style="margin-top:16px">
-      <h3 style="margin:0 0 8px 0;">ヒント</h3>
-      <p style="color:var(--mut); margin:0">このデモはシンプル版です。演出やレシピ判定などは、今後アップデートで拡張していきます。</p>
-    </section>
 
-    <footer>© あにあに遊び場</footer>
-  </div>
+---
 
-  <script>
-    const deckEl = document.getElementById('deck');
-    const logEl = document.getElementById('log');
-    const remainEl = document.getElementById('remain');
+✅ 2人対戦（あなた vs CPU）
 
-    // ちょっと豪華なサンプルカード
-    const cards = [
-      { id:1, name:"🍙 おにぎり", kind:"攻撃+2" },
-      { id:2, name:"🍵 お茶", kind:"回復+2" },
-      { id:3, name:"🍫 チョコ", kind:"攻撃+5" },
-      { id:4, name:"🥕 にんじん", kind:"防御+2" },
-      { id:5, name:"🍞 パン", kind:"回復+3" },
-      { id:6, name:"🍛 カレー", kind:"攻撃+7" },
-      { id:7, name:"🍖 ステーキ", kind:"攻撃+6" },
-      { id:8, name:"🍎 りんご", kind:"回復+1" },
-    ];
+✅ ルール実装：
 
-    let deck = [];
+ドロー/メイン/ターンエンド各フェイズ
 
-    function shuffle(array){
-      const a = array.slice();
-      for(let i=a.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [a[i], a[j]] = [a[j], a[i]];
+
+セット（2枚まで／冷凍庫で3枚まで）
+
+
+役作成（レシピ照合）
+
+
+イベント（1ターン1枚まで）
+
+
+加工カードの購入（各3点）
+
+
+勝利条件（10点/特殊勝利2種）
+
+
+✅ CPU簡易AI（役作り→イベント→セット→エンド）
+
+✅ ログ・取り消し不可（今後追加予定）
+
+🧪 オプション：
+
+ターンエンドの手札制限：デフォルト「手札が4枚以上なら2枚だけ残す」
+
+
+（設定で「3枚以上なら…」にも切替可能）
+
+30%イベント追加ドロー（設定でON/OFF）※デフォルトOFF（現ルール準拠）
+
+
+今後の改善候補：
+
+物々交換のUI改善（CPU手札の表示/選択を分かりやすく）
+
+
+アニメーション/効果音
+
+
+3〜4人プレイ対応 */
+
+
+
+// -------------- 定義データ ---------------- const MATERIAL_COUNTS: Record<string, number> = { "ご飯": 4, "のり": 4, "バナナ": 2, "カレー粉": 2, "鶏肉": 2, "豚肉": 2, "牛肉": 2, "魚肉": 2, "牛乳": 4, "卵": 2, "キャベツ": 2, "にんじん": 2, "じゃがいも": 2, "玉ねぎ": 2, "大根": 2, };
+
+const EVENT_NAMES = [ "ゴミ収集車", "物々交換", "やっぱやーめたっ！", "やり直し", "創作料理", "爆買い", "食材探索", "大掃除", "緊急調理", ];
+
+// 各イベントは2枚ずつ const EVENT_COUNTS: Record<string, number> = Object.fromEntries( EVENT_NAMES.map((n) => [n, 2]) );
+
+// 加工カード（サプライに置かれて購入する） const TOOLS = ["包丁", "冷凍庫", "まな板"] as const; const TOOL_COUNTS: Record<(typeof TOOLS)[number], number> = { 包丁: 2, 冷凍庫: 2, まな板: 2, };
+
+// レシピ定義 // name, points, ingredients: Record<材料名, 必要個数> const RECIPES = [ // 1点 { name: "おにぎり", points: 1, ing: { "ご飯": 1, "のり": 1 } }, { name: "卵かけご飯", points: 1, ing: { "ご飯": 1, "卵": 1 } }, { name: "豚バラ大根", points: 1, ing: { "豚肉": 1, "大根": 1 } }, { name: "ブリ大根", points: 1, ing: { "魚肉": 1, "大根": 1 } }, { name: "ロールキャベツ", points: 1, ing: { "豚肉": 1, "キャベツ": 1 } }, { name: "バナナジュース", points: 1, ing: { "バナナ": 1, "牛乳": 1 } }, // 2点 { name: "鮭おにぎり", points: 2, ing: { "ご飯": 1, "のり": 1, "魚肉": 1 } }, { name: "野菜炒め", points: 2, ing: { "キャベツ": 1, "にんじん": 1, "玉ねぎ": 1 } }, { name: "チャーハン", points: 2, ing: { "ご飯": 1, "玉ねぎ": 1, "卵": 1 } }, // 4点 { name: "豪華なチャーハン", points: 4, ing: { "ご飯": 1, "玉ねぎ": 1, "卵": 1, "豚肉": 1 } }, { name: "キーマカレー", points: 4, ing: { "ご飯": 1, "玉ねぎ": 1, "カレー粉": 1, "牛肉": 1 } }, { name: "オムライス", points: 4, ing: { "ご飯": 1, "玉ねぎ": 1, "卵": 1, "鶏肉": 1 } }, { name: "ハンバーグ", points: 4, ing: { "牛肉": 1, "豚肉": 1, "玉ねぎ": 1, "牛乳": 1 } }, { name: "肉じゃが", points: 4, ing: { "牛肉": 1, "じゃがいも": 1, "玉ねぎ": 1, "にんじん": 1 } }, // 7点 { name: "クリームシチュー", points: 7, ing: { "牛乳": 1, "牛肉": 1, "玉ねぎ": 1, "にんじん": 1, "じゃがいも": 1 } }, { name: "カレー", points: 7, ing: { "牛肉": 1, "玉ねぎ": 1, "にんじん": 1, "じゃがいも": 1, "カレー粉": 1 } }, // 10点 { name: "満腹カレー", points: 10, ing: { "ご飯": 1, "牛肉": 1, "玉ねぎ": 1, "にんじん": 1, "じゃがいも": 1, "カレー粉": 1 } }, { name: "爆弾おにぎり", points: 10, ing: { "ご飯": 4, "のり": 1, "魚肉": 1 } }, ];
+
+// 肉の種類（特殊勝利用） const MEAT_TYPES = ["鶏肉", "豚肉", "牛肉", "魚肉"] as const;
+
+// -------------- 型 --------------- let nextId = 1; const newId = () => ${nextId++};
+
+type Card = { id: string; type: "material" | "event"; name: string; };
+
+type ToolState = { 包丁: boolean; 冷凍庫: boolean; まな板: boolean; };
+
+type Player = { name: string; isCPU: boolean; hand: Card[]; setZone: Card[]; // 裏向き想定だがUIでは公開（プロト版） score: number; tools: ToolState; meatsDone: Set<string>; // 作成済み料理に含まれた肉種類 usedEventThisTurn: boolean; usedSpecial3ptThisTurn: boolean; // 創作料理/緊急調理を使ったらtrue rolesMadeThisTurn: number; // 同一ターンの役達成数 };
+
+type Supply = { tools: Record<(typeof TOOLS)[number], number>; // 残数 };
+
+type Settings = { endDiscardThreshold: 4 | 3; // 4枚以上なら2枚残し / 3枚以上なら2枚残し eventDraw30Pct: boolean; // ドローフェイズ時、30%でイベント1枚追加 };
+
+type Phase = "draw" | "main" | "end";
+
+// -------------- ユーティリティ --------------- function shuffle<T>(arr: T[]): T[] { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function createDeck(): Card[] { const deck: Card[] = []; Object.entries(MATERIAL_COUNTS).forEach(([name, count]) => { for (let i = 0; i < count; i++) deck.push({ id: newId(), type: "material", name }); }); Object.entries(EVENT_COUNTS).forEach(([name, count]) => { for (let i = 0; i < count; i++) deck.push({ id: newId(), type: "event", name }); }); return shuffle(deck); }
+
+function initialSupply(): Supply { return { tools: { ...TOOL_COUNTS } }; }
+
+function emptyTools(): ToolState { return { 包丁: false, 冷凍庫: false, まな板: false }; }
+
+function countByName(cards: Card[]): Record<string, number> { const m: Record<string, number> = {}; for (const c of cards) m[c.name] = (m[c.name] || 0) + 1; return m; }
+
+function canSatisfyRecipe( available: Record<string, number>, ing: Record<string, number>, hasKnife: boolean ): boolean { // 通常チェック let lacks = 0; let missingMap: Record<string, number> = {}; for (const [name, need] of Object.entries(ing)) { const have = available[name] || 0; if (have < need) { missingMap[name] = need - have; lacks += need - have; } } if (lacks <= 0) return true; // 包丁：任意の1種類の材料を+1個分として扱える（シンプル近似） if (hasKnife) { // 包丁で補えるのは1枚分だけ // 欠けている総数が1以下、かつ欠けている材料のうち、 // もともと1枚以上持っている材料名が存在する（=そのカードを2枚扱いできる） if (lacks <= 1) { // 既に1枚以上持っている材料がある？ const canDouble = Object.keys(ing).some((name) => (available[name] || 0) >= 1); if (canDouble) return true; } } return false; }
+
+function pickCardsForRecipe( pool: Card[], ing: Record<string, number>, hasKnife: boolean ): Card[] | null { // グリーディで材料を選ぶ const picked: Card[] = []; const need = { ...ing } as Record<string, number>; for (const name of Object.keys(need)) { for (const c of pool) { if (c.type === "material" && c.name === name && need[name] > 0) { picked.push(c); need[name] -= 1; if (need[name] === 0) break; } } } // 不足分を包丁で補えるか判定（不足1ならOKとする） const lacks = Object.values(need).reduce((a, b) => a + Math.max(0, b), 0); if (lacks === 0) return picked; if (hasKnife && lacks === 1) { // 既に持っている材料のいずれかを2枚扱いできるとみなす → pickedはそのまま const haveAny = Object.keys(ing).some((name) => pool.some((c) => c.type === "material" && c.name === name)); if (haveAny) return picked; } return null; }
+
+function top<T>(arr: T[]): T | undefined { return arr[arr.length - 1]; }
+
+// -------------- メインコンポーネント --------------- export default function App() { const [deck, setDeck] = useState<Card[]>(() => createDeck()); const [discard, setDiscard] = useState<Card[]>([]); const [supply, setSupply] = useState<Supply>(() => initialSupply()); const [settings, setSettings] = useState<Settings>({ endDiscardThreshold: 4, eventDraw30Pct: false });
+
+const [players, setPlayers] = useState<Player[]>(() => [ { name: "あなた", isCPU: false, hand: [], setZone: [], score: 0, tools: emptyTools(), meatsDone: new Set<string>(), usedEventThisTurn: false, usedSpecial3ptThisTurn: false, rolesMadeThisTurn: 0, }, { name: "CPU", isCPU: true, hand: [], setZone: [], score: 0, tools: emptyTools(), meatsDone: new Set<string>(), usedEventThisTurn: false, usedSpecial3ptThisTurn: false, rolesMadeThisTurn: 0, }, ]);
+
+const [current, setCurrent] = useState(0); // 現在手番 const [phase, setPhase] = useState<Phase>("draw"); const [log, setLog] = useState<string[]>([]); const [reveal, setReveal] = useState<Card[]>([]); // 食材探索などでめくったカード const currentPlayer = players[current]; const opponentIndex = (current + 1) % players.length; const opponent = players[opponentIndex];
+
+// 初期配布 useEffect(() => { if (players[0].hand.length === 0 && players[1].hand.length === 0) { dealInitial(); } // eslint-disable-next-line react-hooks/exhaustive-deps }, []);
+
+function logPush(s: string) { setLog((L) => [...L, s]); }
+
+function draw(n: number): Card[] { let d = [...deck]; let disc = [...discard];
+
+const drawn: Card[] = [];
+for (let i = 0; i < n; i++) {
+  if (d.length === 0) {
+    if (disc.length === 0) break; // 何も引けない
+    // リシャッフル
+    d = shuffle(disc);
+    disc = [];
+    logPush("山札が切れたので、ゴミ箱をシャッフルして山札に戻した！");
+  }
+  drawn.push(d.pop()!);
+}
+setDeck(d);
+setDiscard(disc);
+return drawn;
+
+}
+
+function dealInitial() { // 山札を作り直して配り直し const fresh = createDeck(); setDeck(fresh); setDiscard([]); setSupply(initialSupply());
+
+setPlayers((ps) => {
+  const P = structuredClone(ps) as Player[];
+  for (let p of P) {
+    p.hand = [];
+    p.setZone = [];
+    p.score = 0;
+    p.tools = emptyTools();
+    p.meatsDone = new Set<string>();
+    p.usedEventThisTurn = false;
+    p.usedSpecial3ptThisTurn = false;
+    p.rolesMadeThisTurn = 0;
+  }
+  // 各プレイヤー4枚になるまで引く
+  setTimeout(() => {
+    for (let idx = 0; idx < P.length; idx++) {
+      const need = 4 - P[idx].hand.length;
+      if (need > 0) {
+        const got = draw(need);
+        P[idx].hand.push(...got);
       }
-      return a;
     }
+    setPlayers([...P]);
+    setCurrent(0);
+    setPhase("draw");
+    setLog([]);
+    logPush("ゲーム開始！各プレイヤーは手札が4枚になるまでドロー。");
+  }, 0);
+  return P;
+});
 
-    function renderDeck(){
-      deckEl.innerHTML = '';
-      deck.forEach(c => {
-        const el = document.createElement('span');
-        el.className = 'pill';
-        el.textContent = c.name + '（' + c.kind + '）';
-        deckEl.appendChild(el);
-      });
-      remainEl.textContent = deck.length;
+}
+
+// ---------- ターン進行 ---------- useEffect(() => { if (phase === "draw" && currentPlayer) { doDrawPhase(current); } // eslint-disable-next-line react-hooks/exhaustive-deps }, [phase, current]);
+
+function doDrawPhase(pIndex: number) { setPlayers((ps) => { const P = structuredClone(ps) as Player[]; const p = P[pIndex]; // まな板：手札が5枚になるまで、それ以外は4枚まで const limit = p.tools["まな板"] ? 5 : 4; const need = Math.max(0, limit - p.hand.length); if (need > 0) { const got = draw(need); p.hand.push(...got); if (need > 0) logPush(${p.name}は${need}枚ドロー。); } // オプション：30%でイベント1枚追加 if (settings.eventDraw30Pct) { if (Math.random() < 0.3) { const got = draw(1); if (got[0]) { p.hand.push(got[0]); logPush(${p.name}はボーナスで1枚ドロー！（30%ルール）); } } } // ターン開始時のフラグリセット p.usedEventThisTurn = false; p.usedSpecial3ptThisTurn = false; p.rolesMadeThisTurn = 0; return P; }); setPhase("main"); }
+
+function endTurn() { const threshold = settings.endDiscardThreshold; // 4 or 3 const keepCount = 2; setPlayers((ps) => { const P = structuredClone(ps) as Player[]; const p = P[current]; if (p.hand.length >= threshold) { // シンプル：手札を自動評価して2枚残す（UIで選択する代替） const best = pickBestKeeps(p.hand, keepCount); const toDiscard = p.hand.filter((c) => !best.includes(c)); p.hand = best; setDiscard((D) => [...D, ...toDiscard]); if (toDiscard.length > 0) logPush(${p.name}は手札を${toDiscard.length}枚捨てて2枚だけ残した。); } return P; }); // 次のプレイヤーへ const next = (current + 1) % players.length; setCurrent(next); setPhase("draw"); }
+
+function pickBestKeeps(hand: Card[], k: number): Card[] { // 超簡易：材料カード優先→イベントは汎用性高いもの（爆買い/食材探索） const scoreCard = (c: Card): number => { if (c.type === "material") { // 需要の高い材料にスコア付与 const weight: Record<string, number> = { "ご飯": 4, "玉ねぎ": 3, "卵": 3, "牛肉": 3, "豚肉": 3, "鶏肉": 3, "にんじん": 2, "じゃがいも": 2, "牛乳": 2, "のり": 2, "魚肉": 2, "カレー粉": 2, "キャベツ": 1, "大根": 1, "バナナ": 1, }; return 10 + (weight[c.name] || 1); } else { const w: Record<string, number> = { "爆買い": 7, "食材探索": 6, "ゴミ収集車": 5, "やり直し": 5, "緊急調理": 4, "物々交換": 4, "大掃除": 3, "やっぱやーめたっ！": 2, "創作料理": 2 }; return 5 + (w[c.name] || 0); } }; return [...hand].sort((a, b) => scoreCard(b) - scoreCard(a)).slice(0, k); }
+
+// ---------- 役作成 ---------- function tryMakeRecipe(pIndex: number, recipeName: string) { setPlayers((ps) => { const P = structuredClone(ps) as Player[]; const me = P[pIndex]; const recipe = RECIPES.find((r) => r.name === recipeName); if (!recipe) return P; if (me.usedSpecial3ptThisTurn) { logPush(${me.name}はこのターン、他の役を作れない。); return P; } // 使用可能カード = 手札+セット const pool = [...me.hand, ...me.setZone]; const counts = countByName(pool); if (!canSatisfyRecipe(counts, recipe.ing, me.tools["包丁"])) { logPush(${me.name}は「${recipe.name}」を作る材料が足りない。); return P; } const used = pickCardsForRecipe(pool, recipe.ing, me.tools["包丁"]); if (!used) { logPush(${me.name}は「${recipe.name}」の材料選定に失敗。); return P; } // 使用カードを手札/セットから取り除き、ゴミ箱へ const usedIds = new Set(used.map((c) => c.id)); me.hand = me.hand.filter((c) => !usedIds.has(c.id)); me.setZone = me.setZone.filter((c) => !usedIds.has(c.id)); setDiscard((D) => [...D, ...used]); me.score += recipe.points; me.rolesMadeThisTurn += 1; // 肉種類トラッキング for (const meat of MEAT_TYPES) { if (recipe.ing[meat]) me.meatsDone.add(meat); } logPush(${me.name}は「${recipe.name}」を完成！ +${recipe.points}点（合計${me.score}点）); // 勝利判定 if (me.score >= 10) { logPush(★ ${me.name}は10点到達！勝利！); } if (MEAT_TYPES.every((m) => me.meatsDone.has(m)) && me.score >= 7) { logPush(★ ${me.name}は特殊勝利「料理の鉄人」を達成！勝利！); } if (me.rolesMadeThisTurn >= 3) { logPush(★ ${me.name}は特殊勝利「満腹の達人」を達成！勝利！); } return P; }); }
+
+// ---------- セット/購入 ---------- function setMaterialFromHand(pIndex: number, cardId: string) { setPlayers((ps) => { const P = structuredClone(ps) as Player[]; const me = P[pIndex]; const cap = me.tools["冷凍庫"] ? 3 : 2; if (me.setZone.length >= cap) { logPush(${me.name}はこれ以上セットできない（上限${cap}枚）。); return P; } const idx = me.hand.findIndex((c) => c.id === cardId && c.type === "material"); if (idx < 0) return P; const [card] = me.hand.splice(idx, 1); me.setZone.push(card); logPush(${me.name}は材料「${card.name}」をセット。); return P; }); }
+
+function buyTool(pIndex: number, tool: (typeof TOOLS)[number]) { setPlayers((ps) => { const P = structuredClone(ps) as Player[]; const me = P[pIndex]; if (me.score < 3) { logPush(${me.name}は点数が足りない（3点必要）。); return P; } if (me.tools[tool]) { logPush(${me.name}は既に「${tool}」を持っている。); return P; } setSupply((S) => { if (S.tools[tool] <= 0) { logPush(サプライに「${tool}」が残っていない。); return S; } const NS = structuredClone(S) as Supply; NS.tools[tool] -= 1; me.tools[tool] = true; me.score -= 3; logPush(${me.name}は「${tool}」を3点で購入（残${NS.tools[tool]}）。); return NS; }); return P; }); }
+
+// ---------- イベント ---------- function useEvent(pIndex: number, cardId: string) { setPlayers((ps) => { const P = structuredClone(ps) as Player[]; const me = P[pIndex]; if (me.usedEventThisTurn) { logPush(${me.name}は既に今ターンイベントを使っている。); return P; } const idx = me.hand.findIndex((c) => c.id === cardId && c.type === "event"); if (idx < 0) return P; const [ev] = me.hand.splice(idx, 1); setDiscard((D) => [...D, ev]); me.usedEventThisTurn = true;
+
+switch (ev.name) {
+    case "爆買い": {
+      const got = draw(3);
+      me.hand.push(...got);
+      logPush(`${me.name}は「爆買い」で3枚ドロー。`);
+      break;
     }
-
-    function log(line){
-      const time = new Date().toLocaleTimeString();
-      logEl.innerHTML += `<div><span style="color:#94a3b8">${time}</span>：<b>${line}</b></div>`;
-      logEl.scrollTop = logEl.scrollHeight;
+    case "やり直し": {
+      const cnt = me.hand.length;
+      setDiscard((D) => [...D, ...me.hand]);
+      me.hand = [];
+      const got = draw(cnt);
+      me.hand.push(...got);
+      logPush(`${me.name}は「やり直し」で手札を総入替。`);
+      break;
     }
-
-    function drawCard(){
-      if(deck.length===0){ log('山札がありません'); return; }
-      const top = deck.pop();
-      renderDeck();
-      log('「' + top.name + '」を引いた！ ' + top.kind);
+    case "ゴミ収集車": {
+      // ゴミ箱から材料1枚を選んで回収（プロト：直近から優先）
+      const matIndex = [...discard].reverse().findIndex((c) => c.type === "material");
+      if (matIndex >= 0) {
+        const realIdx = discard.length - 1 - matIndex;
+        const card = discard[realIdx];
+        setDiscard((D) => D.filter((_, i) => i !== realIdx));
+        me.hand.push(card);
+        logPush(`${me.name}は「ゴミ収集車」で「${card.name}」を回収。`);
+      } else {
+        logPush(`${me.name}は「ゴミ収集車」を使ったが、回収できる材料がない。`);
+      }
+      break;
     }
-
-    function resetGame(){
-      deck = shuffle(cards);
-      renderDeck();
-      logEl.innerHTML = '';
-      log('ゲームを開始しました');
+    case "食材探索": {
+      const got = draw(3);
+      setReveal(got);
+      // プロト：自動で材料最大2枚を手札へ、残りは捨て札
+      const mats = got.filter((c) => c.type === "material").slice(0, 2);
+      const rest = got.filter((c) => !mats.includes(c));
+      me.hand.push(...mats);
+      setDiscard((D) => [...D, ...rest]);
+      logPush(`${me.name}は「食材探索」で3枚めくり、材料${mats.length}枚を獲得。`);
+      break;
     }
+    case "物々交換": {
+      // プロト：CPU相手なら自動、対人なら簡易UI（ここでは自動）
+      const opp = pIndex === 0 ? players[1] : players[0];
+      const oppMat = opp.hand.find((c) => c.type === "material");
+      const myMat = me.hand.find((c) => c.type === "material");
+      if (oppMat && myMat) {
+        opp.hand = opp.hand.filter((c) => c.id !== oppMat.id);
+        me.hand = me.hand.filter((c) => c.id !== myMat.id);
+        opp.hand.push(myMat);
+        me.hand.push(oppMat);
+        logPush(`${me.name}は「物々交換」で${opp.name}と材料を1枚交換。`);
+      } else {
+        logPush(`${me.name}は「物々交換」を使ったが条件不成立。`);
+      }
+      break;
+    }
+    case "やっぱやーめたっ！": {
+      const cnt = me.setZone.length;
+      if (cnt > 0) {
+        me.hand.push(...me.setZone);
+        me.setZone = [];
+        logPush(`${me.name}は「やっぱやーめたっ！」でセットを手札に戻した（${cnt}枚）。`);
+      } else {
+        logPush(`${me.name}は「やっぱやーめたっ！」を使ったが、セットがない。`);
+      }
+      break;
+    }
+    case "大掃除": {
+      const oppIndex = pIndex === 0 ? 1 : 0;
+      const opp = P[oppIndex];
+      const cnt = opp.hand.length;
+      setDiscard((D) => [...D, ...opp.hand]);
+      opp.hand = [];
+      const got = draw(cnt);
+      opp.hand.push(...got);
+      logPush(`${me.name}は「大掃除」で${opp.name}の手札をリセット。`);
+      break;
+    }
+    case "創作料理": {
+      // 手札の材料2枚を捨てて3点得る（このターン他の役不可）
+      const mats = me.hand.filter((c) => c.type === "material").slice(0, 2);
+      if (mats.length < 2) {
+        logPush(`${me.name}は「創作料理」を使えなかった（材料が足りない）。`);
+      } else {
+        const ids = new Set(mats.map((c) => c.id));
+        me.hand = me.hand.filter((c) => !ids.has(c.id));
+        setDiscard((D) => [...D, ...mats]);
+        me.score += 3;
+        me.usedSpecial3ptThisTurn = true;
+        me.rolesMadeThisTurn += 1; // これは「役扱い」の3点
+        logPush(`${me.name}は「創作料理」を発動！ +3点（合計${me.score}点）。今ターン他の役は作れない。`);
+      }
+      break;
+    }
+    case "緊急調理": {
+      if (me.score <= 5) {
+        const mat = me.hand.find((c) => c.type === "material");
+        if (mat) {
+          me.hand = me.hand.filter((c) => c.id !== mat.id);
+          setDiscard((D) => [...D, mat]);
+          me.score += 3;
+          me.usedSpecial3ptThisTurn = true;
+          me.rolesMadeThisTurn += 1;
+          logPush(`${me.name}は「緊急調理」で+3点（合計${me.score}点）。今ターン他の役は作れない。`);
+        } else {
+          logPush(`${me.name}は「緊急調理」を使えなかった（材料がない）。`);
+        }
+      } else {
+        logPush(`${me.name}は「緊急調理」を使えない（得点が5点以下でない）。`);
+      }
+      break;
+    }
+  }
+  return P;
+});
 
-    // 初期化
-    resetGame();
-  </script>
-</body>
-</html>
+}
+
+// ---------- CPU AI ---------- useEffect(() => { if (phase === "main" && currentPlayer?.isCPU) { const t = setTimeout(cpuTurn, 700); return () => clearTimeout(t); } // eslint-disable-next-line react-hooks/exhaustive-deps }, [phase, current, players, deck, discard]);
+
+function cpuTurn() { // 1) 作れる最大ポイントの役を探して作る const me = players[current]; const pool = [...me.hand, ...me.setZone]; const counts = countByName(pool); const canList = RECIPES.filter((r) => canSatisfyRecipe(counts, r.ing, me.tools["包丁"])) .sort((a, b) => b.points - a.points); if (!me.usedSpecial3ptThisTurn && canList[0]) { tryMakeRecipe(current, canList[0].name); return; // もう一度メイン継続（同ターン複数作成可能） }
+
+// 2) イベントを1枚活用（爆買い/食材探索/やり直し優先）
+if (!me.usedEventThisTurn) {
+  const evPriority = ["爆買い", "食材探索", "やり直し", "ゴミ収集車", "緊急調理", "やっぱやーめたっ！", "物々交換", "大掃除", "創作料理"];
+  const ev = me.hand.find((c) => c.type === "event" && evPriority.includes(c.name));
+  if (ev) { useEvent(current, ev.id); return; }
+}
+
+// 3) セット枠に材料を入れて将来に繋ぐ
+const cap = me.tools["冷凍庫"] ? 3 : 2;
+if (me.setZone.length < cap) {
+  // 重用度の高い材料から
+  const pri = ["ご飯", "玉ねぎ", "卵", "牛肉", "豚肉", "鶏肉", "にんじん", "じゃがいも", "牛乳", "魚肉", "のり", "カレー粉", "キャベツ", "大根", "バナナ"];
+  const mat = me.hand.find((c) => c.type === "material" && pri.includes(c.name));
+  if (mat) { setMaterialFromHand(current, mat.id); return; }
+}
+
+// 4) ツール購入（点が余ってたら まな板→包丁→冷凍庫）
+const order: (typeof TOOLS)[number][] = ["まな板", "包丁", "冷凍庫"];
+for (const t of order) {
+  if (!me.tools[t] && me.score >= 3 && supply.tools[t] > 0) { buyTool(current, t); return; }
+}
+
+// 5) エンド
+endTurn();
+
+}
+
+// ---------- UI補助 ---------- const yourTurn = current === 0; const gameEnded = useMemo(() => { const winners: string[] = []; players.forEach((p) => { if (p.score >= 10) winners.push(p.name); if (MEAT_TYPES.every((m) => p.meatsDone.has(m)) && p.score >= 7) winners.push(p.name); if (p.rolesMadeThisTurn >= 3) winners.push(p.name); }); return winners.length > 0 ? winners : null; }, [players]);
+
+// ---------- レンダリング ---------- return ( <div className="w-full min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 text-slate-800 p-4"> <div className="max-w-6xl mx-auto"> <header className="flex items-center justify-between mb-4"> <h1 className="text-2xl md:text-3xl font-bold">Battle à la carte – ブラウザ版（CPUつき）</h1> <div className="flex items-center gap-2"> <button className="px-3 py-1 rounded-xl bg-white shadow hover:shadow-md" onClick={dealInitial}>リスタート</button> <details className="px-3 py-1 rounded-xl bg-white shadow"> <summary className="cursor-pointer">設定</summary> <div className="py-2 flex flex-col gap-2"> <label className="flex items-center gap-2"> <input type="checkbox" checked={settings.eventDraw30Pct} onChange={(e) => setSettings((s) => ({

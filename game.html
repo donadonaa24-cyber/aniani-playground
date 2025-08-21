@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Battle à la carte – 安全版（CPU戦）v0.2</title>
+<title>Battle à la carte – （CPU戦）v0.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0b0f19;--ink:#eef2ff;--mut:#a1a8b5;--line:#ffffff1a;--card:#11162a;--pri:#f59e0b}
@@ -31,7 +31,7 @@
   .choice.sel{outline:2px solid #f59e0b}
 </style>
 </head>
-<body>
+<body onload="try{ newGame(); }catch(e){ alert('初期化エラー: '+e); }">
 <div class="wrap">
   <div class="top">
     <h1 style="margin:0">🍳 Battle à la carte – 安全版（CPU戦）</h1>
@@ -40,7 +40,7 @@
       <button type="button" class="btn" id="btnBuy">加工カード</button>
       <button type="button" class="btn" id="btnEnd">ターン終了</button>
       <button type="button" class="btn primary" id="btnNew">ニューゲーム</button>
-      <a class="btn" href="index.html">← ホーム</a>
+      <a class="btn primary" href="game.html?v=3">ニューゲーム</a>
     </div>
   </div>
 

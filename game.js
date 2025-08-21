@@ -361,3 +361,153 @@ function wireUI(){
 document.addEventListener('DOMContentLoaded', function(){
   try { wireUI(); } catch(e){ console.warn('UI配線エラー:', e); }
 });
+/* ===============================
+   ALCARTE — BGM / UI / PEEK / UNDO
+   追記ブロック
+=============================== */
+
+// === 設定 ===
+const AUDIO_SRC = 'assets/bgm_main.mp3'; // 変えるならここも合わせる
+
+// === 既存ゲーム国の状態へのフック ===
+// 想定：グローバルに gameState / players / currentPlayer などがある前提。
+// 無い場合は、あなたの実装名に合わせて参照を書き換えてね。
+window._al = window._al || {};
+_al.history = [];            // undo用履歴スタック
+_al.undoArmed = false;       // 「ターンエンド直後のみ」取り消し可
+_al.maxHistory = 10;         // 保険（メモリ節約）
+_al.deepClone = (obj)=> structuredClone ? structuredClone(obj) : JSON.parse(JSON.stringify(obj));
+
+// === BGM制御 ===
+(function initBGM(){
+  const audio = document.getElementById('bgm');
+  if (!audio) return;
+
+  // src安全確認（HTMLと設定のズレ対策）
+  if (audio.getAttribute('src') !== AUDIO_SRC) audio.setAttribute('src', AUDIO_SRC);
+
+  const btn = document.getElementById('btn-bgm');
+  const status = document.getElementById('bgm-status');
+  const vol = document.getElementById('bgm-vol');
+
+  const setStatus = (playing)=> status.textContent = playing ? '再生中' : '停止中';
+
+  btn?.addEventListener('click', async ()=>{
+    try{
+      if (audio.paused){
+        await audio.play();
+        btn.textContent = '♪ BGM 停止';
+        setStatus(true);
+      }else{
+        audio.pause();
+        btn.textContent = '♪ BGM 再生';
+        setStatus(false);
+      }
+    }catch(e){
+      console.warn('BGM error', e);
+    }
+  });
+  vol?.addEventListener('input', ()=> audio.volume = Number(vol.value));
+  // 初期音量
+  audio.volume = Number(vol?.value ?? 0.5);
+})();
+
+// === セット確認（自分の裏向きセットを確認する） ===
+(function initPeek(){
+  const dlg = document.getElementById('peek-dialog');
+  const grid = document.getElementById('peek-grid');
+  const openBtn = document.getElementById('btn-peek');
+  const closeBtn = document.getElementById('peek-close');
+
+  const cardFace = (card)=>{
+    // あなたの既存データ構造に合わせて表示名を調整
+    // 例: card.name, card.type, card.id など
+    const div = document.createElement('div');
+    div.className = 'peek__card';
+    div.textContent = card?.name ?? '???';
+    return div;
+  };
+
+  openBtn?.addEventListener('click', ()=>{
+    // 自分のセット配列を取る（あなたの実装名に合わせて変更）
+    // 例: gameState.players[0].setCards など
+    try{
+      const you = (window.gameState?.players || [])[0]; // 0がプレイヤー想定
+      const setCards = you?.setCards ?? []; // 例：裏向き配列
+      grid.innerHTML = '';
+      setCards.forEach(c=> grid.appendChild(cardFace(c)));
+      dlg.showModal();
+    }catch(e){
+      console.warn('peek error', e);
+      alert('セット情報が見つかりませんでした');
+    }
+  });
+
+  closeBtn?.addEventListener('click', ()=> dlg.close());
+})();
+
+// === Undo（ターンエンド取り消し）===
+// 使い方：ターンエンド直前で pushHistory() → turnEnd() 実行。
+// 「ターンエンド直後のみ」btn-undoを有効化し、押されたら復元。
+(function initUndo(){
+  const btnUndo = document.getElementById('btn-undo');
+
+  window.pushHistory = function(){
+    try{
+      if (!window.gameState) return;
+      const snap = _al.deepClone(window.gameState);
+      _al.history.push(snap);
+      if (_al.history.length > _al.maxHistory) _al.history.shift();
+    }catch(e){
+      console.warn('pushHistory failed', e);
+    }
+  };
+
+  window.armUndo = function(){
+    _al.undoArmed = true;
+    btnUndo?.removeAttribute('disabled');
+  };
+
+  window.disarmUndo = function(){
+    _al.undoArmed = false;
+    btnUndo?.setAttribute('disabled','');
+  };
+
+  btnUndo?.addEventListener('click', ()=>{
+    if (!_al.undoArmed) return;
+    const snap = _al.history.pop();
+    if (!snap){
+      alert('復元できる履歴がありません');
+      return;
+    }
+    // 復元
+    window.gameState = snap;
+    // 画面再描画（あなたのUI更新関数を呼ぶ）
+    try{
+      window.renderGame?.();
+    }catch{}
+    disarmUndo();
+  });
+})();
+
+// === 既存ターンエンドにフック ===
+// あなたの turnEnd 実装名に合わせて差し替え。
+// 例： window.turnEnd = function(){...} の場合、元を退避してラップする。
+(function wrapTurnEnd(){
+  if (typeof window.turnEnd !== 'function') return;
+
+  const _orig = window.turnEnd;
+  window.turnEnd = function(...args){
+    // 履歴保存（ターンエンド直前）
+    pushHistory();
+    // 本来のターンエンド処理
+    const r = _orig.apply(this, args);
+    // 取り消し可能に
+    armUndo();
+    return r;
+  };
+
+  // プレイヤーが何か新しいアクションを実行したらUndo無効化したい場合は、
+  // あなたの各アクション関数（例：playEvent, setMaterial, craftRoleなど）で
+  // disarmUndo(); を呼んでね。
+})();

@@ -1,171 +1,103 @@
-、<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Battle à la carte – 安全版（CPU戦）v0.3.1</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
-<style>
-  :root{--bg:#0b0f19;--ink:#eef2ff;--mut:#a1a8b5;--line:#ffffff1a;--card:#11162a;--pri:#f59e0b}
-  *{box-sizing:border-box}body{margin:0;font-family:"Noto Sans JP",system-ui;color:var(--ink);background:#0b0f19}
-  .wrap{max-width:1080px;margin:0 auto;padding:16px}
-  .top{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .btn{padding:10px 14px;border-radius:12px;border:1px solid #ffffff30;background:#ffffff14;color:var(--ink);font-weight:700}
-  .btn.primary{background:linear-gradient(135deg,#f59e0b,#ef4444);border:none}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:900px){.row{grid-template-columns:1fr}}
-  .area{border:1px solid #ffffff1a;border-radius:16px;padding:12px;background:#0f1425}
-  .who{display:flex;align-items:center;justify-content:space-between}
-  .hand,.set{display:flex;gap:8px;flex-wrap:wrap}
-  .back{width:96px;height:68px;border:1px solid #ffffff2a;border-radius:10px;display:grid;place-items:center;background:#0c1220}
-  .card{min-width:140px;max-width:180px;padding:10px;border:1px solid #ffffff20;border-radius:14px;background:#101630}
-  .card .name{font-weight:800}.mut{color:var(--mut)}.hr{height:1px;background:#ffffff1a;margin:8px 0}
-  .log{height:220px;overflow:auto;background:#0c1220;border:1px dashed #ffffff2a;border-radius:12px;padding:8px;font-size:14px}
-  .tags{display:flex;gap:6px;flex-wrap:wrap}.tag{padding:4px 8px;border:1px solid #ffffff25;border-radius:999px;font-size:12px}
-  .tag.on{background:#10b98133;border-color:#10b981aa}
-  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
-  .sheet{max-width:740px;width:100%;background:#0f142a;border:1px solid #ffffff22;border-radius:16px;padding:12px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-  .choice{border:1px solid #ffffff25;border-radius:12px;padding:8px;background:#101630}
-  .choice.sel{outline:2px solid #f59e0b}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🍳 Battle à la carte – 安全版（CPU戦）</title>
+  <style>
+    :root{--bg:#0f1420;--panel:#121a2a;--panel2:#101826;--text:#e9eef7;--muted:#a9b3c7;--accent:#ff7a45;}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+    .wrap{max-width:920px;margin:0 auto;padding:16px}
+    h1{font-size:28px;margin:8px 0 12px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 14px}
+    .btn{padding:10px 14px;border-radius:10px;background:#222a3c;color:#fff;border:1px solid #2e3a55}
+    .btn.primary{background:#ff7a45;border-color:#ff935f;color:#222}
+    .btn:disabled{opacity:.5}
+    .panel{background:var(--panel);border:1px solid #253250;border-radius:12px;padding:12px;margin:8px 0}
+    .row{display:flex;gap:14px;flex-wrap:wrap}
+    .col{flex:1;min-width:280px}
+    .caption{font-size:14px;color:var(--muted);margin:6px 0}
+    .cards{display:flex;gap:6px;flex-wrap:wrap;padding:6px;border:1px dashed #32415f;border-radius:10px;min-height:44px}
+    .card{padding:6px 8px;border-radius:8px;background:var(--panel2);border:1px solid #2c3a58;font-size:13px}
+    #log{min-height:120px;white-space:pre-wrap}
+    #diag{position:fixed;left:8px;right:8px;bottom:8px;background:#0c1220cc;border:1px solid #2a395c;border-radius:10px;padding:6px 10px;font-size:12px;color:#bcd;pointer-events:none}
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>🍳 Battle à la carte – 安全版（CPU戦）</h1>
 
-<!-- ① 自動リダイレクト（body直後に配置済み） -->
-<script>
-(function(){
-  var basePath = '/aniani-playground/';
-  if (location.hostname.endsWith('github.io') &&
-      location.pathname.indexOf(basePath) === -1) {
-    location.replace('https://donadonaa24-cyber.github.io' + basePath + 'game.html?redir=' + Date.now());
-  }
-})();
-</script>
-
-<div class="wrap">
-  <div class="top">
-    <h1 style="margin:0">🍳 Battle à la carte – 安全版（CPU戦）</h1>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button type="button" class="btn" id="btnCraft">役を作る</button>
-      <button type="button" class="btn" id="btnBuy">加工カード</button>
-      <button type="button" class="btn" id="btnEnd">ターン終了</button>
-      <!-- ② ニューゲーム（絶対URLで強制リロード） -->
-      <button class="btn primary" id="btnNew"
-        onclick="location.href='https://donadonaa24-cyber.github.io/aniani-playground/game.html?ts='+Date.now()">
-        ニューゲーム
-      </button>
+    <div class="toolbar">
+      <button class="btn" id="btnMakeRoles">役を作る</button>
+      <button class="btn" id="btnProcess">加工カード</button>
+      <button class="btn" id="btnEndTurn">ターン終了</button>
+      <button class="btn primary" id="btnNewGame">ニューゲーム</button>
       <a class="btn" href="index.html">← ホーム</a>
     </div>
-  </div>
 
-  <div class="area">
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <div>山札 <b id="deckCount">0</b> / ゴミ箱 <b id="trashCount">0</b></div>
-      <div class="mut">ターン：<b id="turnCount">-</b>（イベント：<span id="evtRest">-</span>）</div>
-      <div class="mut">先手イベント制限：<b id="eventLock">-</b></div>
+    <div class="panel">
+      <div class="caption">
+        山札 <span id="uiDeckCount">0</span> ／ ゴミ箱 <span id="uiDiscardCount">0</span>　
+        ターン: <span id="uiTurn">-</span>　（イベント: <span id="uiEvent">-</span>）
+      </div>
+      <div class="caption">先手イベント制限：<span id="uiFirstLimit">-</span></div>
+    </div>
+
+    <div class="row">
+      <div class="panel col">
+        <h3>🤖 CPU</h3>
+        <div class="caption">※手札非公開・セットは裏</div>
+        <div class="caption">手札 <span id="cpuHandCount">0</span> ／ セット <span id="cpuSetCount">0</span> ／ 得点 <span id="cpuScore">0</span></div>
+      </div>
+
+      <div class="panel col">
+        <h3>👤 あなた</h3>
+        <div class="caption">手札</div>
+        <div id="youHand" class="cards"></div>
+        <div class="caption">セット（裏向き）</div>
+        <div id="youSet" class="cards"></div>
+        <div class="caption">セット上限2（冷凍庫で3）。イベント以外で交換不可。</div>
+        <div class="caption">手札 <span id="youHandCount">0</span> ／ セット <span id="youSetCount">0</span> ／ 得点 <span id="youScore">0</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>ログ</h3>
+      <div id="log" class="cards"></div>
     </div>
   </div>
 
-  <div class="row">
-    <section class="area">
-      <div class="who"><h3>🤖 CPU</h3><div class="mut">手札 <b id="cpuHand">0</b> / セット <b id="cpuSet">0</b> / 得点 <b id="cpuScore">0</b></div></div>
-      <div class="tags" id="cpuProcs"></div>
-      <div class="mut">※手札非公開・セットは裏</div>
-      <div class="set" id="cpuSetCards"></div>
-    </section>
-    <section class="area">
-      <div class="who"><h3>🧑 あなた</h3><div class="mut">手札 <b id="youHand">0</b> / セット <b id="youSet">0</b> / 得点 <b id="youScore">0</b></div></div>
-      <div class="tags" id="youProcs"></div>
-      <h4>手札</h4>
-      <div class="hand" id="yourHandCards"></div>
-      <div class="hr"></div>
-      <h4>セット（裏向き）</h4>
-      <div class="set" id="yourSetCards"></div>
-      <div class="mut">セット上限2（冷凍庫で3）。イベント以外で交換不可。</div>
-    </section>
-  </div>
+  <div id="diag">loading…</div>
 
-  <section class="area">
-    <h3 style="margin:0 0 6px 0;">ログ</h3>
-    <div id="logContent" class="log"></div>
-  </section>
-</div>
+  <!-- ゲーム本体JS（キャッシュ回避 v=6） -->
+  <script src="./game.js?v=6"></script>
 
-<!-- 役づくり -->
-<div class="modal" id="modalCraft">
-  <div class="sheet">
-    <h3 style="margin:0 0 6px 0">役を作る</h3>
-    <div class="grid" id="craftList"></div>
-    <div class="hr"></div>
-    <button class="btn" id="closeCraft">閉じる</button>
-  </div>
-</div>
+  <!-- 画面初期化：自動開始しない。ニューゲームでのみ開始。 -->
+  <script>
+    function setDiag(t){ const el=document.getElementById('diag'); if(el) el.textContent=String(t); }
 
-<!-- 加工 -->
-<div class="modal" id="modalBuy">
-  <div class="sheet">
-    <h3 style="margin:0 0 6px 0">加工カード（各3点）</h3>
-    <div class="grid" id="buyList"></div>
-    <div class="hr"></div>
-    <button class="btn" id="closeBuy">閉じる</button>
-  </div>
-</div>
+    document.addEventListener('DOMContentLoaded', () => {
+      setDiag('準備OK。ニューゲームを押して開始！');
+      try{
+        if (typeof window.wireUI === 'function') window.wireUI();
 
-<!-- 2枚残し -->
-<div class="modal" id="modalKeep">
-  <div class="sheet">
-    <h3 style="margin:0 0 6px 0">手札2枚だけ残す（タップして選択→決定）</h3>
-    <div class="grid" id="keepList"></div>
-    <div class="hr"></div>
-    <button class="btn primary" id="confirmKeep">決定</button>
-  </div>
-</div>
-
-<!-- ゲーム本体JS -->
-<script src="game.js"></script>
-
-<!-- ③ 診断＆起動（bodyの最後） -->
-<div id="diag"
-     style="position:fixed;left:8px;bottom:8px;font:12px/1.2 system-ui;color:#fff;
-            background:#000a;padding:6px 8px;border-radius:8px;z-index:9999">
-  loading…
-</div>
-<script>
-  // 画面下の診断表示を書き換える関数（そのままでOK）
-  function setDiag(t){
-    var el = document.getElementById('diag');
-    if (el) el.textContent = String(t);
-  }
-
-  // ページ読み込み時は「UIの配線」だけ。ゲームは開始しない！
-  document.addEventListener('DOMContentLoaded', function(){
-    setDiag('準備OK。ニューゲームを押して開始！');
-    try {
-      // ボタン等のイベントだけ結線
-      if (typeof wireUI === 'function') { wireUI(); }
-
-      // もし URL に ?autostart=1 が付いていたら自動開始（開発用）
-      const url = new URL(location.href);
-      if (url.searchParams.get('autostart') === '1') {
-        newGame();
-        setDiag('自動開始しました（autostart=1）');
+        // 開発用: ?autostart=1 を付けたときだけ自動開始
+        const sp = new URL(location.href).searchParams;
+        if (sp.get('autostart') === '1' && typeof window.newGame === 'function') {
+          window.newGame(true);
+          setDiag('自動開始（autostart=1）');
+        }
+      }catch(e){
+        setDiag('初期化エラー: '+e);
+        alert('初期化エラー: '+e);
       }
-    } catch (e) {
-      setDiag('初期化エラー: ' + e);
-      alert('初期化エラー: ' + e);
-    }
-  });
+    });
 
-  // フォールバック：旧環境向け。自動開始はしないでメッセージだけ出す
-  setTimeout(function(){
-    var d = document.getElementById('diag');
-    if (d && /loading/i.test(d.textContent)) {
-      setDiag('準備できました。ニューゲームで開始してね！');
-    }
-  }, 1200);
-
-</script>
-<script src="./game.js?v=3"></script>
+    // フォールバック（旧環境）
+    setTimeout(()=>{
+      const d=document.getElementById('diag');
+      if(d && /loading/i.test(d.textContent)) setDiag('準備できました。ニューゲームで開始してね！');
+    },1200);
+  </script>
 </body>
 </html>

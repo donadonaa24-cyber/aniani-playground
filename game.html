@@ -29,6 +29,20 @@
   .choice{border:1px solid #ffffff25;border-radius:12px;padding:8px;background:#101630}
   .choice.sel{outline:2px solid #f59e0b}
 </style>
+<style>
+  .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin: 10px 0; }
+  .toolbar .btn { padding:.6rem .9rem; border-radius:.6rem; border:1px solid #333; background:#222; color:#fff; }
+  .toolbar .btn--primary { background:#ff7a3c; border-color:#ff7a3c; color:#111; }
+  .toolbar .btn:disabled { opacity:.5; }
+  .hud { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+  .badge { background:#333; padding:.2rem .5rem; border-radius:.4rem; }
+  dialog.peek { border:none; border-radius: 12px; padding: 0; overflow:hidden; }
+  .peek__wrap{ background:#0f1220; color:#fff; padding:14px; min-width:280px; }
+  .peek__grid{ display:grid; grid-template-columns: repeat(3, 90px); gap:10px; justify-content:center; }
+  .peek__card{ width:90px; height:130px; border-radius:10px; border:1px dashed #555; background:#111; display:flex; align-items:center; justify-content:center; }
+  .audioctl{ display:flex; align-items:center; gap:.6rem; }
+  .audioctl input[type="range"]{ width:140px; }
+</style>
 </head>
 <body>
 
@@ -58,7 +72,26 @@
       <a class="btn" href="index.html">← ホーム</a>
     </div>
   </div>
+<div class="toolbar" id="toolbar-extra">
+  <button class="btn" id="btn-peek">セット確認（自分）</button>
+  <button class="btn" id="btn-undo" disabled>ターンエンド取り消し</button>
+  <div class="audioctl">
+    <button class="btn" id="btn-bgm">♪ BGM 再生</button>
+    <span class="badge" id="bgm-status">停止中</span>
+    <input type="range" id="bgm-vol" min="0" max="1" step="0.01" value="0.5" />
+  </div>
+</div>
 
+<!-- セット確認用モーダル -->
+<dialog class="peek" id="peek-dialog">
+  <div class="peek__wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong>あなたのセット（裏向き）</strong>
+      <button class="btn" id="peek-close">閉じる</button>
+    </div>
+    <div class="peek__grid" id="peek-grid"></div>
+  </div>
+</dialog>
   <div class="area">
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <div>山札 <b id="deckCount">0</b> / ゴミ箱 <b id="trashCount">0</b></div>
@@ -159,6 +192,6 @@
 
 <!-- ここで game.js を読み込む -->
 <script src="./game.js?v=3"></script>
-
+<audio id="bgm" src="assets/bgm_main.mp3" preload="auto" loop></audio>
 </body>
 </html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🍳 Battle à la carte – 動作確認版</title>
+  <style>
+    :root{--bg:#0f1420;--panel:#121a2a;--text:#e9eef7;--muted:#a9b3c7;--accent:#ff7a45;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,"Noto Sans JP",sans-serif}
+    .wrap{max-width:860px;margin:0 auto;padding:16px}
+    h1{margin:6px 0 12px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px}
+    .btn{padding:10px 14px;border-radius:10px;background:#222a3c;color:#fff;border:1px solid #2e3a55}
+    .btn.primary{background:#ff7a45;border-color:#ff935f;color:#222}
+    .panel{background:var(--panel);border:1px solid #253250;border-radius:12px;padding:12px;margin:8px 0}
+    #log{min-height:100px;white-space:pre-wrap}
+    .card{background:#101826;border:1px solid #2c3a58;border-radius:8px;padding:6px 8px;margin:4px 0}
+    #diag{position:fixed;left:8px;right:8px;bottom:8px;background:#0c1220cc;border:1px solid #2a395c;border-radius:10px;padding:6px 10px;font-size:12px;color:#bcd;pointer-events:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🍳 Battle à la carte – 動作確認版</h1>
+
+    <div class="toolbar">
+      <button class="btn primary" id="btnNewGame">ニューゲーム</button>
+      <button class="btn" id="btnEndTurn">ターン終了</button>
+      <a class="btn" href="index.html">← ホーム</a>
+    </div>
+
+    <div class="panel">
+      山札 <span id="uiDeckCount">0</span> ／ ゴミ箱 <span id="uiDiscardCount">0</span> ／
+      ターン <span id="uiTurn">-</span>
+    </div>
+
+    <div class="panel">
+      <b>あなたの手札</b>
+      <div id="youHand"></div>
+    </div>
+
+    <div class="panel">
+      <b>ログ</b>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <div id="diag">loading…</div>
+
+  <!-- ★JSは必ずこの1行で読ませる（キャッシュ回避 v=7） -->
+  <script src="./game.js?v=7"></script>
+
+  <!-- 初期化：自動開始しない。ニューゲームだけで開始。 -->
+  <script>
+    function setDiag(t){ const el=document.getElementById('diag'); if(el) el.textContent=String(t); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setDiag('準備OK（v7）。ニューゲームを押して開始！');
+      try{
+        if (typeof window.wireUI === 'function') window.wireUI();
+      }catch(e){
+        setDiag('初期化エラー: '+e);
+        alert('初期化エラー: '+e);
+      }
+    });
+  </script>
+</body>
+</html>

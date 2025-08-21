@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Battle à la carte – 正式ルールデモ（CPU戦）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0f19; --ink:#eef2ff; --mut:#a1a8b5; --line:#ffffff1a;
+    --card:#11162a; --glass:#ffffff0a;
+    --pri:#f59e0b; --good:#10b981; --bad:#ef4444; --info:#60a5fa; --vio:#a855f7;
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:"Noto Sans JP",system-ui; color:var(--ink); background:radial-gradient(900px 400px at 90% -10%, #1e293b 0%, transparent 60%), var(--bg)}
+  a{color:inherit; text-decoration:none}
+  .wrap{max-width:1080px; margin:0 auto; padding:18px}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+  .btn{padding:10px 16px; border-radius:12px; border:1px solid #ffffff24; background:#ffffff12; color:var(--ink); font-weight:700; cursor:pointer}
+  .btn:hover{border-color:#ffffff55}
+  .btn.primary{background:linear-gradient(135deg, var(--pri), #ef4444); border:none; color:white; box-shadow:0 8px 24px #00000040}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media (max-width:900px){ .row{grid-template-columns:1fr} }
+  .area{background:var(--glass); border:1px solid var(--line); border-radius:var(--r); padding:14px}
+  .who{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px}
+  .tags{display:flex; gap:8px; flex-wrap:wrap}
+  .tag{padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:#ffffff10; font-weight:700; font-size:12px}
+  .tag.on{background:#10b98133; border-color:#10b981aa}
+  .hand,.set{display:flex; gap:10px; flex-wrap:wrap}
+  .card{
+    min-width:140px; max-width:170px; padding:10px; border-radius:16px; border:1px solid #ffffff18;
+    background:#101630; box-shadow:0 8px 24px #00000030; position:relative;
+  }
+  .card .name{font-weight:800}
+  .card .desc{color:var(--mut); font-size:13px}
+  .card .type{position:absolute; top:8px; right:8px; font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid #ffffff25; background:#ffffff14}
+  .type.mat{border-color:#22c55e66} .type.evt{border-color:#60a5fa66} .type.proc{border-color:#f59e0b66}
+  .back{width:110px; height:80px; border-radius:12px; border:1px solid var(--line); background:#0c1224; display:grid; place-items:center}
+  .mut{color:var(--mut)}
+  .pile{display:flex; align-items:center; gap:12px}
+  .pile .box{width:60px; height:84px; border-radius:12px; border:2px dashed var(--line); display:grid; place-items:center}
+  .log{height:240px; overflow:auto; background:#0c1224; border:1px dashed #ffffff22; border-radius:12px; padding:10px; font-size:14px}
+  .flex{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .right{display:flex; gap:8px; align-items:center}
+  .small{font-size:12px}
+  .danger{color:#fca5a5}
+  .ok{color:#86efac}
+  dialog{border:none; border-radius:16px; padding:0; max-width:680px; width:min(92vw,680px)}
+  .dlg{padding:16px; background:#0f142a; color:var(--ink); border:1px solid var(--line); border-radius:16px}
+  .list{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px}
+  .hr{height:1px; background:var(--line); margin:10px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🍳 Battle à la carte — 正式ルールデモ（CPU戦）</h1>
+    <div class="right">
+      <button class="btn" id="btnCraft">役を作る</button>
+      <button class="btn" id="btnBuy">加工カード</button>
+      <button class="btn" id="btnEnd">ターン終了</button>
+      <button class="btn" id="btnNew">ニューゲーム</button>
+      <a class="btn" href="index.html">← ホーム</a>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="pile">
+      <div class="box">山札<br><b id="deckN">0</b></div>
+      <div class="box">ゴミ箱<br><b id="discN">0</b></div>
+      <div class="mut">ターン：<b id="turnLabel">あなた</b>（イベント：<span id="evtRest">OK</span>）</div>
+      <div class="mut">先手イベント制限：<b id="firstLock">-</b></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- CPU -->
+    <section class="area">
+      <div class="who">
+        <h3>🤖 CPU</h3>
+        <div class="mut">手札 <b id="cpuHandN">0</b> / セット <b id="cpuSetN">0</b> / 得点 <b id="cpuPts">0</b></div>
+      </div>
+      <div class="tags" id="cpuProcs"></div>
+      <div class="mut small">※CPUの手札は非公開 / セットは裏向き</div>
+      <div class="set" id="cpuSet"></div>
+    </section>
+
+    <!-- YOU -->
+    <section class="area">
+      <div class="who">
+        <h3>🧑 あなた</h3>
+        <div class="mut">手札 <b id="youHandN">0</b> / セット <b id="youSetN">0</b> / 得点 <b id="youPts">0</b></div>
+      </div>
+      <div class="tags" id="youProcs"></div>
+
+      <h4 style="margin:.4rem 0 0 0;">手札</h4>
+      <div class="hand" id="youHand"></div>
+
+      <div class="hr"></div>
+      <h4 style="margin:.2rem 0 0 0;">セット（裏向き）</h4>
+      <div class="set" id="youSet"></div>
+      <div class="mut small">セットは通常2枚まで（冷凍庫で3）。イベント以外で交換不可。自分だけ中身を確認できます。</div>
+    </section>
+  </div>
+
+  <section class="area">
+    <h3 style="margin:0 0 6px 0;">ログ</h3>
+    <div id="log" class="log"></div>
+    <p class="mut small" style="margin:.5rem 0 0 0">
+      ルール：開始時4枚配布。自分の番のドローで上限（通常4／まな板所持で5）まで引く。イベントは各ターン1回。役を作ると使用札はゴミ箱へ。10点で勝利。<br>
+      特殊勝利：料理の鉄人（4肉を各1回以上含む役＋合計7点）、満腹の達人（同一ターン3役）。
+    </p>
+  </section>
+</div>
+
+<!-- 役づくりダイアログ -->
+<dialog id="dlgCraft"><div class="dlg">
+  <h3>役を作る</h3>
+  <div class="mut small">手札と自分のセットから材料を使ってレシピを成立させます。包丁所持なら材料1枚を2枚分として使用可。</div>
+  <div class="hr"></div>
+  <div id="craftList" class="list"></div>
+  <div class="hr"></div>
+  <div class="flex">
+    <button class="btn" id="closeCraft">閉じる</button>
+  </div>
+</div></dialog>
+
+<!-- 加工カード購入ダイアログ -->
+<dialog id="dlgBuy"><div class="dlg">
+  <h3>加工カードを獲得（各3点）</h3>
+  <div class="list" id="buyList"></div>
+  <div class="hr"></div>
+  <button class="btn" id="closeBuy">閉じる</button>
+</div></dialog>
+
+<!-- 手札2枚残しダイアログ -->
+<dialog id="dlgKeep"><div class="dlg">
+  <h3>ターン終了：手札を2枚だけ残してください</h3>
+  <div id="keepList" class="list"></div>
+  <div class="hr"></div>
+  <div class="flex">
+    <button class="btn primary" id="confirmKeep">決定</button>
+  </div>
+</div></dialog>
+
+<script>
+/* ====== データ定義 ====== */
+const MATERIAL_COUNTS = {
+  "ご飯":4, "のり":4, "牛乳":4,
+  "バナナ":2, "カレー粉":2,
+  "鶏肉":2, "豚肉":2, "牛肉":2, "魚肉":2,
+  "卵":2, "キャベツ":2, "にんじん":2, "じゃがいも":2, "玉ねぎ":2, "大根":2
+};
+
+const EVENTS = [
+  {id:"ごみ", name:"ゴミ収集車", desc:"ゴミ箱から材料1枚を手札へ", once:true},
+  {id:"物々", name:"物々交換", desc:"相手の手札を見て材料1枚をもらい、自分の材料1枚を渡す", once:true},
+  {id:"やめ", name:"やっぱやーめたっ！", desc:"自分のセット中の材料をすべて手札に戻す", once:true},
+  {id:"やり", name:"やり直し", desc:"自分の手札をすべて捨て、同枚数引く", once:true},
+  {id:"創作", name:"創作料理", desc:"材料2枚を捨て3点獲得。このターン他の役不可", once:true, lock:true},
+  {id:"爆買", name:"爆買い", desc:"山札から3枚引く", once:true},
+  {id:"探索", name:"食材探索", desc:"山から3枚公開→材料があれば2枚まで手札へ", once:true},
+  {id:"掃除", name:"大掃除", desc:"相手の手札を全捨て→同枚数引く", once:true},
+  {id:"緊急", name:"緊急調理", desc:"自分の得点が5点以下のとき、材料1枚とこのカードを捨て3点（他の役不可）", once:true, lock:true},
+];
+
+const PROCS = [
+  {id:"knife",   name:"包丁",   desc:"役作成時、材料1枚を2枚分として扱える"},
+  {id:"freezer", name:"冷凍庫", desc:"自分のセット上限+1（合計3）"},
+  {id:"board",   name:"まな板", desc:"ドロー上限+1（合計5）"},
+];
+
+const RECIPES = [
+  // 1点
+  {name:"おにぎり", pts:1, need:{"ご飯":1,"のり":1}},
+  {name:"卵かけご飯", pts:1, need:{"ご飯":1,"卵":1}},
+  {name:"豚バラ大根", pts:1, need:{"豚肉":1,"大根":1}},
+  {name:"ブリ大根", pts:1, need:{"魚肉":1,"大根":1}},
+  {name:"ロールキャベツ", pts:1, need:{"豚肉":1,"キャベツ":1}},
+  {name:"バナナジュース", pts:1, need:{"バナナ":1,"牛乳":1}},
+  // 2点
+  {name:"鮭おにぎり", pts:2, need:{"ご飯":1,"のり":1,"魚肉":1}},
+  {name:"野菜炒め", pts:2, need:{"キャベツ":1,"にんじん":1,"玉ねぎ":1}},
+  {name:"チャーハン", pts:2, need:{"ご飯":1,"玉ねぎ":1,"卵":1}},
+  // 4点
+  {name:"豪華なチャーハン", pts:4, need:{"ご飯":1,"玉ねぎ":1,"卵":1,"豚肉":1}},
+  {name:"キーマカレー", pts:4, need:{"ご飯":1,"玉ねぎ":1,"カレー粉":1,"牛肉":1}},
+  {name:"オムライス", pts:4, need:{"ご飯":1,"玉ねぎ":1,"卵":1,"鶏肉":1}},
+  {name:"ハンバーグ", pts:4, need:{"牛肉":1,"豚肉":1,"玉ねぎ":1,"牛乳":1}},
+  {name:"肉じゃが", pts:4, need:{"牛肉":1,"じゃがいも":1,"玉ねぎ":1,"にんじん":1}},
+  // 7点
+  {name:"クリームシチュー", pts:7, need:{"牛乳":1,"牛肉":1,"玉ねぎ":1,"にんじん":1,"じゃがいも":1}},
+  {name:"カレー", pts:7, need:{"牛肉":1,"玉ねぎ":1,"にんじん":1,"じゃがいも":1,"カレー粉":1}},
+  // 10点
+  {name:"満腹カレー", pts:10, need:{"ご飯":1,"牛肉":1,"玉ねぎ":1,"にんじん":1,"じゃがいも":1,"カレー粉":1}},
+  {name:"爆弾おにぎり", pts:10, need:{"ご飯":4,"のり":1,"魚肉":1}},
+];
+
+function makeDeck(){
+  const deck = [];
+  for(const [mat, n] of Object.entries(MATERIAL_COUNTS))
+    for(let i=0;i<n;i++) deck.push({kind:"mat", name:mat});
+  // イベント各2枚
+  for(const ev of EVENTS) for(let i=0;i<2;i++) deck.push({kind:"evt", id:ev.id, name:ev.name});
+  return shuffle(deck);
+}
+
+/* ====== ユーティリティ ====== */
+function shuffle(a){
+  const arr = a.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function countByName(list){
+  const m = {};
+  for(const c of list){ m[c.name] = (m[c.name]||0)+1; }
+  return m;
+}
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* ====== 状態 ====== */
+let S;
+
+function newGame(){
+  S = {
+    deck: makeDeck(),
+    discard: [],
+    firstTurnEventLock: {you:true, cpu:true}, // 2人戦：先行のみ初手禁止 → start時にyou先行にする
+    turn: 'you',
+    gameOver:false,
+    // プレイヤー
+    you: {hand:[], set:[], pts:0, procs:[], meats:new Set(), evtUsed:false, turnLock:false, craftedThisTurn:0},
+    cpu: {hand:[], set:[], pts:0, procs:[], meats:new Set(), evtUsed:false, turnLock:false, craftedThisTurn:0},
+  };
+  // 先攻/後攻の先手制限：今回はyou先攻 → youのみ初手イベント禁止
+  S.firstTurnEventLock = {you:true, cpu:false};
+
+  // 初期4枚ずつ
+  for(let i=0;i<4;i++){ draw('you'); draw('cpu'); }
+  logClear();
+  log('🎬 ゲーム開始！ あなたが先攻です。先手の初手はイベント使用不可。');
+  startTurn();
+  render();
+}
+
+function draw(who){
+  // 手札上限：通常4、まな板持ちで5
+  const limit = hasProc(who,'board') ? 5 : 4;
+  while(S[who].hand.length < limit){
+    if(S.deck.length===0){
+      if(S.discard.length===0) break;
+      S.deck = shuffle(S.discard); S.discard = [];
+      log('♻️ 山札が切れたため、ゴミ箱をシャッフルして山札に戻しました。');
+    }
+    S[who].hand.push(S.deck.pop());
+  }
+}
+
+function startTurn(){
+  const who = S.turn;
+  S[who].evtUsed = false;
+  S[who].turnLock = false;
+  S[who].craftedThisTurn = 0;
+
+  draw(who);
+  render();
+  if(who==='cpu' && !S.gameOver){
+    setTimeout(cpuAct, 700);
+  }
+}
+
+function endTurn(){
+  if(S.gameOver) return;
+  const who = S.turn;
+  // エンド時、手札が4枚以上なら2枚だけ残す
+  if(S[who].hand.length>2){
+    if(who==='you'){ openKeepDialog(); return; }
+    cpuDiscardToTwo();
+  }
+  // ターン切替
+  S.turn = (S.turn==='you')?'cpu':'you';
+  // 先手イベント制限はそのプレイヤーの最初の終了時に解除
+  S.firstTurnEventLock[S.turn] = S.firstTurnEventLock[S.turn] && false;
+  render();
+  startTurn();
+}
+
+function openKeepDialog(){
+  const dlg = byId('dlgKeep');
+  const cont = byId('keepList'); cont.innerHTML='';
+  const who = S.turn;
+  const hand = S[who].hand;
+  const selected = new Set();
+  hand.forEach((c,idx)=>{
+    const el = docCard(c);
+    el.onclick = ()=>{ 
+      if(selected.has(idx)){ selected.delete(idx); el.style.outline='none'; }
+      else { selected.add(idx); el.style.outline='2px solid #f59e0b'; }
+    };
+    cont.appendChild(el);
+  });
+  byId('confirmKeep').onclick = ()=>{
+    if(selected.size!==2){ alert('2枚だけ選んでください'); return; }
+    const keepIdx = Array.from(selected).sort((a,b)=>a-b);
+    const newHand = [hand[keepIdx[0]], hand[keepIdx[1]]];
+    // 捨てる
+    hand.forEach((c,i)=>{ if(!keepIdx.includes(i)) S.discard.push(c); });
+    S[who].hand = newHand;
+    dlg.close();
+    // 次のターンへ
+    S.turn = (S.turn==='you')?'cpu':'you';
+    render(); startTurn();
+  };
+  dlg.showModal();
+}
+
+/* ====== 役作成 ====== */
+function canCraft(who, recipe){
+  const all = [...S[who].hand, ...S[who].set];
+  const cnt = countByName(all);
+  const need = clone(recipe.need);
+  // 包丁があれば、任意の材料1枚の必要数+1ぶんを“1枚で”充足できる（=使用枚数-1してOK）
+  const hasKnife = hasProc(who,'knife');
+  // チェック：包丁なしで足りてるか
+  let ok = true;
+  for(const [k,v] of Object.entries(need)){
+    if((cnt[k]||0) < v){ ok=false; break; }
+  }
+  if(ok) return {ok:true, use:chooseUse(all, need, null)};
+  if(!hasKnife) return {ok:false};
+  // 包丁あり：どれか1種について、必要数を1だけ減らして再判定（材料1枚を2枚分扱い）
+  for(const k of Object.keys(need)){
+    const n2 = clone(need); n2[k] = Math.max(0, n2[k]-1);
+    let ok2 = true;
+    for(const [kk,vv] of Object.entries(n2)){
+      if((cnt[kk]||0) < vv){ ok2=false; break; }
+    }
+    if(ok2) return {ok:true, use:chooseUse(all, n2, {knifeOn:k})};
+  }
+  return {ok:false};
+}
+
+function chooseUse(pool, need, knifeInfo){
+  // 実際に使う札（インデックス）を決める。setを優先的に消費
+  const fromSet = [];
+  const fromHand = [];
+  const hand = S[S.turn].hand, setp = S[S.turn].set;
+
+  const needCnt = clone(need);
+  // まずセットから
+  for(let i=0;i<setp.length;i++){
+    const nm = setp[i].name;
+    if(needCnt[nm]>0){ needCnt[nm]--; fromSet.push({src:'set', idx:i}); }
+  }
+  // 手札から
+  for(let i=0;i<hand.length;i++){
+    const nm = hand[i].name;
+    if(needCnt[nm]>0){ needCnt[nm]--; fromHand.push({src:'hand', idx:i}); }
+  }
+  return {fromSet, fromHand, knifeInfo};
+}
+
+function doCraft(recipe){
+  const who = S.turn;
+  if(S[who].turnLock){ alert('このターンは役を作れません（創作料理/緊急調理の後）'); return; }
+  const chk = canCraft(who, recipe);
+  if(!chk.ok){ alert('必要な材料が足りません'); return; }
+  // 使用札をゴミ箱へ（indexがずれるので注意）
+  // セット→手札の順で処理
+  const setSel = chk.use.fromSet.map(x=>x.idx).sort((a,b)=>b-a);
+  for(const i of setSel){ S.discard.push(S[who].set.splice(i,1)[0]); }
+  const handSel = chk.use.fromHand.map(x=>x.idx).sort((a,b)=>b-a);
+  for(const i of handSel){ S.discard.push(S[who].hand.splice(i,1)[0]); }
+  S[who].pts += recipe.pts;
+  S[who].craftedThisTurn++;
+
+  // 役の中に含まれる肉種を記録（特殊勝利用）
+  for(const meat of ["鶏肉","豚肉","牛肉","魚肉"]) if(recipe.need[meat]) S[who].meats.add(meat);
+
+  log(`🍽️ ${whoLabel(who)}が「${recipe.name}」を完成（${recipe.pts}点）`);
+  // 勝利判定
+  if(S[who].pts >= 10){ gameOver(`${whoLabel(who)}の勝利！（10点到達）`); return; }
+  // 特殊勝利
+  if(S[who].meats.size===4 && S[who].pts>=7){ gameOver(`${whoLabel(who)}が「料理の鉄人」達成！`); return; }
+  if(S[who].craftedThisTurn>=3){ gameOver(`${whoLabel(who)}が「満腹の達人」達成！`); return; }
+
+  render();
+}
+
+/* ====== イベント ====== */
+function canUseEvent(who){
+  if(S[who].evtUsed) return false;
+  if(S.firstTurnEventLock[who]) return false;
+  return true;
+}
+
+function useEvent(cardIdx){
+  const who = 'you';
+  const card = S[who].hand[cardIdx];
+  if(!canUseEvent(who)){ alert('このターンはもうイベントを使えません（または先手初手のため使用不可）'); return; }
+  const ev = EVENTS.find(e=>e.name===card.name);
+  if(!ev){ alert('イベントが見つかりません'); return; }
+
+  // 効果
+  let consumed = true, lockThisTurn = false;
+  switch(ev.id){
+    case "ごみ":{
+      const mats = S.discard.filter(c=>c.kind==='mat');
+      if(mats.length===0){ log('🚛 ゴミ箱に材料がありません'); consumed=true; break; }
+      // 一覧から選択
+      const names = Array.from(new Set(mats.map(c=>c.name)));
+      const pick = prompt(`ゴミ箱から1枚選んでください：\n${names.join(' / ')}`);
+      const target = mats.find(c=>c.name===pick) || mats[0];
+      // 先に捨て札から削除
+      const i = S.discard.findIndex(c=>c.kind==='mat' && c.name===target.name);
+      if(i>=0){ const got = S.discard.splice(i,1)[0]; S[who].hand.push(got); log(`🚛 ゴミ収集車：${target.name} を回収`); }
+      break;
+    }
+    case "物々":{
+      // CPUの手札公開→1枚もらう、こちらから1枚渡す
+      const opp = 'cpu';
+      const oppMats = S[opp].hand.filter(c=>c.kind==='mat');
+      if(oppMats.length===0){ log('🔁 相手に材料がありません'); break; }
+      const names = oppMats.map(c=>c.name);
+      const want = prompt(`相手の手札（材料）:\n${names.join(' / ')}\n→ もらう材料名を入力`);
+      const takeIdx = S[opp].hand.findIndex(c=>c.kind==='mat' && c.name===(want||'')); 
+      const pickIdx = (takeIdx>=0)?takeIdx : S[opp].hand.findIndex(c=>c.kind==='mat');
+      const taken = S[opp].hand.splice(pickIdx,1)[0]; S[who].hand.push(taken);
+      // 渡す：こちらの材料が無ければスキップ
+      const myMatIdx = S[who].hand.findIndex(c=>c.kind==='mat');
+      if(myMatIdx>=0){
+        const give = S[who].hand.splice(myMatIdx,1)[0]; S[opp].hand.push(give);
+        log(`🔁 物々交換：${whoLabel(who)}は${taken.name}を受け取り、${give.name}を渡した`);
+      }else{
+        log(`🔁 物々交換：${whoLabel(who)}は${taken.name}を受け取った（渡す材料なし）`);
+      }
+      break;
+    }
+    case "やめ":{
+      const n = S[who].set.length;
+      if(n===0){ log('↩️ セットにカードがありません'); break; }
+      while(S[who].set.length) S[who].hand.push(S[who].set.pop());
+      log(`↩️ やっぱやーめたっ！：セットを手札に戻した（${n}枚）`);
+      break;
+    }
+    case "やり":{
+      const n = S[who].hand.length;
+      S.discard.push(...S[who].hand.splice(0));
+      for(let i=0;i<n;i++){
+        if(S.deck.length===0){ S.deck = shuffle(S.discard); S.discard = []; }
+        S[who].hand.push(S.deck.pop());
+      }
+      log('🔄 やり直し：手札を入れ替えました');
+      break;
+    }
+    case "創作":{
+      // 材料2枚を捨てて3点
+      const myMats = S[who].hand.filter(c=>c.kind==='mat');
+      if(myMats.length<2){ alert('材料が2枚必要です'); consumed=false; break; }
+      // 適当に先頭2枚（UI簡略）
+      const dump = 2;
+      let removed=0, keep=[]; 
+      for(const c of S[who].hand){
+        if(c.kind==='mat' && removed<dump){ S.discard.push(c); removed++; }
+        else keep.push(c);
+      }
+      S[who].hand = keep;
+      S[who].pts += 3;
+      lockThisTurn = true;
+      log('✨ 創作料理：材料2枚→3点（このターン他の役不可）');
+      if(S[who].pts>=10){ gameOver(`${whoLabel(who)}の勝利！（10点到達）`); return; }
+      break;
+    }
+    case "爆買":{
+      for(let i=0;i<3;i++){
+        if(S.deck.length===0){ S.deck = shuffle(S.discard); S.discard = []; }
+        if(S.deck.length===0) break;
+        S[who].hand.push(S.deck.pop());
+      }
+      log('🛒 爆買い：3枚ドロー');
+      break;
+    }
+    case "探索":{
+      const open = [];
+      for(let i=0;i<3;i++){
+        if(S.deck.length===0){ S.deck = shuffle(S.discard); S.discard = []; }
+        if(S.deck.length===0) break;
+        open.push(S.deck.pop());
+      }
+      const mats = open.filter(c=>c.kind==='mat');
+      const take = mats.slice(0,2);
+      const rest = open.filter(c=>!take.includes(c));
+      S[who].hand.push(...take);
+      S.discard.push(...rest);
+      log(`🔎 食材探索：公開${open.map(c=>c.name||'イベント').join('・')} → 材料${take.length}枚入手`);
+      break;
+    }
+    case "掃除":{
+      const opp='cpu'; const n = S[opp].hand.length;
+      if(n===0){ log('🧹 相手の手札がありません'); break; }
+      S.discard.push(...S[opp].hand.splice(0));
+      for(let i=0;i<n;i++){
+        if(S.deck.length===0){ S.deck = shuffle(S.discard); S.discard = []; }
+        if(S.deck.length===0) break;
+        S[opp].hand.push(S.deck.pop());
+      }
+      log('🧹 大掃除：相手の手札を入れ替えさせた');
+      break;
+    }
+    case "緊急":{
+      if(S[who].pts>5){ alert('自分の得点が5点以下のときのみ使用可'); consumed=false; break; }
+      const matIdx = S[who].hand.findIndex(c=>c.kind==='mat');
+      if(matIdx<0){ alert('材料が1枚必要です'); consumed=false; break; }
+      S.discard.push(S[who].hand.splice(matIdx,1)[0]); // 材料
+      S[who].pts += 3; lockThisTurn = true;
+      log('⏱ 緊急調理：材料1枚→3点（このターン他の役不可）');
+      if(S[who].pts>=10){ gameOver(`${whoLabel(who)}の勝利！（10点到達）`); return; }
+      break;
+    }
+  }
+  if(consumed){
+    // イベントカード自体を捨てる
+    S.discard.push(S[who].hand.splice(cardIdx,1)[0]);
+    S[who].evtUsed = true;
+    if(ev.lock) S[who].turnLock = true;
+  }
+  render();
+}
+
+function setMaterial(idx){
+  const who = 'you';
+  const limit = hasProc(who,'freezer') ? 3 : 2;
+  if(S[who].set.length>=limit){ alert(`セット上限は${limit}枚です（冷凍庫で+1）`); return; }
+  const c = S[who].hand[idx];
+  if(c.kind!=='mat'){ alert('材料カードのみセットできます'); return; }
+  S[who].set.push(c);
+  S[who].hand.splice(idx,1);
+  render();
+}
+
+/* ====== 加工カード ====== */
+function hasProc(who, id){ return S[who].procs.includes(id); }
+function canBuyProc(who, id){ return !hasProc(who,id) && S[who].pts>=3; }
+function buyProc(id){
+  const who='you';
+  if(!canBuyProc(who,id)){ alert('購入できません（既に所持 or 点数不足）'); return; }
+  S[who].pts -= 3;
+  S[who].procs.push(id);
+  log(`🛠️ ${whoLabel(who)}が加工カード「${procName(id)}」を獲得（-3点）`);
+  render();
+}
+
+/* ====== 勝敗 ====== */
+function whoLabel(w){ return w==='you'?'あなた':'CPU'; }
+function gameOver(msg){
+  S.gameOver = true; log('🏆 ' + msg);
+  alert('ゲーム終了：' + ms

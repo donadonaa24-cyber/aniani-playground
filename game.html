@@ -132,29 +132,39 @@
   loading…
 </div>
 <script>
-  function setDiag(t){ var d=document.getElementById('diag'); if(d){ d.textContent=t; } }
+  // 画面下の診断表示を書き換える関数（そのままでOK）
+  function setDiag(t){
+    var el = document.getElementById('diag');
+    if (el) el.textContent = String(t);
+  }
+
+  // ページ読み込み時は「UIの配線」だけ。ゲームは開始しない！
   document.addEventListener('DOMContentLoaded', function(){
-    setDiag('DOMContentLoaded OK → newGame() 実行中…');
+    setDiag('準備OK。ニューゲームを押して開始！');
     try {
+      // ボタン等のイベントだけ結線
       if (typeof wireUI === 'function') { wireUI(); }
-      if (typeof newGame !== 'function') {
-        setDiag('newGame 未定義。game.js が読み込まれていない可能性');
-      } else {
+
+      // もし URL に ?autostart=1 が付いていたら自動開始（開発用）
+      const url = new URL(location.href);
+      if (url.searchParams.get('autostart') === '1') {
         newGame();
-        setDiag('ゲーム初期化 完了！');
+        setDiag('自動開始しました（autostart=1）');
       }
-    } catch(e){
+    } catch (e) {
       setDiag('初期化エラー: ' + e);
-      alert('初期化エラー: '+e);
+      alert('初期化エラー: ' + e);
     }
   });
-  // 保険（古い環境）
+
+  // フォールバック：旧環境向け。自動開始はしないでメッセージだけ出す
   setTimeout(function(){
-    var d=document.getElementById('diag'); if(d && /loading/.test(d.textContent)){
-      setDiag('フォールバック起動…');
-      try{ if (typeof newGame==='function'){ newGame(); setDiag('ゲーム初期化 完了(フォールバック)'); } }catch(e){ setDiag('失敗: '+e); }
+    var d = document.getElementById('diag');
+    if (d && /loading/i.test(d.textContent)) {
+      setDiag('準備できました。ニューゲームで開始してね！');
     }
   }, 1200);
+
 </script>
 <script src="./game.js?v=3"></script>
 </body>

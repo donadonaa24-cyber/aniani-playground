@@ -393,3 +393,12 @@ function cpuAct(){
     setTimeout(endTurn,400); return; }
   // 2) 包丁がなく点3以上なら買う
   if(S.cpu.pts>=3 && S.cpu.procs.indexOf('knife')<0 && S.cpu.hand.filter(function(c){return c.k
+
+<script src="game.js"></script>
+  <script>
+    window.onload = function() {
+      newGame();
+    };
+  </script>
+</body>
+</html>

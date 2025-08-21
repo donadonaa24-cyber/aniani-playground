@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Battle à la carte – （CPU戦）v0.2</title>
+<title>Battle à la carte – 安全版（CPU戦）v0.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0b0f19;--ink:#eef2ff;--mut:#a1a8b5;--line:#ffffff1a;--card:#11162a;--pri:#f59e0b}
   *{box-sizing:border-box}body{margin:0;font-family:"Noto Sans JP",system-ui;color:var(--ink);background:#0b0f19}
   .wrap{max-width:1080px;margin:0 auto;padding:16px}
-  .top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .top{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
   .btn{padding:10px 14px;border-radius:12px;border:1px solid #ffffff30;background:#ffffff14;color:var(--ink);font-weight:700}
   .btn.primary{background:linear-gradient(135deg,#f59e0b,#ef4444);border:none}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -23,7 +23,6 @@
   .log{height:220px;overflow:auto;background:#0c1220;border:1px dashed #ffffff2a;border-radius:12px;padding:8px;font-size:14px}
   .tags{display:flex;gap:6px;flex-wrap:wrap}.tag{padding:4px 8px;border:1px solid #ffffff25;border-radius:999px;font-size:12px}
   .tag.on{background:#10b98133;border-color:#10b981aa}
-  /* 簡易モーダル（dialog代替） */
   .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
   .sheet{max-width:740px;width:100%;background:#0f142a;border:1px solid #ffffff22;border-radius:16px;padding:12px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
@@ -31,7 +30,7 @@
   .choice.sel{outline:2px solid #f59e0b}
 </style>
 </head>
-<body onload="try{ newGame(); }catch(e){ alert('初期化エラー: '+e); }">
+<body>
 <div class="wrap">
   <div class="top">
     <h1 style="margin:0">🍳 Battle à la carte – 安全版（CPU戦）</h1>
@@ -39,8 +38,8 @@
       <button type="button" class="btn" id="btnCraft">役を作る</button>
       <button type="button" class="btn" id="btnBuy">加工カード</button>
       <button type="button" class="btn" id="btnEnd">ターン終了</button>
-      <button type="button" class="btn primary" id="btnNew">ニューゲーム</button>
-      <a class="btn primary" href="game.html?v=3">ニューゲーム</a>
+      <a class="btn primary" href="game.html?v=3" id="btnNew">ニューゲーム</a>
+      <a class="btn" href="index.html">← ホーム</a>
     </div>
   </div>
 
@@ -77,7 +76,7 @@
   </section>
 </div>
 
-<!-- 簡易モーダル：役づくり -->
+<!-- 役づくり -->
 <div class="modal" id="modalCraft">
   <div class="sheet">
     <h3 style="margin:0 0 6px 0">役を作る</h3>
@@ -87,7 +86,7 @@
   </div>
 </div>
 
-<!-- 簡易モーダル：加工 -->
+<!-- 加工 -->
 <div class="modal" id="modalBuy">
   <div class="sheet">
     <h3 style="margin:0 0 6px 0">加工カード（各3点）</h3>
@@ -97,7 +96,7 @@
   </div>
 </div>
 
-<!-- 簡易モーダル：2枚残し -->
+<!-- 2枚残し -->
 <div class="modal" id="modalKeep">
   <div class="sheet">
     <h3 style="margin:0 0 6px 0">手札2枚だけ残す（タップして選択→決定）</h3>
@@ -108,7 +107,7 @@
 </div>
 
 <script>
-/* ===== データ ===== */
+/* ========= データ ========= */
 var MATERIAL_COUNTS={"ご飯":4,"のり":4,"牛乳":4,"バナナ":2,"カレー粉":2,"鶏肉":2,"豚肉":2,"牛肉":2,"魚肉":2,"卵":2,"キャベツ":2,"にんじん":2,"じゃがいも":2,"玉ねぎ":2,"大根":2};
 var EVENTS=[
  {id:"ごみ",name:"ゴミ収集車",desc:"ゴミ箱から材料1枚を手札へ"},
@@ -118,7 +117,7 @@ var EVENTS=[
  {id:"創作",name:"創作料理",desc:"材料2枚捨て→3点（このターン他役不可）",lock:true},
  {id:"爆買",name:"爆買い",desc:"3枚ドロー"},
  {id:"探索",name:"食材探索",desc:"山から3枚公開→材料があれば2枚まで入手"},
- {id:"掃除",name:"大掃除",desc:"相手の手札を全捨てさせ→同枚数ドロー"},
+ {id:"掃除",name:"大掃除",desc:"相手の手札を全捨て→同枚数ドロー"},
  {id:"緊急",name:"緊急調理",desc:"自点5以下：材料1＋このカード捨て→3点（他役不可）",lock:true}
 ];
 var PROCS=[{id:"knife",name:"包丁",desc:"役作成時、材料1枚を2枚分扱い"},{id:"freezer",name:"冷凍庫",desc:"セット上限+1（合計3）"},{id:"board",name:"まな板",desc:"ドロー上限+1（合計5）"}];
@@ -143,16 +142,18 @@ var RECIPES=[
  {name:"爆弾おにぎり",pts:10,need:{"ご飯":4,"のり":1,"魚肉":1}}
 ];
 
-/* ===== 便利 ===== */
+/* ========= 便利 ========= */
 function $(id){return document.getElementById(id)}
 function log(t){var el=$('log');var tm=new Date().toLocaleTimeString();el.innerHTML+='<div><span style="color:#94a3b8">'+tm+'</span>：<b>'+t+'</b></div>';el.scrollTop=el.scrollHeight;}
 function shuffle(a){var r=a.slice();for(var i=r.length-1;i>0;i--){var j=(Math.random()*(i+1))|0;var tmp=r[i];r[i]=r[j];r[j]=tmp;}return r;}
 function countByName(list){var m={};for(var i=0;i<list.length;i++){var n=list[i].name;m[n]=(m[n]||0)+1;}return m;}
 function clone(o){return JSON.parse(JSON.stringify(o));}
+function label(w){return w==='you'?'あなた':'CPU'}
 
-/* ===== 状態 ===== */
+/* ========= 状態 ========= */
 var S=null;
 
+/* ========= ゲーム本体 ========= */
 function makeDeck(){
   var d=[];
   Object.keys(MATERIAL_COUNTS).forEach(function(n){for(var i=0;i<MATERIAL_COUNTS[n];i++) d.push({kind:"mat",name:n});});
@@ -202,7 +203,7 @@ function endTurn(){
   render(); startTurn();
 }
 
-/* ===== 役作り ===== */
+/* ==== 役作り ==== */
 function hasProc(who,id){return S[who].procs.indexOf(id)>=0}
 function canCraft(who,rec){
   var pool=S[who].hand.concat(S[who].set), cnt=countByName(pool), need=clone(rec.need);
@@ -237,18 +238,17 @@ function doCraft(rec){
   render();
 }
 
-/* ===== イベント ===== */
+/* ==== イベント ==== */
 function canUseEvent(who){ return !S[who].evtUsed && !S.firstTurnEventLock[who]; }
 function useEvent(idx){
   var who='you', c=S[who].hand[idx]; if(!c||c.kind!=='evt')return;
   if(!canUseEvent(who)){alert('このターンはイベント使用不可');return;}
   var ev=null; for(var i=0;i<EVENTS.length;i++) if(EVENTS[i].name===c.name) ev=EVENTS[i];
-  if(!ev) return;
+  if(!ev) return; var i;
   switch(ev.id){
     case "ごみ":{
       var mats=S.discard.filter(function(x){return x.kind==='mat'}); if(mats.length===0){log('🚛 ゴミ箱に材料なし');break;}
-      var t=mats[0]; // 簡易：先頭
-      var di=S.discard.findIndex?S.discard.findIndex(function(x){return x.kind==='mat' && x.name===t.name}):S.discard.indexOf(t);
+      var t=mats[0]; var di=S.discard.findIndex?S.discard.findIndex(function(x){return x.kind==='mat' && x.name===t.name}):S.discard.indexOf(t);
       if(di>=0){ var got=S.discard.splice(di,1)[0]; S[who].hand.push(got); log('🚛 ゴミ収集車：'+got.name+' を回収');}
       break;
     }
@@ -273,7 +273,6 @@ function useEvent(idx){
     }
     case "創作":{
       var mats=S[who].hand.filter(function(x){return x.kind==='mat'}); if(mats.length<2){alert('材料2枚が必要');return;}
-      // 先頭2枚捨てて3点
       var dumped=0, keep=[]; for(i=0;i<S[who].hand.length;i++){var cc=S[who].hand[i]; if(cc.kind==='mat' && dumped<2){S.discard.push(cc);dumped++;} else keep.push(cc);}
       S[who].hand=keep; S[who].pts+=3; S[who].turnLock=true; log('✨ 創作料理：3点（他の役不可）'); if(S[who].pts>=10){over('あなたの勝利！（10点）');return;}
       break;
@@ -304,7 +303,7 @@ function useEvent(idx){
   S.discard.push(S[who].hand.splice(idx,1)[0]); S[who].evtUsed=true; render();
 }
 
-/* ===== セット & 加工 ===== */
+/* ==== セット/加工 ==== */
 function setMaterial(idx){
   var who='you', limit=hasProc(who,'freezer')?3:2;
   if(S[who].set.length>=limit){alert('セット上限は'+limit+'枚');return;}
@@ -317,11 +316,10 @@ function buyProc(id){
   S[who].pts-=3; S[who].procs.push(id); log('🛠️ '+label(who)+'が「'+id+'」を獲得（-3点）'); render();
 }
 
-/* ===== 勝敗 ===== */
-function label(w){return w==='you'?'あなた':'CPU'}
+/* ==== 勝敗 ==== */
 function over(msg){S.gameOver=true;log('🏆 '+msg); alert('ゲーム終了：'+msg);}
 
-/* ===== 表示 ===== */
+/* ==== 表示 ==== */
 function render(){
   $('deckN').textContent=S.deck.length; $('discN').textContent=S.discard.length;
   $('turnLabel').textContent=label(S.turn); $('evtRest').textContent=S[S.turn].evtUsed?'使用済':'OK';
@@ -344,9 +342,8 @@ function renderProcs(id,list){
   var el=$(id); el.innerHTML=''; for(var i=0;i<PROCS.length;i++){var t=document.createElement('div'); t.className='tag'+(list.indexOf(PROCS[i].id)>=0?' on':''); t.textContent=PROCS[i].name; el.appendChild(t);}
 }
 
-/* ===== モーダル（dialog代替） ===== */
+/* ==== モーダル ==== */
 function showModal(id){$(id).style.display='flex'} function closeModal(id){$(id).style.display='none'}
-
 function openCraft(){ if(S.turn!=='you'||S.gameOver) return;
   var cont=$('craftList'); cont.innerHTML='';
   RECIPES.forEach(function(r){
@@ -366,7 +363,6 @@ function openBuy(){ if(S.turn!=='you'||S.gameOver) return;
 }
 $('closeCraft').onclick=function(){closeModal('modalCraft')}
 $('closeBuy').onclick=function(){closeModal('modalBuy')}
-
 function openKeepModal(){
   var cont=$('keepList'); cont.innerHTML='';
   var sel={}; S.you.hand.forEach(function(c,idx){
@@ -383,22 +379,11 @@ function openKeepModal(){
   showModal('modalKeep');
 }
 
-/* ===== CPU ===== */
+/* ==== CPU ==== */
 function cpuAct(){
   var me='cpu';
-  // 1) 作れる役 → 最大点から
   var cands=RECIPES.filter(function(r){return canCraft(me,r).ok}).sort(function(a,b){return b.pts-a.pts});
   if(cands.length){ doCraftCPU(cands[0]); if(S.gameOver) return;
     var more=RECIPES.filter(function(r){return canCraft(me,r).ok}); if(more.length && Math.random()<0.5){setTimeout(cpuAct,400);return;}
     setTimeout(endTurn,400); return; }
-  // 2) 包丁がなく点3以上なら買う
-  if(S.cpu.pts>=3 && S.cpu.procs.indexOf('knife')<0 && S.cpu.hand.filter(function(c){return c.k
-
-<script src="game.js"></script>
-  <script>
-    window.onload = function() {
-      newGame();
-    };
-  </script>
-</body>
-</html>
+  if(S.cpu.pts>=3 && S.cpu.procs.indexOf('knife')<0 && S.cpu.hand.filter(function(c){return c.kind==='mat'}).length>=3){ S.cpu.pts-=3; S.cpu.procs.push('knife'); log('🛠️ CP

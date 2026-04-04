@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle à la carte 公式サイト</title>
+    <meta name="description" content="Battle à la carte（バトルア・ラ・カルト）の公式ホームページ。ルール紹介、カード画像、ゲームプレイページへの案内を掲載。">
+    <link rel="stylesheet" href="home.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="logo-block">
+                <p class="mini-label">公式ホームページ</p>
+                <h1>Battle à la carte</h1>
+                <p class="tagline">選べ、盛れ、勝ち取れ！<br>料理を作って先に10点を目指すカードゲーム</p>
+            </div>
+
+            <nav class="header-nav">
+                <a href="#about">ゲーム紹介</a>
+                <a href="#rules">ルール</a>
+                <a href="#cards">カード紹介</a>
+                <a href="#links">リンク</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-inner">
+                <div class="hero-text">
+                    <p class="hero-kicker">料理 × 対戦 × ひらめき</p>
+                    <h2>手札とセットカードを組み合わせて、<br>料理を完成させよう。</h2>
+                    <p class="hero-description">
+                        「Battle à la carte」は、材料を集めて料理を作り、先に10点以上を目指す対戦カードゲームです。<br>
+                        イベントカードや加工アイテムを使って、相手より一歩先に勝利をつかもう。
+                    </p>
+
+                    <div class="hero-buttons">
+                        <a class="primary-button" href="game.html">ゲームを遊ぶ</a>
+                        <a class="secondary-button" href="#rules">ルールを見る</a>
+                    </div>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="visual-card visual-main">
+                        <div class="visual-badge">おすすめ</div>
+                        <img src="assets/images/recipes/manpuku-curry.png" alt="満腹カレー">
+                        <div class="visual-name">満腹カレー</div>
+                    </div>
+
+                    <div class="visual-side-group">
+                        <div class="visual-card small">
+                            <img src="assets/images/cards/rice.png" alt="ご飯">
+                            <div class="visual-name">ご飯</div>
+                        </div>
+                        <div class="visual-card small">
+                            <img src="assets/images/events/bakugai.png" alt="爆買い">
+                            <div class="visual-name">爆買い</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="content-section">
+            <div class="section-heading">
+                <p class="section-label">ABOUT</p>
+                <h2>ゲーム紹介</h2>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>料理を作って得点</h3>
+                    <p>
+                        ご飯、のり、肉、野菜などの材料を集めて料理を完成。
+                        料理ごとに点数があり、合計10点以上で勝利を目指します。
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>イベントで逆転</h3>
+                    <p>
+                        爆買い、食材探索、大掃除など、場を大きく動かすイベントカードを使って
+                        一気に流れを変えることができます。
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>加工アイテムで強化</h3>
+                    <p>
+                        包丁、冷凍庫、まな板などの加工アイテムを交換して、
+                        手札や料理作成を有利に進められます。
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>CPU対戦ですぐ遊べる</h3>
+                    <p>
+                        ブラウザ上でそのままプレイ可能。
+                        インストール不要で、公開ページからすぐに遊べます。
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section id="rules" class="content-section alt-section">
+            <div class="section-heading">
+                <p class="section-label">RULES</p>
+                <h2>かんたんルール</h2>
+            </div>
+
+            <div class="rules-layout">
+                <div class="rule-box">
+                    <h3>勝利条件</h3>
+                    <ul>
+                        <li>先に<strong>10点以上</strong>取ると勝利</li>
+                        <li>特殊勝利条件を達成しても勝利</li>
+                    </ul>
+                </div>
+
+                <div class="rule-box">
+                    <h3>基本の流れ</h3>
+                    <ol>
+                        <li>ドローで手札を補充</li>
+                        <li>材料をセット、またはイベントを使用</li>
+                        <li>料理を完成させて得点を獲得</li>
+                        <li>ターン終了時に手札を2枚まで整理</li>
+                    </ol>
+                </div>
+
+                <div class="rule-box">
+                    <h3>カードの種類</h3>
+                    <ul>
+                        <li><strong>材料カード</strong>：料理を作るための基本カード</li>
+                        <li><strong>イベントカード</strong>：状況を大きく動かす効果カード</li>
+                        <li><strong>加工アイテム</strong>：点数と引き換えに得る強化要素</li>
+                    </ul>
+                </div>
+
+                <div class="rule-box">
+                    <h3>ポイント</h3>
+                    <ul>
+                        <li>セットカードも料理の材料に使えます</li>
+                        <li>イベントカードは1ターンに1枚まで使用可能</li>
+                        <li>まな板があるとドロー時に6枚まで補充できます</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="rules-button-wrap">
+                <a class="primary-button" href="game.html">今すぐ遊ぶ</a>
+            </div>
+        </section>
+
+        <section id="cards" class="content-section">
+            <div class="section-heading">
+                <p class="section-label">CARDS</p>
+                <h2>カード紹介</h2>
+            </div>
+
+            <div class="gallery-group">
+                <h3>材料カード</h3>
+                <div class="card-gallery">
+                    <div class="gallery-card">
+                        <img src="assets/images/cards/rice.png" alt="ご飯">
+                        <p>ご飯</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/cards/nori.png" alt="のり">
+                        <p>のり</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/cards/beef.png" alt="牛肉">
+                        <p>牛肉</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/cards/onion.png" alt="玉ねぎ">
+                        <p>玉ねぎ</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/cards/carrot.png" alt="にんじん">
+                        <p>にんじん</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-group">
+                <h3>イベントカード</h3>
+                <div class="card-gallery">
+                    <div class="gallery-card">
+                        <img src="assets/images/events/bakugai.png" alt="爆買い">
+                        <p>爆買い</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/events/osouji.png" alt="大掃除">
+                        <p>大掃除</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/events/shokuzai-tansaku.png" alt="食材探索">
+                        <p>食材探索</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/events/sousaku-ryouri.png" alt="創作料理">
+                        <p>創作料理</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-group">
+                <h3>料理カードイメージ</h3>
+                <div class="card-gallery">
+                    <div class="gallery-card">
+                        <img src="assets/images/recipes/onigiri.png" alt="おにぎり">
+                        <p>おにぎり</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/recipes/keema-curry.png" alt="キーマカレー">
+                        <p>キーマカレー</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/recipes/cream-stew.png" alt="クリームシチュー">
+                        <p>クリームシチュー</p>
+                    </div>
+                    <div class="gallery-card">
+                        <img src="assets/images/recipes/manpuku-curry.png" alt="満腹カレー">
+                        <p>満腹カレー</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="links" class="content-section alt-section">
+            <div class="section-heading">
+                <p class="section-label">LINKS</p>
+                <h2>リンク</h2>
+            </div>
+
+            <div class="link-boxes">
+                <a class="link-card play-link" href="game.html">
+                    <span class="link-title">ゲームを遊ぶ</span>
+                    <span class="link-text">ブラウザで Battle à la carte をすぐプレイ</span>
+                </a>
+
+                <a class="link-card x-link" href="https://x.com/" target="_blank" rel="noopener noreferrer">
+                    <span class="link-title">Xを見る</span>
+                    <span class="link-text">ここをあとで自分のXアカウントURLに変更</span>
+                </a>
+            </div>
+
+            <p class="link-note">
+                ※ Xのリンクは今は仮のURLです。あとで自分のアカウントURLに書き換えて使ってね。
+            </p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>© Battle à la carte</p>
+        <p>料理をテーマにしたオリジナルカードゲーム</p>
+    </footer>
+</body>
+</html>

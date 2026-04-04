@@ -1,254 +1,284 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>あにあに遊び場 | 公式サイト</title>
-  <meta name="description" content="あにあにの実験・作品・ゲームを公開する遊び場の公式サイト。ブラウザで遊べるカードゲーム試作あり。" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎮</text></svg>">
-  <meta property="og:title" content="あにあに遊び場 | 公式サイト" />
-  <meta property="og:description" content="ブラウザで遊べるカードゲーム試作あり。" />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://dummyimage.com/1200x630/d97706/ffffff&text=%E3%81%82%E3%81%AB%E3%81%82%E3%81%AB%E9%81%8A%E3%81%B3%E5%A0%B4" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#0b0f19; --pri:#f59e0b; --pri-2:#fde68a; --ink:#eef2ff; --mut:#9aa3b2; --card:#11162a; --glass:rgba(255,255,255,.06);
-      --radius:22px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto; color:var(--ink); background:
-      radial-gradient(1200px 600px at 80% -10%, #1e293b 0%, transparent 60%),
-      radial-gradient(900px 500px at -10% 10%, #111827 0%, transparent 60%), var(--bg);}
-    a{color:inherit; text-decoration:none}
-    .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
-    .nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); background:linear-gradient(to bottom, rgba(11,15,25,.9), rgba(11,15,25,.6)); border-bottom:1px solid rgba(255,255,255,.06)}
-    .navin{display:flex; align-items:center; justify-content:space-between; padding:14px 0}
-    .brand{display:flex; gap:10px; align-items:center; font-weight:800}
-    .brand .logo{width:34px; height:34px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg, var(--pri), #f97316); box-shadow:0 8px 24px #00000050}
-    .brand span{letter-spacing:.02em}
-    .hero{padding:64px 0 36px}
-    .hgrid{display:grid; grid-template-columns:1.2fr 1fr; gap:28px}
-    .title{font-size:clamp(28px,5.6vw,54px); font-weight:800; line-height:1.05}
-    .lead{color:var(--mut); margin-top:14px}
-    .cta{display:flex; gap:12px; margin-top:22px; flex-wrap:wrap}
-    .btn{padding:12px 18px; border-radius:14px; font-weight:700; border:1px solid transparent; transition:.2s; box-shadow:0 8px 24px #00000040}
-    .btn.primary{background:linear-gradient(135deg, var(--pri), #ef4444); color:white}
-    .btn.primary:hover{transform:translateY(-2px)}
-    .btn.ghost{background:transparent; border-color:rgba(255,255,255,.12); color:var(--ink)}
-    .btn.ghost:hover{border-color:rgba(255,255,255,.3)}
-    .card{background:var(--glass); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:18px}
-    .badge{display:inline-block; font-size:12px; color:#0b0f19; background:var(--pri-2); padding:4px 10px; border-radius:999px; font-weight:700}
-    .grid{display:grid; gap:18px}
-    .grid3{grid-template-columns:repeat(3,1fr)}
-    .grid2{grid-template-columns:repeat(2,1fr)}
-    @media (max-width:900px){ .hgrid{grid-template-columns:1fr} .grid3{grid-template-columns:1fr} .grid2{grid-template-columns:1fr} }
-    footer{border-top:1px solid rgba(255,255,255,.06); color:var(--mut); padding:28px 0; margin-top:40px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle à la carte - UI再設計版</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="nav">
-    <div class="wrap navin">
-      <a class="brand" href="#">
-        <div class="logo">🎮</div><span>あにあに遊び場</span>
-      </a>
-      <nav style="display:flex; gap:16px; color:var(--mut); font-weight:600;">
-        <a href="#works">作品</a><a href="#about">このサイト</a><a href="#contact">連絡</a>
-      </nav>
+    <div id="game-container">
+        <header class="top-bar">
+            <div class="title-block">
+                <h1>Battle à la carte</h1>
+                <div id="turn-indicator">ターン: プレイヤー</div>
+                <div id="phase-indicator">フェイズ: メインフェイズ</div>
+                <div id="cpu-status"></div>
+                <div id="discard-banner" class="discard-banner hidden"></div>
+            </div>
+
+            <div class="header-actions">
+                <button id="reset-game-button">ゲームリセット</button>
+            </div>
+        </header>
+
+        <main class="battle-layout">
+            <section class="side-panel">
+                <h2>プレイヤー</h2>
+
+                <div class="character-panel">
+                    <div class="character-icon player-icon face-normal"></div>
+                    <div class="character-name-row">
+                        <div class="character-name">プレイヤー</div>
+                        <div class="side-score">現在の得点: <span id="player-side-score">0</span></div>
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>手札（材料＋イベント）</h3>
+                    <div id="player-hand-mixed" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>セットカード</h3>
+                    <div id="player-set" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>加工アイテム</h3>
+                    <div id="player-packs" class="pack-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>加工アイテム交換（各3点）</h3>
+                    <div class="shop-buttons">
+                        <button id="buy-knife-button">包丁</button>
+                        <button id="buy-freezer-button">冷凍庫</button>
+                        <button id="buy-board-button">まな板</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="center-panel">
+                <div class="deck-discard-row">
+                    <div id="deck-pile-button" class="pile deck-pile clickable-pile" role="button" tabindex="0">
+                        <div class="pile-title">山札</div>
+                        <div class="pile-count" id="deck-count">0</div>
+                    </div>
+
+                    <div id="discard-pile-button" class="pile clickable-pile" role="button" tabindex="0">
+                        <div class="pile-title">捨て札</div>
+                        <div class="pile-count" id="discard-count">0</div>
+                    </div>
+                </div>
+
+                <div class="bottom-info-grid">
+                    <div class="panel-box small-box">
+                        <h3>料理候補</h3>
+                        <div id="candidate-recipes" class="candidate-area">料理を作るボタンを押すと候補が出ます。</div>
+                    </div>
+
+                    <div class="panel-box small-box">
+                        <h3>ログ</h3>
+                        <div id="log-area" class="log-area"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button id="cook-button">料理候補を表示</button>
+                    <button id="confirm-discard-button" disabled>選んだカードを捨てる</button>
+                    <button id="end-turn-button">ターン終了</button>
+                </div>
+
+                <div class="dish-history-row">
+                    <div class="panel-box dish-summary-panel">
+                        <h3>プレイヤーの料理</h3>
+                        <div id="player-latest-dish" class="latest-dish-slot"></div>
+                    </div>
+
+                    <div class="panel-box dish-summary-panel">
+                        <h3>CPUの料理</h3>
+                        <div id="cpu-latest-dish" class="latest-dish-slot"></div>
+                    </div>
+                </div>
+
+                <div id="dish-history-panel" class="panel-box selection-panel hidden">
+                    <h3 id="dish-history-title">料理履歴</h3>
+                    <div id="dish-history-description" class="selection-description"></div>
+                    <div id="dish-history-list" class="dish-history-list"></div>
+                    <div class="selection-actions">
+                        <button id="dish-history-close-button">閉じる</button>
+                    </div>
+                </div>
+
+                <div id="selection-panel" class="panel-box selection-panel hidden">
+                    <h3 id="selection-title">イベント対象選択</h3>
+                    <div id="selection-description" class="selection-description"></div>
+                    <div id="selection-options" class="selection-options"></div>
+                    <div class="selection-actions">
+                        <button id="selection-confirm-button" disabled>決定</button>
+                        <button id="selection-cancel-button">キャンセル</button>
+                    </div>
+                </div>
+
+                <div id="set-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>カードセット確認</h3>
+                    <div id="set-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="set-confirm-yes-button">はい</button>
+                        <button id="set-confirm-no-button">いいえ</button>
+                    </div>
+                </div>
+
+                <div id="event-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>イベントカード発動確認</h3>
+                    <div id="event-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="event-confirm-yes-button">発動する</button>
+                        <button id="event-confirm-no-button">やめる</button>
+                    </div>
+                </div>
+
+                <div id="set-view-panel" class="panel-box selection-panel hidden">
+                    <h3>セットカード確認</h3>
+                    <div id="set-view-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="set-view-close-button">確認して閉じる</button>
+                    </div>
+                </div>
+
+                <div id="pile-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3 id="pile-confirm-title">確認</h3>
+                    <div id="pile-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="pile-confirm-yes-button">確認する</button>
+                        <button id="pile-confirm-no-button">キャンセル</button>
+                    </div>
+                </div>
+
+                <div id="pile-view-panel" class="panel-box selection-panel hidden">
+                    <h3 id="pile-view-title">一覧</h3>
+                    <div id="pile-view-description" class="selection-description"></div>
+                    <div id="pile-view-list" class="pile-view-list"></div>
+                    <div class="selection-actions">
+                        <button id="pile-view-close-button">閉じる</button>
+                    </div>
+                </div>
+
+                <div id="end-turn-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>ターン終了確認</h3>
+                    <div id="end-turn-confirm-description" class="selection-description">ターン終了を宣言しますか？</div>
+                    <div class="selection-actions">
+                        <button id="end-turn-confirm-yes-button">宣言する</button>
+                        <button id="end-turn-confirm-no-button">キャンセル</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="side-panel">
+                <h2>CPU</h2>
+
+                <div class="character-panel">
+                    <div class="character-icon cpu-icon face-normal"></div>
+                    <div class="character-name-row">
+                        <div class="character-name">CPU</div>
+                        <div class="side-score">現在の得点: <span id="cpu-side-score">0</span></div>
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>手札（裏面）</h3>
+                    <div id="cpu-hand-mixed" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>セットカード（裏面）</h3>
+                    <div id="cpu-set" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>加工アイテム</h3>
+                    <div id="cpu-packs" class="pack-row"></div>
+                </div>
+            </section>
+        </main>
+
+        <section class="reference-layout">
+            <div class="panel-box reference-box">
+                <h2>料理一覧</h2>
+                <div id="recipe-book" class="reference-list"></div>
+            </div>
+
+            <div class="panel-box reference-box">
+                <h2>イベント一覧</h2>
+                <div id="event-book" class="reference-list"></div>
+            </div>
+
+            <div class="panel-box reference-box">
+                <h2>加工アイテム効果</h2>
+                <div id="pack-book" class="reference-list"></div>
+
+                <div class="mini-rule-box">
+                    <div class="mini-rule-title">かんたんルール解説</div>
+                    <div class="mini-rule-text">
+                        ・先に10点以上取ったら勝利<br>
+                        ・イベントカードは1ターンに1枚まで使用可能<br>
+                        ・ターン終了時、手札は2枚まで残せます<br>
+                        ・セットカードも料理の材料に使えます<br>
+                        ・山札がなくなったら捨て札を混ぜて再利用します
+                    </div>
+                </div>
+
+                <div class="mini-rule-box">
+                    <div class="mini-rule-title">詳細ルール</div>
+                    <div class="mini-rule-text">
+                        ・手札は「材料カード」と「イベントカード」を合わせた合計枚数で管理します<br>
+                        ・ドローフェイズでは、通常は合計5枚になるまで補充します<br>
+                        ・「まな板」を持っている場合は、合計6枚になるまで補充します<br>
+                        ・材料カードはセットできますが、イベントカードはセットできません<br>
+                        ・セット上限は通常2枚まで、「冷凍庫」があれば3枚までです<br>
+                        ・セットカードは自分だけ確認でき、料理作成時に公開された扱いになります<br>
+                        ・「包丁」があると、料理作成時に材料1種類を2枚扱いにできます<br>
+                        ・料理を作っても、そのままメインフェイズを続けられます<br>
+                        ・「創作料理」「緊急調理」は手札だけでなくセットカードも使えます<br>
+                        ・ただし「創作料理」「緊急調理」を使ったターンは、他の料理を作れません<br>
+                        ・エンドフェイズ開始時に手札が3枚以上ある場合、2枚だけ残して残りを捨てます
+                    </div>
+                </div>
+
+                <div class="mini-rule-box">
+                    <div class="mini-rule-title">特殊勝利条件</div>
+                    <div class="mini-rule-text">
+                        ・料理の鉄人：鶏肉・豚肉・牛肉・魚肉を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利<br>
+                        ・満腹の達人：ターン開始時に自分の得点が相手より低い状態から、その1ターン中に3つ以上の料理を完成させたら即勝利
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
-  </header>
 
-  <main class="wrap">
-    <section class="hero">
-      <div class="hgrid">
-        <div>
-          <div class="badge">New</div>
-          <h1 class="title">ブラウザで遊べる<br>カードゲーム試作を公開中</h1>
-          <p class="lead">紙のプロトタイプから一歩進んで、スマホ/PCでサクッと試遊できます。フィードバック大歓迎！</p>
-          <div class="cta">
-            <a class="btn primary" href="game.html">🎲 Battle à la carte を遊ぶ</a>
-            <a class="btn ghost" href="#works">作品一覧を見る</a>
-          </div>
-        </div>
-        <div class="card">
-          <h3 style="margin:0 0 10px 0;">最新トピック</h3>
-          <ul style="margin:0; padding-left:18px; line-height:1.8; color:var(--mut)">
-            <li>試作 v0.1 公開（ランダムドロー＆ログ表示）</li>
-            <li>モバイル表示を最適化／OGP対応</li>
-            <li>見栄えアップ（ダークテーマ＋グラデ背景）</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section id="works" class="grid grid3">
-      <article class="card">
-        <div class="badge">ゲーム</div>
-        <h3 style="margin:.6rem 0 0 0;">Battle à la carte（デモ）</h3>
-        <p style="color:var(--mut); margin:.4rem 0 1rem 0;">ドローして遊ぶ簡易版。ログで進行を確認できます。</p>
-        <a class="btn primary" href="game.html">今すぐ遊ぶ</a>
-      </article>
-
-      <article class="card" style="opacity:.7">
-        <div class="badge">WIP</div>
-        <h3 style="margin:.6rem 0 0 0;">レシピ図鑑</h3>
-        <p style="color:var(--mut); margin:.4rem 0 1rem 0;">カードの組み合わせ研究ノート（準備中）。</p>
-        <a class="btn ghost" href="#about">くわしく</a>
-      </article>
-
-      <article class="card" style="opacity:.7">
-        <div class="badge">WIP</div>
-        <h3 style="margin:.6rem 0 0 0;">イラスト置き場</h3>
-        <p style="color:var(--mut); margin:.4rem 0 1rem 0;">カードアートを公開予定。</p>
-        <a class="btn ghost" href="#about">くわしく</a>
-      </article>
-    </section>
-
-    <section id="about" style="margin-top:28px" class="grid grid2">
-      <div class="card">
-        <h3 style="margin:0 0 .6rem 0;">このサイトについて</h3>
-        <p style="color:var(--mut); margin:0">「あにあに遊び場」は、作品をサクッと公開して反応をもらうための場所。まずはカードゲームのデモから。全部静的HTMLなので無料で公開できます。</p>
-      </div>
-      <div class="card">
-        <h3 style="margin:0 0 .6rem 0;">技術メモ</h3>
-        <ul style="margin:0; padding-left:18px; color:var(--mut); line-height:1.8">
-          <li>GitHub Pages（無料）でホスティング</li>
-          <li>純HTML/CSSのみ（ビルド不要）</li>
-          <li>OGP・アイコン済／モバイル最適化</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="contact" class="card" style="margin-top:28px">
-      <h3 style="margin:0 0 .6rem 0;">連絡</h3>
-      <p style="color:var(--mut); margin:0">改善アイデア・不具合報告などは、いま話しているチャットに送ってもらえればOK。公開用メールやフォームも後で追加できます。</p>
-    </section>
-  </main>
-
-  <footer>
-    <div class="wrap" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap">
-      <div>© あにあに遊び場</div>
-      <div style="color:var(--mut)">v1.1 / static site</div>
+    <div id="result-overlay" class="result-overlay hidden">
+        <div id="result-text" class="result-text">勝利！</div>
     </div>
-  </footer>
-</body>
-</html>
 
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Battle à la carte | 公式サイト</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* 背景レイヤー */
-    .bg-hero {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      z-index: -1;
-    }
-    .bg-hero img {
-      position: absolute;
-      width: 120%;
-      height: 120%;
-      object-fit: cover;
-      filter: blur(3px) saturate(1.05);
-      opacity: 0.35;
-      transform: translate(-10%, -10%) scale(1.05);
-    }
-    .bg-chisato {
-      position: fixed; 
-      inset: 0; 
-      pointer-events: none; 
-      z-index: -1;
-      background:
-        radial-gradient(ellipse at 70% 40%, rgba(255,255,255,.5), transparent 60%),
-        linear-gradient(to bottom, rgba(255,247,237,.8), rgba(255,247,237,.95));
-    }
-    .chisato {
-      position: absolute;
-      right: 2%;
-      bottom: 0;
-      width: min(38vw, 520px);
-      opacity: .85;
-      transform: translateY(6%);
-      filter: drop-shadow(0 12px 24px rgba(0,0,0,.25));
-    }
-  </style>
-</head>
-<body class="min-h-screen text-slate-800">
-  <!-- 背景 -->
-  <div class="bg-hero">
-    <!-- 料理の背景（差し替えOK） -->
-    <img src="images/cooking-bg.jpg" alt="cooking background" />
-  </div>
-  <div class="bg-chisato">
-    <!-- 千聖のイラスト（透過PNG推奨／差し替えOK） -->
-    <img class="chisato" src="images/chisato.png" alt="Chisato illustration" />
-  </div>
+    <div id="spotlight-overlay" class="spotlight-overlay hidden">
+        <div class="spotlight-card-shell">
+            <div id="spotlight-badge" class="spotlight-badge">イベント発動！</div>
+            <div id="spotlight-card" class="spotlight-card">
+                <div id="spotlight-art" class="spotlight-art"></div>
+                <div id="spotlight-name" class="spotlight-name">カード名</div>
+                <div id="spotlight-sub" class="spotlight-sub">説明</div>
+            </div>
+        </div>
+    </div>
 
-  <!-- ヘッダー -->
-  <header class="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
-    <a href="index.html" class="font-bold text-xl">Battle à la carte</a>
-    <nav class="flex gap-4 text-sm">
-      <a class="hover:underline" href="roles.html">役・レシピ</a>
-      <a class="hover:underline" href="game.html">ブラウザで遊ぶ</a>
-      <a class="hover:underline" href="#about">このゲームについて</a>
-    </nav>
-  </header>
-
-  <!-- ヒーロー -->
-  <main class="max-w-6xl mx-auto px-4">
-    <section class="rounded-3xl p-8 md:p-12 bg-white/70 shadow-lg backdrop-blur">
-      <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
-        材料を集めて、最強の“料理役”で満腹勝利！
-      </h1>
-      <p class="mt-4 text-lg md:text-xl text-slate-600">
-        2人〜4人、イベントと加工カードを駆使して、10点先取 or 特殊役で即勝利。<br class="hidden md:block">
-        役一覧は下の「役・レシピ」からいつでも確認できます。
-      </p>
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a href="game.html" class="px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:shadow-md">
-          いますぐブラウザで遊ぶ
-        </a>
-        <a href="roles.html" class="px-5 py-3 rounded-xl bg-white text-slate-800 font-semibold border shadow-sm hover:shadow">
-          役・レシピを確認
-        </a>
-      </div>
-    </section>
-
-    <!-- 概要 -->
-    <section id="about" class="mt-10 grid md:grid-cols-3 gap-4">
-      <div class="bg-white/80 rounded-2xl p-5 shadow">
-        <h3 class="font-semibold text-lg mb-2">ゲーム概要</h3>
-        <p class="text-sm leading-6">
-          材料カードを集めて“料理の役”を作り、得点を競うカードゲーム。<br>
-          先に合計10点を取ったプレイヤーの勝利。<br>
-          または特殊勝利「料理の鉄人」「満腹の達人」でも即勝ち！
-        </p>
-      </div>
-      <div class="bg-white/80 rounded-2xl p-5 shadow">
-        <h3 class="font-semibold text-lg mb-2">特徴</h3>
-        <ul class="text-sm leading-7 list-disc pl-5">
-          <li>イベントは各ターン1回まで</li>
-          <li>セットは2枚まで（冷凍庫で3枚まで）</li>
-          <li>加工カードは3点で購入（包丁/冷凍庫/まな板）</li>
-        </ul>
-      </div>
-      <div class="bg-white/80 rounded-2xl p-5 shadow">
-        <h3 class="font-semibold text-lg mb-2">プレイ人数・価格</h3>
-        <p class="text-sm leading-6">
-          2〜4人（CPU対戦はブラウザ版に同梱）<br>
-          販売価格：1,500〜2,500円
-        </p>
-      </div>
-    </section>
-  </main>
-
-  <footer class="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500">
-    <p>© Battle à la carte</p>
-  </footer>
+    <script src="cards.js"></script>
+    <script src="state.js"></script>
+    <script src="rules.js"></script>
+    <script src="player.js"></script>
+    <script src="cpu.js"></script>
+    <script src="render.js"></script>
+    <script src="audio.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

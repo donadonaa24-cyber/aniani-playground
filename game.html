@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle à la carte - UI再設計版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header class="top-bar">
+            <div class="title-block">
+                <h1>Battle à la carte</h1>
+                <div id="turn-indicator">ターン: プレイヤー</div>
+                <div id="phase-indicator">フェイズ: メインフェイズ</div>
+                <div id="cpu-status"></div>
+                <div id="discard-banner" class="discard-banner hidden"></div>
+            </div>
+
+            <div class="header-actions">
+                <button id="reset-game-button">ゲームリセット</button>
+            </div>
+        </header>
+
+        <main class="battle-layout">
+            <section class="side-panel">
+                <h2>プレイヤー</h2>
+
+                <div class="character-panel">
+                    <div class="character-icon player-icon face-normal"></div>
+                    <div class="character-name-row">
+                        <div class="character-name">プレイヤー</div>
+                        <div class="side-score">現在の得点: <span id="player-side-score">0</span></div>
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>手札（材料＋イベント）</h3>
+                    <div id="player-hand-mixed" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>セットカード</h3>
+                    <div id="player-set" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>加工アイテム</h3>
+                    <div id="player-packs" class="pack-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>加工アイテム交換（各3点）</h3>
+                    <div class="shop-buttons">
+                        <button id="buy-knife-button">包丁</button>
+                        <button id="buy-freezer-button">冷凍庫</button>
+                        <button id="buy-board-button">まな板</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="center-panel">
+                <div class="deck-discard-row">
+                    <div id="deck-pile-button" class="pile deck-pile clickable-pile" role="button" tabindex="0">
+                        <div class="pile-title">山札</div>
+                        <div class="pile-count" id="deck-count">0</div>
+                    </div>
+
+                    <div id="discard-pile-button" class="pile clickable-pile" role="button" tabindex="0">
+                        <div class="pile-title">捨て札</div>
+                        <div class="pile-count" id="discard-count">0</div>
+                    </div>
+                </div>
+
+                <div class="bottom-info-grid">
+                    <div class="panel-box small-box">
+                        <h3>料理候補</h3>
+                        <div id="candidate-recipes" class="candidate-area">料理を作るボタンを押すと候補が出ます。</div>
+                    </div>
+
+                    <div class="panel-box small-box">
+                        <h3>ログ</h3>
+                        <div id="log-area" class="log-area"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button id="cook-button">料理候補を表示</button>
+                    <button id="confirm-discard-button" disabled>選んだカードを捨てる</button>
+                    <button id="end-turn-button">ターン終了</button>
+                </div>
+
+                <div class="dish-history-row">
+                    <div class="panel-box dish-summary-panel">
+                        <h3>プレイヤーの料理</h3>
+                        <div id="player-latest-dish" class="latest-dish-slot"></div>
+                    </div>
+
+                    <div class="panel-box dish-summary-panel">
+                        <h3>CPUの料理</h3>
+                        <div id="cpu-latest-dish" class="latest-dish-slot"></div>
+                    </div>
+                </div>
+
+                <div id="dish-history-panel" class="panel-box selection-panel hidden">
+                    <h3 id="dish-history-title">料理履歴</h3>
+                    <div id="dish-history-description" class="selection-description"></div>
+                    <div id="dish-history-list" class="dish-history-list"></div>
+                    <div class="selection-actions">
+                        <button id="dish-history-close-button">閉じる</button>
+                    </div>
+                </div>
+
+                <div id="selection-panel" class="panel-box selection-panel hidden">
+                    <h3 id="selection-title">イベント対象選択</h3>
+                    <div id="selection-description" class="selection-description"></div>
+                    <div id="selection-options" class="selection-options"></div>
+                    <div class="selection-actions">
+                        <button id="selection-confirm-button" disabled>決定</button>
+                        <button id="selection-cancel-button">キャンセル</button>
+                    </div>
+                </div>
+
+                <div id="set-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>カードセット確認</h3>
+                    <div id="set-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="set-confirm-yes-button">はい</button>
+                        <button id="set-confirm-no-button">いいえ</button>
+                    </div>
+                </div>
+
+                <div id="event-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>イベントカード発動確認</h3>
+                    <div id="event-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="event-confirm-yes-button">発動する</button>
+                        <button id="event-confirm-no-button">やめる</button>
+                    </div>
+                </div>
+
+                <div id="set-view-panel" class="panel-box selection-panel hidden">
+                    <h3>セットカード確認</h3>
+                    <div id="set-view-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="set-view-close-button">確認して閉じる</button>
+                    </div>
+                </div>
+
+                <div id="pile-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3 id="pile-confirm-title">確認</h3>
+                    <div id="pile-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="pile-confirm-yes-button">確認する</button>
+                        <button id="pile-confirm-no-button">キャンセル</button>
+                    </div>
+                </div>
+
+                <div id="pile-view-panel" class="panel-box selection-panel hidden">
+                    <h3 id="pile-view-title">一覧</h3>
+                    <div id="pile-view-description" class="selection-description"></div>
+                    <div id="pile-view-list" class="pile-view-list"></div>
+                    <div class="selection-actions">
+                        <button id="pile-view-close-button">閉じる</button>
+                    </div>
+                </div>
+
+                <div id="end-turn-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>ターン終了確認</h3>
+                    <div id="end-turn-confirm-description" class="selection-description">ターン終了を宣言しますか？</div>
+                    <div class="selection-actions">
+                        <button id="end-turn-confirm-yes-button">宣言する</button>
+                        <button id="end-turn-confirm-no-button">キャンセル</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="side-panel">
+                <h2>CPU</h2>
+
+                <div class="character-panel">
+                    <div class="character-icon cpu-icon face-normal"></div>
+                    <div class="character-name-row">
+                        <div class="character-name">CPU</div>
+                        <div class="side-score">現在の得点: <span id="cpu-side-score">0</span></div>
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>手札（裏面）</h3>
+                    <div id="cpu-hand-mixed" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>セットカード（裏面）</h3>
+                    <div id="cpu-set" class="card-row compact-row"></div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>加工アイテム</h3>
+                    <div id="cpu-packs" class="pack-row"></div>
+                </div>
+            </section>
+        </main>
+
+        <section class="reference-layout">
+            <div class="panel-box reference-box">
+                <h2>料理一覧</h2>
+                <div id="recipe-book" class="reference-list"></div>
+            </div>
+
+            <div class="panel-box reference-box">
+                <h2>イベント一覧</h2>
+                <div id="event-book" class="reference-list"></div>
+            </div>
+
+            <div class="panel-box reference-box">
+                <h2>加工アイテム効果</h2>
+                <div id="pack-book" class="reference-list"></div>
+
+                <div class="mini-rule-box">
+                    <div class="mini-rule-title">かんたんルール解説</div>
+                    <div class="mini-rule-text">
+                        ・先に10点以上取ったら勝利<br>
+                        ・イベントカードは1ターンに1枚まで使用可能<br>
+                        ・ターン終了時、手札は2枚まで残せます<br>
+                        ・セットカードも料理の材料に使えます<br>
+                        ・山札がなくなったら捨て札を混ぜて再利用します
+                    </div>
+                </div>
+
+                <div class="mini-rule-box">
+                    <div class="mini-rule-title">詳細ルール</div>
+                    <div class="mini-rule-text">
+                        ・手札は「材料カード」と「イベントカード」を合わせた合計枚数で管理します<br>
+                        ・ドローフェイズでは、通常は合計5枚になるまで補充します<br>
+                        ・「まな板」を持っている場合は、合計6枚になるまで補充します<br>
+                        ・材料カードはセットできますが、イベントカードはセットできません<br>
+                        ・セット上限は通常2枚まで、「冷凍庫」があれば3枚までです<br>
+                        ・セットカードは自分だけ確認でき、料理作成時に公開された扱いになります<br>
+                        ・「包丁」があると、料理作成時に材料1種類を2枚扱いにできます<br>
+                        ・料理を作っても、そのままメインフェイズを続けられます<br>
+                        ・「創作料理」「緊急調理」は手札だけでなくセットカードも使えます<br>
+                        ・ただし「創作料理」「緊急調理」を使ったターンは、他の料理を作れません<br>
+                        ・エンドフェイズ開始時に手札が3枚以上ある場合、2枚だけ残して残りを捨てます
+                    </div>
+                </div>
+
+                <div class="mini-rule-box">
+                    <div class="mini-rule-title">特殊勝利条件</div>
+                    <div class="mini-rule-text">
+                        ・料理の鉄人：鶏肉・豚肉・牛肉・魚肉を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利<br>
+                        ・満腹の達人：ターン開始時に自分の得点が相手より低い状態から、その1ターン中に3つ以上の料理を完成させたら即勝利
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="result-overlay" class="result-overlay hidden">
+        <div id="result-text" class="result-text">勝利！</div>
+    </div>
+
+    <div id="spotlight-overlay" class="spotlight-overlay hidden">
+        <div class="spotlight-card-shell">
+            <div id="spotlight-badge" class="spotlight-badge">イベント発動！</div>
+            <div id="spotlight-card" class="spotlight-card">
+                <div id="spotlight-art" class="spotlight-art"></div>
+                <div id="spotlight-name" class="spotlight-name">カード名</div>
+                <div id="spotlight-sub" class="spotlight-sub">説明</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="cards.js"></script>
+    <script src="state.js"></script>
+    <script src="rules.js"></script>
+    <script src="player.js"></script>
+    <script src="cpu.js"></script>
+    <script src="render.js"></script>
+    <script src="audio.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

@@ -1,16 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Battle à la carte - UI再設計版</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Battle a la carte - Web UI</title>
+    <link rel="stylesheet" href="style.css?v=20260412g">
 </head>
 <body>
     <div id="game-container">
         <header class="top-bar">
             <div class="title-block">
-                <h1>Battle à la carte</h1>
+                <h1>Battle a la carte</h1>
                 <div id="turn-indicator">ターン: プレイヤー</div>
                 <div id="phase-indicator">フェイズ: メインフェイズ</div>
                 <div id="cpu-status"></div>
@@ -18,8 +18,13 @@
             </div>
 
             <div class="header-actions">
-                <button id="open-settings-tab" class="hud-button" aria-label="設定">⚙ 設定</button>
-                <button id="reset-game-button">ゲームリセット</button>
+                <button id="open-recipes-tab" class="hud-button" aria-label="料理一覧">料理</button>
+                <button id="open-events-tab" class="hud-button" aria-label="イベント一覧">イベント</button>
+                <button id="open-packs-tab" class="hud-button" aria-label="加工一覧">加工</button>
+                <button id="open-rules-tab" class="hud-button" aria-label="ルール">ルール</button>
+                <button id="open-log-tab" class="hud-button" aria-label="ログ">ログ</button>
+                <button id="open-settings-tab" class="hud-button" aria-label="設定">設定</button>
+                <button id="reset-game-button" aria-label="ゲームリセット">ゲームリセット</button>
             </div>
         </header>
 
@@ -31,12 +36,12 @@
                     <div class="character-icon player-icon char-chizuru face-normal"></div>
                     <div class="character-name-row">
                         <div id="player-hud-name" class="character-name">プレイヤー</div>
-                        <div class="side-score">現在の得点: <span id="player-side-score">0</span></div>
+                        <div class="side-score">現在の点数: <span id="player-side-score">0</span></div>
                     </div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>手札（材料＋イベント）</h3>
+                    <h3>手札（材料・イベント）</h3>
                     <div id="player-hand-mixed" class="card-row compact-row"></div>
                 </div>
 
@@ -75,19 +80,19 @@
 
                 <div class="bottom-info-grid">
                     <div class="panel-box small-box candidate-recipes-panel">
-                        <h3>料理候補</h3>
-                        <div id="candidate-recipes" class="candidate-area">料理を作るボタンを押すと候補が出ます。</div>
+                        <h3>料理作成候補一覧</h3>
+                        <div id="candidate-recipes" class="candidate-area">料理作成ボタンで候補が表示されます。</div>
                     </div>
 
-                    <div class="panel-box small-box">
+                    <div class="panel-box small-box" id="realtime-log-panel" role="button" tabindex="0" aria-label="ログ履歴を表示">
                         <h3>ログ</h3>
-                        <div id="log-area" class="log-area"></div>
+                        <div id="realtime-log-list" class="realtime-log-list"></div>
                     </div>
                 </div>
 
                 <div class="controls">
-                    <button id="cook-button">料理候補を表示</button>
-                    <button id="confirm-discard-button" disabled>選んだカードを捨てる</button>
+                    <button id="cook-button">料理作成</button>
+                    <button id="confirm-discard-button" disabled>捨てる</button>
                     <button id="end-turn-button">ターン終了</button>
                 </div>
 
@@ -117,7 +122,7 @@
                     <div id="selection-description" class="selection-description"></div>
                     <div id="selection-options" class="selection-options"></div>
                     <div class="selection-actions">
-                        <button id="selection-confirm-button" disabled>決定</button>
+                        <button id="selection-confirm-button" disabled>確定</button>
                         <button id="selection-cancel-button">キャンセル</button>
                     </div>
                 </div>
@@ -153,10 +158,10 @@
                 </div>
 
                 <div id="event-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3>イベントカード発動確認</h3>
+                    <h3>イベントカード使用確認</h3>
                     <div id="event-confirm-description" class="selection-description"></div>
                     <div class="selection-actions">
-                        <button id="event-confirm-yes-button">発動する</button>
+                        <button id="event-confirm-yes-button">使用する</button>
                         <button id="event-confirm-no-button">やめる</button>
                     </div>
                 </div>
@@ -189,9 +194,9 @@
 
                 <div id="end-turn-confirm-panel" class="panel-box selection-panel hidden">
                     <h3>ターン終了確認</h3>
-                    <div id="end-turn-confirm-description" class="selection-description">ターン終了を宣言しますか？</div>
+                    <div id="end-turn-confirm-description" class="selection-description">ターン終了を実行しますか？</div>
                     <div class="selection-actions">
-                        <button id="end-turn-confirm-yes-button">宣言する</button>
+                        <button id="end-turn-confirm-yes-button">終了する</button>
                         <button id="end-turn-confirm-no-button">キャンセル</button>
                     </div>
                 </div>
@@ -204,17 +209,17 @@
                     <div class="character-icon cpu-icon char-mai face-normal"></div>
                     <div class="character-name-row">
                         <div id="cpu-hud-name" class="character-name">CPU</div>
-                        <div class="side-score">現在の得点: <span id="cpu-side-score">0</span></div>
+                        <div class="side-score">現在の点数: <span id="cpu-side-score">0</span></div>
                     </div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>手札（裏面）</h3>
+                    <h3>CPU手札（非公開）</h3>
                     <div id="cpu-hand-mixed" class="card-row compact-row"></div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>セットカード（裏面）</h3>
+                    <h3>CPUセット（非公開）</h3>
                     <div id="cpu-set" class="card-row compact-row"></div>
                 </div>
 
@@ -225,57 +230,11 @@
             </section>
         </main>
 
-        <section class="reference-layout">
-            <div class="panel-box reference-box">
-                <h2>料理一覧</h2>
-                <div id="recipe-book" class="reference-list"></div>
-            </div>
-
-            <div class="panel-box reference-box">
-                <h2>イベント一覧</h2>
-                <div id="event-book" class="reference-list"></div>
-            </div>
-
-            <div class="panel-box reference-box">
-                <h2>加工アイテム効果</h2>
-                <div id="pack-book" class="reference-list"></div>
-
-                <div class="mini-rule-box">
-                    <div class="mini-rule-title">かんたんルール解説</div>
-                    <div id="mini-rule-simple" class="mini-rule-text">
-                        ・先に10点以上取ったら勝利<br>
-                        ・イベントカードは1ターンに1枚まで使用可能<br>
-                        ・ターン終了時、手札は通常2枚まで、エコバッグ所持時は3枚まで残せます<br>
-                        ・セットカードも料理の材料に使えます<br>
-                        ・山札がなくなったら捨て札を混ぜて再利用します
-                    </div>
-                </div>
-
-                <div class="mini-rule-box">
-                    <div class="mini-rule-title">詳細ルール</div>
-                    <div id="mini-rule-detail" class="mini-rule-text">
-                        ・手札は「材料カード」と「イベントカード」を合わせた合計枚数で管理します<br>
-                        ・ドローフェイズでは、通常は合計5枚になるまで補充します<br>
-                        ・「まな板」を持っている場合は、合計6枚になるまで補充します<br>
-                        ・材料カードはセットできますが、イベントカードはセットできません<br>
-                        ・セット上限は通常2枚まで、「冷蔵庫」があれば3枚までです<br>
-                        ・セットカードは自分だけ確認でき、料理作成時に公開された扱いになります<br>
-                        ・「エコバッグ」があると、エンドフェイズ手札上限が3枚になります<br>
-                        ・料理を作っても、そのままメインフェイズを続けられます<br>
-                        ・「創作料理」は6点以下、「緊急料理」は3点以下で使用できます<br>
-                        ・「創作料理」「緊急料理」は手札だけでなくセットカードも使えます<br>
-                        ・「創作料理」「緊急料理」を使ったターンは通常料理できません（逆も同様）<br>
-                        ・エンドフェイズ開始時に手札上限を超えていれば、上限まで捨てます
-                    </div>
-                </div>
-
-                <div class="mini-rule-box">
-                    <div class="mini-rule-title">特殊勝利条件</div>
-                    <div id="mini-rule-special" class="mini-rule-text">
-                        ・料理の達人：鶏肉・豚肉・牛肉・魚を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利<br>
-                        ・満腹マスター：ターン開始時に自分の得点が相手より低い状態から、その1ターン中に3つ以上の料理を完成させたら即勝利
-                    </div>
-                </div>
+        <section class="phase-guide-layout">
+            <div class="panel-box phase-guide-box">
+                <h2>フェイズ進行（かんたん）</h2>
+                <p class="phase-guide-flow">ドローフェイズ → 料理＆セット＆イベント発動フェイズ → エンドフェイズ → 手札調整フェイズ</p>
+                <div class="phase-guide-note">※ 各フェイズの詳細は上部の「ルール」ボタンから確認できます。</div>
             </div>
         </section>
 
@@ -291,12 +250,12 @@
     </div>
 
     <div id="result-overlay" class="result-overlay hidden">
-        <div id="result-text" class="result-text">勝利！</div>
+        <div id="result-text" class="result-text">勝利</div>
     </div>
 
     <div id="spotlight-overlay" class="spotlight-overlay hidden">
         <div class="spotlight-card-shell">
-            <div id="spotlight-badge" class="spotlight-badge">イベント発動！</div>
+            <div id="spotlight-badge" class="spotlight-badge">イベントカード使用</div>
             <div id="spotlight-card" class="spotlight-card">
                 <div id="spotlight-art" class="spotlight-art"></div>
                 <div id="spotlight-name" class="spotlight-name">カード名</div>
@@ -307,48 +266,175 @@
 
     <div id="start-overlay" class="start-overlay">
         <div class="start-panel">
-            <h1 class="start-title">Battle a la carte</h1>
-            <p class="start-subtitle">キャラを選んでスタート</p>
-
-            <div class="start-char-select">
-                <button class="start-char-button active" data-character-id="chizuru">
-                    <span class="start-char-portrait char-chizuru"></span>
-                    <span class="start-char-name">千鶴</span>
-                </button>
-                <button class="start-char-button" data-character-id="mai">
-                    <span class="start-char-portrait char-mai"></span>
-                    <span class="start-char-name">舞依</span>
-                </button>
-                <button class="start-char-button" data-character-id="takumi">
-                    <span class="start-char-portrait char-takumi"></span>
-                    <span class="start-char-name">拓海</span>
-                </button>
-                <button class="start-char-button" data-character-id="akatsuki">
-                    <span class="start-char-portrait char-akatsuki"></span>
-                    <span class="start-char-name">暁</span>
-                </button>
+            <div id="start-title-stage" class="start-stage">
+                <h1 class="start-title">Battle a la carte</h1>
+                <p class="start-subtitle">料理で勝負するカードバトル</p>
             </div>
 
-            <button id="start-setup-button" class="start-main-button">スタート</button>
+            <div id="start-menu-stage" class="start-stage hidden">
+                <div id="start-menu-floating-bg" class="start-menu-floating-bg"></div>
+                <div class="start-menu-content">
+                    <h1 class="start-title">Battle a la carte</h1>
+                    <p class="start-subtitle">モードを選んでください</p>
 
-            <div id="start-turn-stage" class="start-turn-stage hidden">
-                <p id="start-turn-message" class="start-turn-message">カードを1枚選んでください</p>
-                <div class="start-turn-cards">
-                    <button id="start-turn-card-left" class="start-turn-card">カードA</button>
-                    <button id="start-turn-card-right" class="start-turn-card">カードB</button>
+                    <div class="start-menu-buttons">
+                        <button id="menu-cpu-button" class="start-main-button">料理開始（CPU戦）</button>
+                        <button id="menu-friend-button" class="start-menu-button">料理開始（フレンド戦）</button>
+                        <button id="menu-online-button" class="start-menu-button">オンライン対戦</button>
+                        <button id="menu-coin-button" class="start-menu-button">コイン交換所</button>
+                        <button id="menu-rules-button" class="start-menu-button">ルールページ</button>
+                        <button id="menu-gallery-button" class="start-menu-button">ギャラリーページ</button>
+                        <button id="menu-user-button" class="start-menu-button">ユーザー情報</button>
+                        <button id="menu-home-button" class="start-menu-button home-link">公式ホームページへ戻る</button>
+                    </div>
+
+                    <p id="start-menu-message" class="start-menu-message"></p>
                 </div>
-                <div id="start-battle-message" class="start-battle-message"></div>
+            </div>
+
+            <div id="start-cpu-setup-stage" class="start-stage hidden">
+                <h2 class="start-section-title">CPU戦セットアップ</h2>
+                <p class="start-subtitle">キャラを選んでスタート</p>
+
+                <div class="start-char-select">
+                    <button class="start-char-button active" data-character-id="chizuru">
+                        <span class="start-char-portrait char-chizuru"></span>
+                        <span class="start-char-name">千鶴</span>
+                    </button>
+                    <button class="start-char-button" data-character-id="mai">
+                        <span class="start-char-portrait char-mai"></span>
+                        <span class="start-char-name">舞依</span>
+                    </button>
+                    <button class="start-char-button" data-character-id="takumi">
+                        <span class="start-char-portrait char-takumi"></span>
+                        <span class="start-char-name">拓海</span>
+                    </button>
+                    <button class="start-char-button" data-character-id="akatsuki">
+                        <span class="start-char-portrait char-akatsuki"></span>
+                        <span class="start-char-name">暁</span>
+                    </button>
+                </div>
+
+                <div class="start-setup-actions">
+                    <button id="start-back-menu-button" class="start-sub-button">メニューへ戻る</button>
+                    <button id="start-setup-button" class="start-main-button">スタート</button>
+                </div>
+
+                <div id="start-turn-stage" class="start-turn-stage hidden">
+                    <p id="start-turn-message" class="start-turn-message">カードを1枚選んでください</p>
+                    <div class="start-turn-cards">
+                        <button id="start-turn-card-left" class="start-turn-card">カードA</button>
+                        <button id="start-turn-card-right" class="start-turn-card">カードB</button>
+                    </div>
+                    <div id="start-battle-message" class="start-battle-message"></div>
+                </div>
+            </div>
+
+            <div id="start-rules-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ルールページ</h2>
+                <div class="start-rules-scroll">
+                    <div class="start-rule-box">
+                        <h3>かんたんルール</h3>
+                        <p>先に10点獲得したら勝利。イベントカードは1ターンに1回まで使用できます。</p>
+                    </div>
+                    <div class="start-rule-box">
+                        <h3>手札とセット</h3>
+                        <p>手札は「材料+イベント」の合計。材料カードはセットでき、セットカードも料理素材に使えます。</p>
+                    </div>
+                    <div class="start-rule-box">
+                        <h3>特殊勝利</h3>
+                        <p>料理の達人・満腹マスターなど、通常得点以外の勝利条件があります。</p>
+                    </div>
+                </div>
+                <button id="start-rules-back-button" class="start-sub-button wide">メニューへ戻る</button>
+            </div>
+
+            <div id="start-gallery-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ギャラリーページ</h2>
+                <div class="start-gallery-filters">
+                    <button class="start-gallery-filter active" data-gallery-type="characters">キャラクター一覧</button>
+                    <button class="start-gallery-filter" data-gallery-type="ingredients">材料カード一覧</button>
+                    <button class="start-gallery-filter" data-gallery-type="events">イベントカード一覧</button>
+                    <button class="start-gallery-filter" data-gallery-type="recipes">料理カード一覧</button>
+                </div>
+                <div id="start-gallery-list" class="start-gallery-list"></div>
+                <button id="start-gallery-back-button" class="start-sub-button wide">メニューへ戻る</button>
+            </div>
+
+            <div id="start-friend-stage" class="start-stage hidden">
+                <h2 class="start-section-title">フレンド戦セットアップ</h2>
+                <p class="start-subtitle">合言葉を使ってルームを作成/参加します</p>
+
+                <div class="start-user-form">
+                    <label class="start-field-label" for="friend-passphrase-input">合言葉</label>
+                    <input id="friend-passphrase-input" class="start-text-input" type="text" maxlength="40" placeholder="例: dinner-2026">
+                </div>
+
+                <div class="start-setup-actions">
+                    <button id="friend-create-button" class="start-main-button">ルーム作成</button>
+                    <button id="friend-join-button" class="start-sub-button">ルーム参加</button>
+                </div>
+
+                <p id="friend-room-message" class="start-menu-message"></p>
+                <div class="start-rule-box">
+                    <h3>接続メモ</h3>
+                    <p>Firebase設定済みならリアルタイム対戦、未設定ならローカル検証モードで動作します。</p>
+                </div>
+                <button id="start-friend-back-button" class="start-sub-button wide">メニューへ戻る</button>
+            </div>
+
+            <div id="start-user-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ユーザー情報</h2>
+                <p class="start-subtitle">名前・推しキャラ・統計・コイン</p>
+
+                <div class="start-user-form">
+                    <label class="start-field-label" for="user-name-input">ユーザー名</label>
+                    <input id="user-name-input" class="start-text-input" type="text" maxlength="24" placeholder="ユーザー名を入力">
+
+                    <label class="start-field-label" for="user-favorite-character">お気に入りキャラ</label>
+                    <select id="user-favorite-character" class="start-select-input">
+                        <option value="chizuru">千鶴</option>
+                        <option value="mai">舞依</option>
+                        <option value="takumi">拓海</option>
+                        <option value="akatsuki">暁</option>
+                    </select>
+
+                    <div class="start-user-stats">
+                        <div class="start-user-stat-row"><span>コイン</span><strong id="user-coins-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>対戦回数</span><strong id="user-matches-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>勝利数</span><strong id="user-wins-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>料理作成回数</span><strong id="user-dishes-value">0</strong></div>
+                    </div>
+
+                    <div class="start-bg-shop-wrap">
+                        <label class="start-field-label">背景デザイン交換（コイン）</label>
+                        <div id="user-background-shop" class="start-bg-shop"></div>
+                    </div>
+                </div>
+
+                <div class="start-setup-actions">
+                    <button id="user-save-button" class="start-main-button">保存</button>
+                    <button id="user-reset-button" class="start-sub-button">初期化</button>
+                </div>
+                <p id="user-stage-message" class="start-menu-message"></p>
+                <button id="start-user-back-button" class="start-sub-button wide">メニューへ戻る</button>
             </div>
         </div>
     </div>
 
-    <script src="cards.js"></script>
-    <script src="state.js"></script>
-    <script src="rules.js"></script>
-    <script src="player.js"></script>
-    <script src="cpu.js"></script>
-    <script src="render.js"></script>
-    <script src="audio.js"></script>
-    <script src="main.js"></script>
+    <script src="cards.js?v=20260412g"></script>
+    <script src="state.js?v=20260412g"></script>
+    <script src="profile.js?v=20260412g"></script>
+    <script src="rules.js?v=20260412g"></script>
+    <script src="player.js?v=20260412g"></script>
+    <script src="cpu.js?v=20260412g"></script>
+    <script src="render.js?v=20260412g"></script>
+    <script src="audio.js?v=20260412g"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js?v=20260412g"></script>
+    <script src="friend-battle-firebase.js?v=20260412g"></script>
+    <script src="main.js?v=20260412g"></script>
 </body>
 </html>

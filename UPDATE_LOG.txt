@@ -1,0 +1,125 @@
+Battle a la carte - UPDATE LOG
+================================
+
+Rule
+----
+- Update this file every time we modify or improve the project.
+- Add newest entry at the top.
+- Keep each entry short: Goal / Changes / Scope / Checks.
+
+2026-04-12 (latest)
+-------------------
+Goal:
+- Implement real coin exchange for background designs.
+- Make event card illustrations usable as subtle duel background designs.
+- Enable same behavior in web and mobile.
+
+Changes:
+- profile.js
+  - Added background design catalog data (default + event-based designs).
+  - Added persistent ownership/selection fields:
+    `unlockedBackgroundDesignKeys`, `selectedBackgroundDesignKey`.
+  - Added APIs:
+    `getBackgroundDesignCatalog`, `purchaseBackgroundDesign`, `setSelectedBackgroundDesign`.
+- render.js / mobile/render-sp.js
+  - Added runtime application for `backgroundDesign` (event art overlays).
+  - Added settings UI for:
+    - selecting owned background designs,
+    - buying locked designs with coins,
+    - showing current coin amount.
+  - Added purchase/select handlers with logs and immediate UI refresh.
+- main.js / mobile/main-sp.js
+  - Added user-stage coin shop renderer for background designs.
+  - Added buy/use interactions in user stage.
+  - Updated "coin shop" menu flow from placeholder to working exchange flow.
+- web.html / mobile/mobile.html
+  - Added `#user-background-shop` container to user stage.
+  - Bumped cache version to `20260412g`.
+- style.css / mobile/style-sp.css
+  - Added soft background-design overlay layers (low-opacity, readability-safe).
+  - Added settings-shop card styles.
+  - Added user-stage background shop styles.
+
+Scope:
+- Web and mobile: start menu user stage + in-battle settings.
+- Profile persistence and coin spending flow.
+
+Checks:
+- Owned designs can be selected.
+- Locked designs require coins and deduct on purchase.
+- Purchased design applies immediately to duel background.
+- Background art is intentionally faded to avoid blocking field readability.
+
+2026-04-12 (previous)
+-------------------
+Goal:
+- Web: make first-turn cards use the same card-back style as mobile.
+- Web: ensure cook button shows "!" when recipes are available.
+- Web: remove duplicate log display.
+- Web: remove bottom static info and replace with simple phase flow guide.
+
+Changes:
+- web.html
+  - Removed duplicate log area element (`#log-area`) from realtime log panel.
+  - Replaced bottom `reference-layout` section with a compact phase flow guide section.
+  - Bumped cache query version to `20260412f`.
+- style.css
+  - Added `#cook-button.has-recipe-alert` badge style ("!").
+  - Updated web start-turn card style to use card-back image like mobile.
+  - Added `phase-guide-layout` / `phase-guide-box` styles.
+- render.js
+  - Rules overlay now has fallback rule text when mini-rule DOM blocks are not present.
+  - Added phase flow block in rules overlay:
+    `Draw -> Cook/Set/Event -> End -> Hand Adjust`.
+
+Scope:
+- Web UI only (desktop page).
+
+Checks:
+- First-turn cards in web now display card-back design.
+- Cook button can display "!" when recipe candidates are available.
+- Realtime log panel no longer shows duplicate lines.
+- Bottom area now shows phase flow summary instead of old static lists.
+
+2026-04-12 (previous)
+---------------------
+Goal:
+- Improve usability for crowded hands and long recipe candidate lists.
+
+Changes:
+- render.js / mobile/render-sp.js
+  - Added horizontal drag-scroll for hand/set/pack rows.
+  - Added wheel-to-horizontal scroll behavior.
+  - Added post-drag accidental click suppression.
+  - Added `expanded` class toggle for candidate panel when many recipes exist.
+- style.css / mobile/style-sp.css
+  - Updated hand/set/pack rows for horizontal scroll layout.
+  - Added drag state visuals (`grabbing`, `user-select` lock).
+  - Added candidate panel expansion styles.
+  - Made cancel row sticky so "Not now" stays reachable.
+- web.html / mobile/mobile.html
+  - Bumped cache query version to `20260412e`.
+
+Scope:
+- Web + Mobile duel screens.
+
+Checks:
+- Can reach end cards when hand is large.
+- "Not now" button stays accessible with many recipe candidates.
+- Dragging does not trigger unwanted card clicks.
+
+2026-04-12 (previous)
+---------------------
+Goal:
+- Implement production friend battle with Firebase.
+
+Changes:
+- Added Firestore real-time friend battle module (`friend-battle-firebase.js`).
+- Wired Firebase SDK and module into web/mobile HTML.
+- Added friend mode flow changes in main/player/render scripts.
+- Added `winner` state to web/mobile state files for sync consistency.
+- Added and updated Firebase setup files/docs.
+
+Checks:
+- With valid `firebase-config.js`, two devices can create/join by passphrase.
+- Firebase Anonymous Auth and Firestore rules are enabled.

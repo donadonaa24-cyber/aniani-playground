@@ -41,6 +41,7 @@ const GameState = {
     selectedCardIds: [],
     candidateRecipes: [],
     gameEnded: false,
+    winner: null,
     pendingEventContext: null,
     selectedTargetIds: [],
     pendingSetCardId: null,
@@ -102,6 +103,7 @@ function resetUiState() {
     GameState.selectedCardIds = [];
     GameState.candidateRecipes = [];
     GameState.gameEnded = false;
+    GameState.winner = null;
     GameState.pendingEventContext = null;
     GameState.selectedTargetIds = [];
     GameState.pendingSetCardId = null;

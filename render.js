@@ -552,7 +552,7 @@ function renderPlayerMixedHand() {
         if (GameState.currentTurn === 'player' && !GameState.gameEnded) {
             el.addEventListener('click', () => {
                 if (GameState.selectionMode === 'discard') toggleDiscardSelection(card.id);
-                else if (!GameState.selectionMode && card.type === 'ingredient') openIngredientAction(card.id, 'hand');
+                else if (!GameState.selectionMode && card.type === 'ingredient') playerSetCard(card.id);
                 else if (!GameState.selectionMode && card.type === 'event') playerUseEvent(card.id);
             });
         }
@@ -572,7 +572,7 @@ function renderPlayerSet() {
     player.set.forEach(card => {
         const el = createFaceCard({ ...card, description: 'セット中の材料カード' }, 'ingredient-card');
         if (!GameState.selectionMode && !GameState.gameEnded) {
-            el.addEventListener('click', () => openIngredientAction(card.id, 'set'));
+            el.addEventListener('click', () => viewSetCard(card.id));
         }
         container.appendChild(el);
     });
@@ -1144,7 +1144,8 @@ function renderCandidateRecipes() {
     const panel = container.closest('.candidate-recipes-panel');
     container.innerHTML = '';
     if (GameState.candidateRecipes.length === 0) {
-        if (panel) panel.classList.add('hidden');
+        if (panel) panel.classList.remove('hidden');
+        container.textContent = '料理を作るボタンを押すと候補が出ます。';
         return;
     }
     if (panel) panel.classList.remove('hidden');

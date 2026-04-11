@@ -21,9 +21,7 @@ body {
 #game-container.mobile-field-ui {
     position: relative;
     width: 100vw;
-    min-height: 100vh;
-    min-height: 100svh;
-    height: 100dvh;
+    height: 100vh;
     overflow: hidden;
     background:
         radial-gradient(circle at center, rgba(50,120,255,0.18) 0%, rgba(3,14,45,0.08) 45%, rgba(1,7,22,0.92) 100%),
@@ -160,10 +158,10 @@ body {
 .duel-field {
     position: absolute;
     inset: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    row-gap: 4px;
-    padding: calc(env(safe-area-inset-top, 0) + 54px) 8px calc(env(safe-area-inset-bottom, 0) + 6px) 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 62px 8px 86px 8px;
     box-sizing: border-box;
 }
 
@@ -171,16 +169,15 @@ body {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    min-height: 0;
     z-index: 2;
 }
 
 .cpu-side {
-    min-height: 0;
+    min-height: 21vh;
 }
 
 .player-side {
-    min-height: 0;
+    min-height: 30vh;
 }
 
 .player-hud {
@@ -354,11 +351,8 @@ body {
 }
 
 .center-field {
-    position: relative;
-    inset: auto;
-    min-height: 120px;
-    height: auto;
-    overflow: hidden;
+    position: absolute;
+    inset: 22% 0 31% 0;
     z-index: 4;
     pointer-events: none;
 }
@@ -1464,9 +1458,9 @@ body {
     font-weight: 900;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 700px) {
     #game-container.mobile-field-ui {
-        max-width: 520px;
+        max-width: 430px;
         margin: 0 auto;
         border-left: 1px solid rgba(255,255,255,0.08);
         border-right: 1px solid rgba(255,255,255,0.08);

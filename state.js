@@ -1,16 +1,29 @@
-function createPlayerState() {
+﻿function createPlayerState() {
     return {
         hand: [],
         set: [],
         events: [],
         packs: [],
         score: 0,
+        knifeSelectedName: null,
+        knifeUsedThisTurn: false,
         usedEventThisTurn: false,
         lockedCookingThisTurn: false,
         cookedRecipes: [],
         cookedMeatTypes: [],
         recipesCookedThisTurn: 0,
         startedTurnBehindThisTurn: false
+    };
+}
+
+function createGameSettings() {
+    return {
+        cpuSpeed: 'default',
+        cpuPersonality: 'default',
+        backgroundTheme: 'default',
+        backgroundDesign: 'default',
+        bgmEnabled: true,
+        bgmTrack: 'default'
     };
 }
 
@@ -23,29 +36,47 @@ const GameState = {
     },
     currentTurn: 'player',
     currentPhase: 'メインフェイズ',
-
     selectionMode: null,
     discardNeedCount: 0,
     selectedCardIds: [],
-
     candidateRecipes: [],
     gameEnded: false,
-
     pendingEventContext: null,
     selectedTargetIds: [],
-
     pendingSetCardId: null,
     pendingEventCardId: null,
     pendingViewSetCardId: null,
-
+    pendingPackKey: null,
+    pendingIngredientAction: null,
+    pendingKnifeOptions: [],
     openDishHistoryFor: null,
-    specialWinReason: null
+    specialWinReason: null,
+    characterSides: {
+        player: 'player',
+        cpu: 'cpu'
+    },
+    characterIds: {
+        player: 'chizuru',
+        cpu: 'mai'
+    },
+    characterNames: {
+        player: '千鶴',
+        cpu: '舞依'
+    },
+    settings: createGameSettings(),
+    ui: {
+        pileConfirmType: null,
+        pileViewType: null,
+        infoOverlayType: null
+    }
 };
 
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        const tmp = array[i];
+        array[i] = array[j];
+        array[j] = tmp;
     }
 }
 
@@ -55,6 +86,8 @@ function resetPlayerState(player) {
     player.events = [];
     player.packs = [];
     player.score = 0;
+    player.knifeSelectedName = null;
+    player.knifeUsedThisTurn = false;
     player.usedEventThisTurn = false;
     player.lockedCookingThisTurn = false;
     player.cookedRecipes = [];
@@ -63,21 +96,7 @@ function resetPlayerState(player) {
     player.startedTurnBehindThisTurn = false;
 }
 
-function markTurnStartStatus(currentPlayer, opponentPlayer) {
-    currentPlayer.recipesCookedThisTurn = 0;
-    currentPlayer.startedTurnBehindThisTurn = currentPlayer.score < opponentPlayer.score;
-}
-
-function initGame() {
-    GameState.deck = buildDeck();
-    shuffle(GameState.deck);
-    GameState.discard = [];
-
-    resetPlayerState(GameState.players.player);
-    resetPlayerState(GameState.players.cpu);
-
-    GameState.currentTurn = 'player';
-    GameState.currentPhase = 'メインフェイズ';
+function resetUiState() {
     GameState.selectionMode = null;
     GameState.discardNeedCount = 0;
     GameState.selectedCardIds = [];
@@ -85,18 +104,33 @@ function initGame() {
     GameState.gameEnded = false;
     GameState.pendingEventContext = null;
     GameState.selectedTargetIds = [];
-
     GameState.pendingSetCardId = null;
     GameState.pendingEventCardId = null;
     GameState.pendingViewSetCardId = null;
+    GameState.pendingPackKey = null;
+    GameState.pendingIngredientAction = null;
+    GameState.pendingKnifeOptions = [];
     GameState.openDishHistoryFor = null;
     GameState.specialWinReason = null;
+    GameState.ui = {
+        pileConfirmType: null,
+        pileViewType: null,
+        infoOverlayType: null
+    };
+}
 
-    drawUntilTargetHand(GameState.players.player);
-    drawUntilTargetHand(GameState.players.cpu);
+function markTurnStartStatus(currentPlayer, opponentPlayer) {
+    currentPlayer.recipesCookedThisTurn = 0;
+    currentPlayer.startedTurnBehindThisTurn = currentPlayer.score < opponentPlayer.score;
+}
 
-    markTurnStartStatus(GameState.players.player, GameState.players.cpu);
-    markTurnStartStatus(GameState.players.cpu, GameState.players.player);
+function ensureDeckExists() {
+    if (!Array.isArray(GameState.deck)) {
+        GameState.deck = [];
+    }
+    if (!Array.isArray(GameState.discard)) {
+        GameState.discard = [];
+    }
 }
 
 function reshuffleDiscardIntoDeckIfNeeded() {
@@ -109,6 +143,7 @@ function reshuffleDiscardIntoDeckIfNeeded() {
 }
 
 function drawOneResolved(player) {
+    ensureDeckExists();
     if (!reshuffleDiscardIntoDeckIfNeeded()) return null;
 
     const card = GameState.deck.pop();
@@ -135,10 +170,14 @@ function getSetLimit(player) {
     return hasPack(player, 'freezer') ? 3 : 2;
 }
 
+function getEndPhaseHandLimit(player) {
+    return hasPack(player, 'ecoBag') ? 3 : 2;
+}
+
 function drawUntilTargetHand(player) {
     const target = getTargetTotalHandSize(player);
-
     let safety = 0;
+
     while (getCurrentTotalHandCount(player) < target && safety < 300) {
         const card = drawOneResolved(player);
         if (!card) break;
@@ -147,6 +186,7 @@ function drawUntilTargetHand(player) {
 }
 
 function moveCardToDiscard(card) {
+    if (!card) return;
     GameState.discard.push(card);
 }
 
@@ -183,16 +223,16 @@ function buyPack(player, packKey) {
 function getIronChefReason(player) {
     if (player.score < 7) return null;
 
-    const requiredMeats = ['鶏肉', '豚肉', '牛肉', '魚肉'];
+    const requiredMeats = ['鶏肉', '豚肉', '牛肉', '魚'];
     const hasAll = requiredMeats.every(meat => player.cookedMeatTypes.includes(meat));
 
-    return hasAll ? '料理の鉄人' : null;
+    return hasAll ? '料理の達人' : null;
 }
 
 function getManpukuMasterReason(player) {
     if (!player.startedTurnBehindThisTurn) return null;
     if (player.recipesCookedThisTurn < 3) return null;
-    return '満腹の達人';
+    return '満腹マスター';
 }
 
 function getSpecialWinReason(player) {
@@ -226,6 +266,49 @@ function checkWinner() {
     return null;
 }
 
+function initGame() {
+    GameState.deck = typeof buildDeck === 'function' ? buildDeck() : [];
+    shuffle(GameState.deck);
+    GameState.discard = [];
+
+    resetPlayerState(GameState.players.player);
+    resetPlayerState(GameState.players.cpu);
+    resetUiState();
+
+    GameState.currentTurn = 'player';
+    GameState.currentPhase = 'メインフェイズ';
+
+    ensureDeckExists();
+    drawUntilTargetHand(GameState.players.player);
+    drawUntilTargetHand(GameState.players.cpu);
+
+    markTurnStartStatus(GameState.players.player, GameState.players.cpu);
+    markTurnStartStatus(GameState.players.cpu, GameState.players.player);
+}
+
+function getCardZoneSummary() {
+    const player = GameState.players.player;
+    const cpu = GameState.players.cpu;
+
+    const playerHandTotal = player.hand.length + player.events.length;
+    const cpuHandTotal = cpu.hand.length + cpu.events.length;
+
+    return {
+        deck: GameState.deck.length,
+        discard: GameState.discard.length,
+        playerHandTotal,
+        playerSet: player.set.length,
+        cpuHandTotal,
+        cpuSet: cpu.set.length,
+        total: GameState.deck.length +
+            GameState.discard.length +
+            playerHandTotal +
+            player.set.length +
+            cpuHandTotal +
+            cpu.set.length
+    };
+}
+
 window.GameState = GameState;
 window.shuffle = shuffle;
 window.initGame = initGame;
@@ -239,6 +322,11 @@ window.buyPack = buyPack;
 window.getTargetTotalHandSize = getTargetTotalHandSize;
 window.getCurrentTotalHandCount = getCurrentTotalHandCount;
 window.getSetLimit = getSetLimit;
+window.getEndPhaseHandLimit = getEndPhaseHandLimit;
 window.checkWinner = checkWinner;
 window.reshuffleDiscardIntoDeckIfNeeded = reshuffleDiscardIntoDeckIfNeeded;
 window.markTurnStartStatus = markTurnStartStatus;
+window.ensureDeckExists = ensureDeckExists;
+window.getCardZoneSummary = getCardZoneSummary;
+
+

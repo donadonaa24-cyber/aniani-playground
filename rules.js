@@ -1,26 +1,26 @@
-const recipes = [
-    { name: 'おにぎり', points: 1, required: ['ご飯', 'のり'] },
-    { name: '卵かけご飯', points: 1, required: ['ご飯', '卵'] },
+﻿const recipes = [
+    { name: 'おにぎり', points: 1, required: ['ごはん', 'のり'] },
+    { name: '卵かけごはん', points: 1, required: ['ごはん', '卵'] },
     { name: '豚バラ大根', points: 1, required: ['豚肉', '大根'] },
-    { name: 'ブリ大根', points: 1, required: ['魚肉', '大根'] },
+    { name: 'ブリ大根', points: 1, required: ['魚', '大根'] },
     { name: 'ロールキャベツ', points: 1, required: ['豚肉', 'キャベツ'] },
     { name: 'バナナジュース', points: 1, required: ['バナナ', '牛乳'] },
 
-    { name: '鮭おにぎり', points: 2, required: ['ご飯', 'のり', '魚肉'] },
-    { name: '野菜炒め', points: 2, required: ['キャベツ', 'にんじん', '玉ねぎ'] },
-    { name: 'チャーハン', points: 2, required: ['ご飯', '玉ねぎ', '卵'] },
+    { name: '鮭おにぎり', points: 2, required: ['ごはん', 'のり', '魚'] },
+    { name: '野菜炒め', points: 2, required: ['キャベツ', 'にんじん', 'たまねぎ'] },
+    { name: 'チャーハン', points: 2, required: ['ごはん', 'たまねぎ', '卵'] },
 
-    { name: '豪華なチャーハン', points: 4, required: ['ご飯', '玉ねぎ', '卵', '豚肉'] },
-    { name: 'キーマカレー', points: 4, required: ['ご飯', '玉ねぎ', 'カレー粉', '牛肉'] },
-    { name: 'オムライス', points: 4, required: ['ご飯', '玉ねぎ', '卵', '鶏肉'] },
-    { name: 'ハンバーグ', points: 4, required: ['牛肉', '豚肉', '玉ねぎ', '牛乳'] },
-    { name: '肉じゃが', points: 4, required: ['牛肉', 'じゃがいも', '玉ねぎ', 'にんじん'] },
+    { name: '豪華チャーハン', points: 4, required: ['ごはん', 'たまねぎ', '卵', '豚肉'] },
+    { name: 'キーマカレー', points: 4, required: ['ごはん', 'たまねぎ', 'カレー粉', '牛肉'] },
+    { name: 'オムライス', points: 4, required: ['ごはん', 'たまねぎ', '卵', '鶏肉'] },
+    { name: 'ハンバーグ', points: 4, required: ['牛肉', '豚肉', 'たまねぎ', '牛乳'] },
+    { name: '肉じゃが', points: 4, required: ['牛肉', 'じゃがいも', 'たまねぎ', 'にんじん'] },
 
-    { name: 'クリームシチュー', points: 7, required: ['牛乳', '牛肉', '玉ねぎ', 'にんじん', 'じゃがいも'] },
-    { name: 'カレー', points: 7, required: ['牛肉', '玉ねぎ', 'にんじん', 'じゃがいも', 'カレー粉'] },
+    { name: 'クリームシチュー', points: 7, required: ['牛乳', '牛肉', 'たまねぎ', 'にんじん', 'じゃがいも'] },
+    { name: 'カレー', points: 7, required: ['牛肉', 'たまねぎ', 'にんじん', 'じゃがいも', 'カレー粉'] },
 
-    { name: '満腹カレー', points: 10, required: ['ご飯', '牛肉', '玉ねぎ', 'にんじん', 'じゃがいも', 'カレー粉'] },
-    { name: '爆弾おにぎり', points: 10, required: ['ご飯', 'ご飯', 'ご飯', 'ご飯', 'のり', '魚肉'] }
+    { name: '満腹カレー', points: 10, required: ['ごはん', '牛肉', 'たまねぎ', 'にんじん', 'じゃがいも', 'カレー粉'] },
+    { name: '爆弾おにぎり', points: 10, required: ['ごはん', 'ごはん', 'ごはん', 'ごはん', 'のり', '魚'] }
 ];
 
 function countNamesFromCards(cards) {
@@ -47,48 +47,12 @@ function canRecipeBeMadeWithCounts(recipe, counts) {
     return true;
 }
 
-function findKnifeDoubleName(recipe, counts) {
-    if (!canRecipeBeMadeWithCounts(recipe, counts)) {
-        const availableNames = Object.keys(counts).filter(name => counts[name] > 0);
-        for (const candidateName of availableNames) {
-            const testCounts = cloneCounts(counts);
-            testCounts[candidateName] = (testCounts[candidateName] || 0) + 1;
-            if (canRecipeBeMadeWithCounts(recipe, testCounts)) {
-                return candidateName;
-            }
-        }
-    }
-    return null;
-}
-
 function getRecipePlan(player, recipe) {
     const allCards = [...player.hand, ...player.set];
     const counts = countNamesFromCards(allCards);
-
-    if (canRecipeBeMadeWithCounts(recipe, counts)) {
-        return {
-            recipe,
-            doubledName: null,
-            isValid: true
-        };
-    }
-
-    if (hasPack(player, 'knife')) {
-        const doubledName = findKnifeDoubleName(recipe, counts);
-        if (doubledName) {
-            return {
-                recipe,
-                doubledName,
-                isValid: true
-            };
-        }
-    }
-
-    return {
-        recipe,
-        doubledName: null,
-        isValid: false
-    };
+    return canRecipeBeMadeWithCounts(recipe, counts)
+        ? { recipe, doubledName: null, isValid: true }
+        : { recipe, doubledName: null, isValid: false };
 }
 
 function findPossibleRecipesForPlayer(player) {
@@ -128,7 +92,7 @@ function getOwnerKeyFromPlayerRef(player) {
 }
 
 function updateCookedMeatTypes(player, recipe) {
-    const meatTypes = ['鶏肉', '豚肉', '牛肉', '魚肉'];
+    const meatTypes = ['鶏肉', '豚肉', '牛肉', '魚'];
 
     recipe.required.forEach(name => {
         if (meatTypes.includes(name) && !player.cookedMeatTypes.includes(name)) {
@@ -169,7 +133,6 @@ function applyRecipePlan(player, plan) {
 
     usedCards.forEach(card => moveCardToDiscard(card));
     player.score += plan.recipe.points;
-
     pushCookedRecipeHistory(player, plan.recipe, plan.doubledName);
 
     return true;

@@ -1,4 +1,4 @@
-function playerSetCard(cardId) {
+﻿function playerSetCard(cardId) {
     if (GameState.gameEnded) return;
     if (GameState.currentTurn !== 'player') return;
     if (GameState.selectionMode) return;
@@ -7,7 +7,7 @@ function playerSetCard(cardId) {
     const setLimit = getSetLimit(player);
 
     if (player.set.length >= setLimit) {
-        addLog(`セット上限は ${setLimit} 枚です。`);
+        addLog(`セット上限です（最大${setLimit}枚）。`);
         return;
     }
 
@@ -16,7 +16,7 @@ function playerSetCard(cardId) {
 
     GameState.selectionMode = 'set-confirm';
     GameState.pendingSetCardId = cardId;
-    addLog(`${card.name} をセットするか確認してください。`);
+    addLog(`セット確認: 「${card.name}」をセットしますか？`);
     updateUI();
 }
 
@@ -27,7 +27,7 @@ function confirmSetCard() {
     const setLimit = getSetLimit(player);
 
     if (player.set.length >= setLimit) {
-        addLog(`セット上限は ${setLimit} 枚です。`);
+        addLog(`セットできませんでした（上限${setLimit}枚）。`);
         cancelSetCard();
         return;
     }
@@ -46,7 +46,7 @@ function confirmSetCard() {
     GameState.selectionMode = null;
     GameState.candidateRecipes = [];
 
-    addLog(`${card.name} をセットしました。`);
+    addLog(`あなたは「${card.name}」をセットしました。`);
     updateUI();
 }
 
@@ -55,7 +55,7 @@ function cancelSetCard() {
     if (GameState.selectionMode === 'set-confirm') {
         GameState.selectionMode = null;
     }
-    addLog('カードセットをキャンセルしました。');
+    addLog('セットをキャンセルしました。');
     updateUI();
 }
 
@@ -69,7 +69,7 @@ function viewSetCard(cardId) {
 
     GameState.selectionMode = 'set-view';
     GameState.pendingViewSetCardId = cardId;
-    addLog(`セットカード「${card.name}」を確認しています。`);
+    addLog(`セット確認中: 「${card.name}」`);
     updateUI();
 }
 
@@ -82,6 +82,83 @@ function closeSetCardView() {
     }
 }
 
+function openIngredientAction(cardId, sourceZone) {
+    if (GameState.gameEnded) return;
+    if (GameState.currentTurn !== 'player') return;
+    if (GameState.selectionMode) return;
+
+    const player = GameState.players.player;
+    const source = sourceZone === 'set' ? 'set' : 'hand';
+    const zone = source === 'set' ? player.set : player.hand;
+    const card = zone.find(item => item.id === cardId && item.type === 'ingredient');
+    if (!card) return;
+
+    GameState.selectionMode = 'ingredient-action';
+    GameState.pendingIngredientAction = {
+        cardId,
+        sourceZone: source,
+        view: 'actions'
+    };
+    updateUI();
+}
+
+function closeIngredientAction() {
+    if (GameState.selectionMode !== 'ingredient-action') return;
+    GameState.selectionMode = null;
+    GameState.pendingIngredientAction = null;
+    updateUI();
+}
+
+function showIngredientCombinations() {
+    if (GameState.selectionMode !== 'ingredient-action') return;
+    if (!GameState.pendingIngredientAction) return;
+    GameState.pendingIngredientAction.view = 'combo';
+    updateUI();
+}
+
+function backIngredientAction() {
+    if (GameState.selectionMode !== 'ingredient-action') return;
+    if (!GameState.pendingIngredientAction) return;
+    GameState.pendingIngredientAction.view = 'actions';
+    updateUI();
+}
+
+function confirmIngredientSetFromAction() {
+    if (GameState.selectionMode !== 'ingredient-action') return;
+    const context = GameState.pendingIngredientAction;
+    if (!context) return;
+    if (context.sourceZone !== 'hand') {
+        addLog('セット中の材料は再セットできません。');
+        return;
+    }
+
+    const player = GameState.players.player;
+    const setLimit = getSetLimit(player);
+    if (player.set.length >= setLimit) {
+        addLog(`セット上限です（最大${setLimit}枚）。`);
+        return;
+    }
+
+    const targetCardId = context.cardId;
+    const handIndex = player.hand.findIndex(card => card.id === targetCardId);
+    if (handIndex === -1) {
+        GameState.selectionMode = null;
+        GameState.pendingIngredientAction = null;
+        addLog('セット対象のカードが見つかりませんでした。');
+        updateUI();
+        return;
+    }
+
+    const card = player.hand.splice(handIndex, 1)[0];
+    player.set.push(card);
+
+    GameState.selectionMode = null;
+    GameState.pendingIngredientAction = null;
+    GameState.candidateRecipes = [];
+    addLog(`あなたは「${card.name}」をセットしました。`);
+    updateUI();
+}
+
 function playerShowRecipeCandidates() {
     if (GameState.gameEnded) return;
     if (GameState.currentTurn !== 'player') return;
@@ -90,18 +167,30 @@ function playerShowRecipeCandidates() {
     const player = GameState.players.player;
 
     if (player.lockedCookingThisTurn) {
-        addLog('このターンは他の料理を作れません。');
+        addLog('このターンはイベント効果で通常料理できません。');
         return;
     }
 
     GameState.candidateRecipes = findPossibleRecipesForPlayer(player);
 
     if (GameState.candidateRecipes.length === 0) {
-        addLog('今は作れる料理がありません。');
+        addLog('作れる料理がありません。');
     } else {
-        addLog('作れる料理候補を表示しました。');
+        const names = GameState.candidateRecipes.map(item => item.recipe.name).join('、');
+        addLog(`料理作成候補 ${GameState.candidateRecipes.length}件: ${names}`);
     }
 
+    updateUI();
+}
+
+function playerCancelRecipeCandidates() {
+    if (GameState.gameEnded) return;
+    if (GameState.currentTurn !== 'player') return;
+    if (GameState.selectionMode) return;
+
+    if (GameState.candidateRecipes.length === 0) return;
+    GameState.candidateRecipes = [];
+    addLog('料理作成を見送りました。');
     updateUI();
 }
 
@@ -113,26 +202,25 @@ function playerCookSelectedRecipe(recipeName) {
     const player = GameState.players.player;
 
     if (player.lockedCookingThisTurn) {
-        addLog('このターンは他の料理を作れません。');
+        addLog('このターンはイベント効果で通常料理できません。');
         return;
     }
 
     const plan = GameState.candidateRecipes.find(item => item.recipe.name === recipeName);
     if (!plan) {
-        addLog('その料理候補は選べません。');
+        addLog('選択した料理作成候補が見つかりませんでした。');
         return;
     }
 
     const success = applyRecipePlan(player, plan);
     if (!success) {
-        addLog('料理作成に失敗しました。');
+        addLog(`料理「${recipeName}」の材料が不足しています。`);
         return;
     }
 
-    const knifeText = plan.doubledName ? `（包丁で ${plan.doubledName} を2枚扱い）` : '';
-    addLog(`${plan.recipe.name} を作成して ${plan.recipe.points}点獲得しました。セットカードがある場合はここで公開された扱いです。${knifeText}`);
+    addLog(`あなたは「${plan.recipe.name}」を作りました（+${plan.recipe.points}点）`);
     GameState.candidateRecipes = [];
-    playSfx('cook');
+    if (window.playCookBgm) { playCookBgm(); } else { playSfx('cook'); }
 
     if (window.showSpotlightRecipeCard) {
         window.showSpotlightRecipeCard(plan.recipe);
@@ -142,6 +230,17 @@ function playerCookSelectedRecipe(recipeName) {
 
     const winner = checkWinner();
     if (winner) endGame(winner);
+}
+
+function getActorDisplayName(side) {
+    return side === 'player' ? 'あなた' : 'CPU';
+}
+
+function getZoneLabel(card) {
+    if (!card) return '';
+    if (card.sourceZone === 'set') return '（セット）';
+    if (card.sourceZone === 'hand') return '（手札）';
+    return '';
 }
 
 function getLatestIngredientChoicesFromDiscard() {
@@ -155,6 +254,33 @@ function getSelectableIngredientCards(player) {
     ];
 }
 
+function getKnifeSelectableIngredientNames(player) {
+    return Array.from(new Set(getSelectableIngredientCards(player).map(card => card.name)));
+}
+
+function isSpecialCookingEvent(eventName) {
+    return eventName === '緊急料理' || eventName === '創作料理';
+}
+
+function canActivateSpecialCookingEvent(selfPlayer, eventName) {
+    if (!isSpecialCookingEvent(eventName)) return { ok: true, message: '' };
+    if ((selfPlayer.recipesCookedThisTurn || 0) > 0) {
+        return {
+            ok: false,
+            message: `このターンはすでに料理を作っているため「${eventName}」は発動できません。`
+        };
+    }
+    return { ok: true, message: '' };
+}
+
+function startKnifeSelection() {
+    addLog('エコバッグは常時効果です。選択操作は不要です。');
+}
+
+function confirmKnifeSelection() {
+    addLog('エコバッグは常時効果です。選択操作は不要です。');
+}
+
 function playerUseEvent(eventId) {
     if (GameState.gameEnded) return;
     if (GameState.currentTurn !== 'player') return;
@@ -163,16 +289,22 @@ function playerUseEvent(eventId) {
     const player = GameState.players.player;
 
     if (player.usedEventThisTurn) {
-        addLog('イベントカードは1ターンに1枚までです。');
+        addLog('このターンはすでにイベントカードを使用しています。');
         return;
     }
 
     const eventCard = player.events.find(card => card.id === eventId);
     if (!eventCard) return;
 
+    const specialCheck = canActivateSpecialCookingEvent(player, eventCard.name);
+    if (!specialCheck.ok) {
+        addLog(specialCheck.message);
+        return;
+    }
+
     GameState.selectionMode = 'event-confirm';
     GameState.pendingEventCardId = eventId;
-    addLog(`イベント「${eventCard.name}」を発動するか確認してください。`);
+    addLog(`イベント確認: 「${eventCard.name}」を使用しますか？`);
     updateUI();
 }
 
@@ -198,9 +330,8 @@ function confirmEventCard() {
     GameState.selectionMode = null;
     GameState.pendingEventCardId = null;
 
-    const needSelection = needsEventSelection(player, cpu, eventCard, 'player');
-    if (needSelection) {
-        startEventSelection(player, cpu, eventCard, 'player');
+    startEventSelection(player, cpu, eventCard, 'player');
+    if (GameState.selectionMode === 'event-target') {
         return;
     }
 
@@ -218,7 +349,7 @@ function cancelEventCard() {
     if (GameState.selectionMode === 'event-confirm') {
         GameState.selectionMode = null;
         GameState.pendingEventCardId = null;
-        addLog('イベント発動をキャンセルしました。');
+        addLog('イベント使用をキャンセルしました。');
         updateUI();
     }
 }
@@ -230,17 +361,23 @@ function needsEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
         case '物々交換':
             return selfPlayer.hand.length > 0 && enemyPlayer.hand.length > 0;
         case '創作料理':
-            return getSelectableIngredientCards(selfPlayer).length >= 2;
+            return selfPlayer.score <= 6 && getSelectableIngredientCards(selfPlayer).length >= 2;
         case '食材探索':
             return true;
-        case '緊急調理':
-            return selfPlayer.score <= 5 && getSelectableIngredientCards(selfPlayer).length >= 1;
+        case '緊急料理':
+            return selfPlayer.score <= 3 && getSelectableIngredientCards(selfPlayer).length >= 1;
         default:
             return false;
     }
 }
 
 function startEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
+    const specialCheck = canActivateSpecialCookingEvent(selfPlayer, eventCard.name);
+    if (!specialCheck.ok) {
+        addLog(specialCheck.message);
+        return;
+    }
+
     const context = {
         actor: side,
         selfPlayerKey: side,
@@ -276,7 +413,7 @@ function startEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
                 id: card.id,
                 label: `もらう: ${card.name}`
             }));
-            context.description = 'まず、相手からもらう材料を1枚選んでください。';
+            context.description = 'まず、相手から受け取る材料を1枚選んでください。';
             break;
         }
 
@@ -288,7 +425,7 @@ function startEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
                 id: card.id,
                 label: `${card.name}${card.sourceZone === 'set' ? '（セット）' : '（手札）'}`
             }));
-            context.description = '手札またはセットカードから材料を2枚選んでください。3点獲得します。';
+            context.description = '手札またはセットから捨てる材料を2枚選んでください。';
             break;
         }
 
@@ -307,11 +444,11 @@ function startEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
                 id: card.id,
                 label: `${card.name}${card.type === 'event' ? '（イベント）' : ''}`
             }));
-            context.description = '山札から見た3枚のうち、手札に加えるカードを0〜2枚選んでください。残りは捨て札へ行きます。';
+            context.description = '山札から公開した3枚のうち、手札に加えるカードを0〜2枚選んでください。残りは捨て札へ送られます。';
             break;
         }
 
-        case '緊急調理': {
+        case '緊急料理': {
             context.source = 'self-ingredients';
             context.minSelect = 1;
             context.maxSelect = 1;
@@ -319,7 +456,7 @@ function startEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
                 id: card.id,
                 label: `${card.name}${card.sourceZone === 'set' ? '（セット）' : '（手札）'}`
             }));
-            context.description = '手札またはセットカードから材料を1枚選んでください。3点獲得します。';
+            context.description = '手札またはセットから捨てる材料を1枚選んでください。';
             break;
         }
 
@@ -330,11 +467,21 @@ function startEventSelection(selfPlayer, enemyPlayer, eventCard, side) {
     GameState.selectionMode = 'event-target';
     GameState.pendingEventContext = context;
     GameState.selectedTargetIds = [];
-    addLog(`イベント「${eventCard.name}」の対象を選んでください。`);
+    addLog(`${getActorDisplayName(side)}はイベント「${eventCard.name}」の対象を選択中です。`);
     updateUI();
 }
 
 function toggleEventTargetSelection(targetId) {
+    if (GameState.selectionMode === 'knife-select') {
+        if (GameState.selectedTargetIds[0] === targetId) {
+            GameState.selectedTargetIds = [];
+        } else {
+            GameState.selectedTargetIds = [targetId];
+        }
+        updateUI();
+        return;
+    }
+
     if (GameState.selectionMode !== 'event-target') return;
 
     const context = GameState.pendingEventContext;
@@ -345,7 +492,7 @@ function toggleEventTargetSelection(targetId) {
         GameState.selectedTargetIds.splice(idx, 1);
     } else {
         if (GameState.selectedTargetIds.length >= context.maxSelect) {
-            addLog(`選べるのは最大 ${context.maxSelect} 枚です。`);
+            addLog(`選択上限は${context.maxSelect}枚です。`);
             return;
         }
         GameState.selectedTargetIds.push(targetId);
@@ -357,7 +504,7 @@ function toggleEventTargetSelection(targetId) {
 function proceedTradeExchangeSecondStep(context, selfPlayer) {
     const receiveId = GameState.selectedTargetIds[0];
     if (!receiveId) {
-        addLog('まず受け取るカードを選んでください。');
+        addLog('相手から受け取るカードを1枚選んでください。');
         return;
     }
 
@@ -370,13 +517,18 @@ function proceedTradeExchangeSecondStep(context, selfPlayer) {
         id: card.id,
         label: `渡す: ${card.name}`
     }));
-    context.description = '次に、自分が渡す材料を1枚選んでください。';
+    context.description = '次に、相手へ渡す材料を1枚選んでください。';
     GameState.selectedTargetIds = [];
-    addLog('次に、自分が渡すカードを選んでください。');
+    addLog('次に、相手へ渡すカードを1枚選んでください。');
     updateUI();
 }
 
 function confirmEventSelection() {
+    if (GameState.selectionMode === 'knife-select') {
+        confirmKnifeSelection();
+        return;
+    }
+
     if (GameState.selectionMode !== 'event-target') return;
 
     const context = GameState.pendingEventContext;
@@ -389,7 +541,7 @@ function confirmEventSelection() {
 
     if (context.eventName === '物々交換' && context.step === 1) {
         if (GameState.selectedTargetIds.length !== 1) {
-            addLog('受け取るカードを1枚選んでください。');
+            addLog('受け取るカードを1枚選択してください。');
             return;
         }
         proceedTradeExchangeSecondStep(context, selfPlayer);
@@ -397,7 +549,7 @@ function confirmEventSelection() {
     }
 
     if (GameState.selectedTargetIds.length < context.minSelect || GameState.selectedTargetIds.length > context.maxSelect) {
-        addLog(`${context.minSelect}〜${context.maxSelect} 枚選んでください。`);
+        addLog(`選択枚数が不正です（${context.minSelect}〜${context.maxSelect}枚）。`);
         return;
     }
 
@@ -428,6 +580,7 @@ function confirmEventSelection() {
     GameState.selectionMode = null;
     GameState.pendingEventContext = null;
     GameState.selectedTargetIds = [];
+    addLog(`${getActorDisplayName(context.actor)}はイベント「${eventCard.name}」を発動しました。`);
     updateUI();
 
     const winner = checkWinner();
@@ -435,6 +588,15 @@ function confirmEventSelection() {
 }
 
 function cancelEventSelection() {
+    if (GameState.selectionMode === 'knife-select') {
+        GameState.selectionMode = null;
+        GameState.pendingKnifeOptions = [];
+        GameState.selectedTargetIds = [];
+        addLog('加工アイテム選択をキャンセルしました。');
+        updateUI();
+        return;
+    }
+
     const context = GameState.pendingEventContext;
     if (context && context.source === 'opened-cards' && context.openedCards) {
         context.openedCards.forEach(card => moveCardToDiscard(card));
@@ -498,8 +660,22 @@ function discardAllIngredientHand(targetPlayer) {
     return removed.length;
 }
 
+function pushSpecialEventDishHistory(player, dishName) {
+    if (!player || !dishName) return;
+    player.cookedRecipes.unshift({
+        name: dishName,
+        points: 3,
+        required: [],
+        doubledName: null,
+        cookedAt: Date.now(),
+        fromEvent: true
+    });
+    player.recipesCookedThisTurn = (player.recipesCookedThisTurn || 0) + 1;
+}
+
 function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
-    const actorName = side === 'player' ? 'あなた' : 'CPU';
+    const actorName = getActorDisplayName(side);
+    const enemyName = side === 'player' ? 'CPU' : 'あなた';
     const selectedIds = extra?.selectedIds || [];
 
     switch (eventCard.name) {
@@ -517,16 +693,16 @@ function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
 
             if (card) {
                 selfPlayer.hand.push(card);
-                addLog(`${actorName}はゴミ収集車で ${card.name} を回収しました。`);
+                addLog(`${actorName}は「ゴミ収集車」で「${card.name}」を回収しました。`);
             } else {
-                addLog(`${actorName}はゴミ収集車を使ったが、回収できる材料がありませんでした。`);
+                addLog(`${actorName}は「ゴミ収集車」を使いましたが回収対象がありませんでした。`);
             }
             break;
         }
 
         case '物々交換': {
             if (selfPlayer.hand.length === 0 || enemyPlayer.hand.length === 0) {
-                addLog(`${actorName}は物々交換を使ったが、交換できる材料がありませんでした。`);
+                addLog(`${actorName}は「物々交換」を使いましたが交換できませんでした。`);
                 break;
             }
 
@@ -542,19 +718,21 @@ function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
             selfPlayer.hand.push(enemyCard);
             enemyPlayer.hand.push(myCard);
 
-            addLog(`${actorName}は物々交換で ${enemyCard.name} を受け取り、${myCard.name} を渡しました。`);
+            addLog(`${actorName}は「物々交換」で ${enemyName}の「${enemyCard.name}」を受け取り、「${myCard.name}」を渡しました。`);
             break;
         }
 
-        case 'やっぱやーめたっ！': {
+        case 'やっぱやめた': {
             if (selfPlayer.set.length === 0) {
-                addLog(`${actorName}はやっぱやーめたっ！を使ったが、戻すセットカードがありませんでした。`);
+                addLog(`${actorName}は「やっぱやめた」を使いましたが戻すセットがありませんでした。`);
                 break;
             }
+            let movedCount = 0;
             while (selfPlayer.set.length > 0) {
                 selfPlayer.hand.push(selfPlayer.set.pop());
+                movedCount++;
             }
-            addLog(`${actorName}はセットカードをすべて手札に戻しました。`);
+            addLog(`${actorName}は「やっぱやめた」でセット${movedCount}枚を手札に戻しました。`);
             break;
         }
 
@@ -563,35 +741,51 @@ function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
             for (let i = 0; i < count; i++) {
                 drawOneResolved(selfPlayer);
             }
-            addLog(`${actorName}は手札を引き直しました。`);
+            addLog(`${actorName}は「やり直し」で材料手札${count}枚を引き直しました。`);
             break;
         }
 
         case '創作料理': {
+            if (selfPlayer.score > 6) {
+                addLog(`${actorName}は「創作料理」を使えませんでした（点数が7以上）。`);
+                break;
+            }
+
             const fallbackIds = getSelectableIngredientCards(selfPlayer).slice(0, 2).map(card => card.id);
             const ids = selectedIds.length === 2 ? selectedIds : fallbackIds;
 
             if (ids.length < 2) {
-                addLog(`${actorName}は創作料理を使ったが、材料が2枚ありませんでした。`);
+                addLog(`${actorName}は「創作料理」の材料選択に失敗しました。`);
                 break;
             }
 
+            const usedNames = [];
             ids.forEach(id => {
                 const card = removeIngredientCardByIdFromPlayer(selfPlayer, id);
-                if (card) moveCardToDiscard(card);
+                if (card) {
+                    moveCardToDiscard(card);
+                    usedNames.push(`${card.name}${getZoneLabel(card)}`);
+                }
             });
 
             selfPlayer.score += 3;
             selfPlayer.lockedCookingThisTurn = true;
-            addLog(`${actorName}は創作料理で3点獲得しました。手札またはセットカードを使えます。今ターン他の料理は作れません。`);
+            pushSpecialEventDishHistory(selfPlayer, '創作料理');
+            addLog(`${actorName}は「創作料理」で ${usedNames.join('、')} を使い、3点獲得しました。`);
             break;
         }
 
         case '爆買い': {
-            drawOneResolved(selfPlayer);
-            drawOneResolved(selfPlayer);
-            drawOneResolved(selfPlayer);
-            addLog(`${actorName}は爆買いで3枚引きました。`);
+            const drawnNames = [];
+            for (let i = 0; i < 3; i++) {
+                const drawn = drawOneResolved(selfPlayer);
+                if (drawn) drawnNames.push(drawn.name);
+            }
+            if (side === 'cpu') {
+                addLog('CPUは「爆買い」でカードを引きました。');
+            } else {
+                addLog(`${actorName}は「爆買い」で ${drawnNames.join('、') || 'カードなし'} を引きました。`);
+            }
             break;
         }
 
@@ -617,26 +811,26 @@ function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
             });
 
             unchosen.forEach(card => moveCardToDiscard(card));
-            addLog(`${actorName}は食材探索で ${chosen.length} 枚手札に加えました。`);
+            addLog(`${actorName}は「食材探索」で ${chosen.map(c => c.name).join('、') || '0枚'} を獲得し、残り${unchosen.length}枚を捨てました。`);
             break;
         }
 
         case '大掃除': {
-            discardAllHandAndSet(enemyPlayer);
-            addLog(`${actorName}は大掃除で相手の手札とセットカードをすべて捨てさせました。`);
+            const removedCount = discardAllHandAndSet(enemyPlayer);
+            addLog(`${actorName}は「大掃除」で${enemyName}のカード${removedCount}枚を捨てさせました。`);
             break;
         }
 
-        case '緊急調理': {
-            if (selfPlayer.score > 5) {
-                addLog(`${actorName}は緊急調理を使えませんでした。得点が6点以上です。`);
+        case '緊急料理': {
+            if (selfPlayer.score > 3) {
+                addLog(`${actorName}は「緊急料理」を使えませんでした（点数が4以上）。`);
                 break;
             }
 
             const fallbackId = getSelectableIngredientCards(selfPlayer)[0]?.id;
             const id = selectedIds[0] || fallbackId;
             if (!id) {
-                addLog(`${actorName}は緊急調理を使ったが、材料が足りませんでした。`);
+                addLog(`${actorName}は「緊急料理」の材料を選べませんでした。`);
                 break;
             }
 
@@ -645,12 +839,13 @@ function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
 
             selfPlayer.score += 3;
             selfPlayer.lockedCookingThisTurn = true;
-            addLog(`${actorName}は緊急調理で3点獲得しました。手札またはセットカードを使えます。今ターン他の料理は作れません。`);
+            pushSpecialEventDishHistory(selfPlayer, '緊急料理');
+            addLog(`${actorName}は「緊急料理」で「${card ? card.name : '材料なし'}」を使い、3点獲得しました。`);
             break;
         }
 
         default:
-            addLog(`${actorName}は ${eventCard.name} を使いました。`);
+            addLog(`${actorName}はイベント「${eventCard.name}」を発動しました。`);
             break;
     }
 }
@@ -665,13 +860,64 @@ function playerBuyPack(packKey) {
     if (!def) return;
 
     if (!canBuyPack(player, packKey)) {
-        addLog(`${def.name} は交換できません。点数不足か、すでに所持しています。`);
+        if (hasPack(player, packKey)) {
+            addLog(`「${def.name}」はすでに所持しています。`);
+        } else {
+            addLog(`点数不足で「${def.name}」を購入できません（必要${def.cost}点）。`);
+        }
         return;
+    }
+
+    GameState.selectionMode = 'pack-confirm';
+    GameState.pendingPackKey = packKey;
+    addLog(`加工アイテム確認: 「${def.name}」を交換しますか？`);
+    updateUI();
+}
+
+async function confirmPackPurchase() {
+    if (GameState.selectionMode !== 'pack-confirm') return;
+
+    const player = GameState.players.player;
+    const packKey = GameState.pendingPackKey;
+    const def = getPackDefinition(packKey);
+
+    GameState.selectionMode = 'pack-resolving';
+    GameState.pendingPackKey = null;
+
+    if (!def) {
+        GameState.selectionMode = null;
+        updateUI();
+        return;
+    }
+
+    if (!canBuyPack(player, packKey)) {
+        if (hasPack(player, packKey)) {
+            addLog(`「${def.name}」はすでに所持しています。`);
+        } else {
+            addLog(`点数不足で「${def.name}」を購入できません（必要${def.cost}点）。`);
+        }
+        GameState.selectionMode = null;
+        updateUI();
+        return;
+    }
+
+    updateUI();
+    if (window.showSpotlightPackCardAsync) {
+        await window.showSpotlightPackCardAsync(def);
     }
 
     buyPack(player, packKey);
     GameState.candidateRecipes = [];
-    addLog(`${def.name} を3点で交換しました。`);
+    GameState.selectionMode = null;
+    addLog(`あなたは加工アイテム「${def.name}」を購入しました（-${def.cost}点）。`);
+    updateUI();
+}
+
+function cancelPackPurchase() {
+    if (GameState.selectionMode !== 'pack-confirm') return;
+    GameState.selectionMode = null;
+    GameState.pendingPackKey = null;
+    addLog('加工アイテム交換をキャンセルしました。');
     updateUI();
 }
 
@@ -681,7 +927,7 @@ function playerEndTurn() {
     if (GameState.selectionMode) return;
 
     GameState.selectionMode = 'end-turn-confirm';
-    addLog('ターン終了確認を開きました。');
+    addLog('ターン終了確認を表示しました。');
     updateUI();
 }
 
@@ -694,13 +940,14 @@ function confirmEndTurn() {
 
     const player = GameState.players.player;
 
-    if (getCurrentTotalHandCount(player) >= 3) {
-        const discardCount = getCurrentTotalHandCount(player) - 2;
+    const handLimit = getEndPhaseHandLimit(player);
+    if (getCurrentTotalHandCount(player) > handLimit) {
+        const discardCount = getCurrentTotalHandCount(player) - handLimit;
         GameState.selectionMode = 'discard';
         GameState.discardNeedCount = discardCount;
         GameState.selectedCardIds = [];
         showDiscardBanner(discardCount);
-        addLog(`エンドフェイズです。手札から ${discardCount} 枚選んで捨ててください。`);
+        addLog(`エンドフェイズ: ${discardCount}枚捨ててください。`);
         updateUI();
         return;
     }
@@ -726,7 +973,7 @@ function toggleDiscardSelection(cardId) {
         GameState.selectedCardIds.splice(index, 1);
     } else {
         if (GameState.selectedCardIds.length >= GameState.discardNeedCount) {
-            addLog(`捨てるカードは ${GameState.discardNeedCount} 枚までです。`);
+            addLog(`捨てる枚数は最大${GameState.discardNeedCount}枚です。`);
             return;
         }
         GameState.selectedCardIds.push(cardId);
@@ -741,11 +988,12 @@ function confirmDiscardSelection() {
     const player = GameState.players.player;
 
     if (GameState.selectedCardIds.length !== GameState.discardNeedCount) {
-        addLog(`ちょうど ${GameState.discardNeedCount} 枚選んでください。`);
+        addLog(`あと${GameState.discardNeedCount - GameState.selectedCardIds.length}枚選択してください。`);
         return;
     }
 
     const ids = [...GameState.selectedCardIds];
+    const discardedNames = [];
     ids.forEach(id => {
         let card = removeCardByIdFromArray(player.hand, id);
         if (!card) {
@@ -753,9 +1001,13 @@ function confirmDiscardSelection() {
         }
         if (card) {
             moveCardToDiscard(card);
-            addLog(`${card.name} を捨てました。`);
+            discardedNames.push(card.name);
         }
     });
+
+    if (discardedNames.length > 0) {
+        addLog(`あなたは ${discardedNames.join('、')} を捨てました。`);
+    }
 
     GameState.selectionMode = null;
     GameState.discardNeedCount = 0;
@@ -771,6 +1023,8 @@ function finishPlayerTurn() {
 
     player.usedEventThisTurn = false;
     player.lockedCookingThisTurn = false;
+    player.knifeSelectedName = null;
+    player.knifeUsedThisTurn = false;
 
     GameState.selectionMode = null;
     GameState.discardNeedCount = 0;
@@ -780,19 +1034,24 @@ function finishPlayerTurn() {
     GameState.pendingSetCardId = null;
     GameState.pendingEventCardId = null;
     GameState.pendingViewSetCardId = null;
+    GameState.pendingPackKey = null;
+    GameState.pendingIngredientAction = null;
+    GameState.pendingKnifeOptions = [];
     GameState.candidateRecipes = [];
 
     hideDiscardBanner();
 
     GameState.currentTurn = 'cpu';
     GameState.currentPhase = 'ドローフェイズ';
+    cpu.knifeUsedThisTurn = false;
     markTurnStartStatus(cpu, player);
 
-    addLog('あなたのターン終了。CPUのターンです。');
+    addLog('あなたのターン終了。CPUターンへ移行します。');
     disablePlayerControls();
     updateUI();
 
-    setTimeout(cpuTurn, 3000);
+    const cpuStartDelay = typeof getCpuTurnStartDelay === 'function' ? getCpuTurnStartDelay() : 3000;
+    setTimeout(cpuTurn, cpuStartDelay);
 }
 
 window.playerSetCard = playerSetCard;
@@ -800,12 +1059,20 @@ window.confirmSetCard = confirmSetCard;
 window.cancelSetCard = cancelSetCard;
 window.viewSetCard = viewSetCard;
 window.closeSetCardView = closeSetCardView;
+window.openIngredientAction = openIngredientAction;
+window.closeIngredientAction = closeIngredientAction;
+window.showIngredientCombinations = showIngredientCombinations;
+window.backIngredientAction = backIngredientAction;
+window.confirmIngredientSetFromAction = confirmIngredientSetFromAction;
 window.playerShowRecipeCandidates = playerShowRecipeCandidates;
+window.playerCancelRecipeCandidates = playerCancelRecipeCandidates;
 window.playerCookSelectedRecipe = playerCookSelectedRecipe;
 window.playerUseEvent = playerUseEvent;
 window.confirmEventCard = confirmEventCard;
 window.cancelEventCard = cancelEventCard;
 window.playerBuyPack = playerBuyPack;
+window.confirmPackPurchase = confirmPackPurchase;
+window.cancelPackPurchase = cancelPackPurchase;
 window.playerEndTurn = playerEndTurn;
 window.confirmEndTurn = confirmEndTurn;
 window.cancelEndTurn = cancelEndTurn;
@@ -816,3 +1083,7 @@ window.confirmEventSelection = confirmEventSelection;
 window.cancelEventSelection = cancelEventSelection;
 window.executeEventEffect = executeEventEffect;
 window.drawFromDeckRaw = drawFromDeckRaw;
+
+
+
+

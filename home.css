@@ -386,6 +386,14 @@ a {
     background: linear-gradient(180deg, #fff2d8 0%, #ffe0a8 100%);
 }
 
+.mobile-link {
+    background: linear-gradient(180deg, #e7f4ff 0%, #cfe9ff 100%);
+}
+
+.note-link {
+    background: linear-gradient(180deg, #fef3d8 0%, #ffe7b3 100%);
+}
+
 .x-link {
     background: linear-gradient(180deg, #f5f5f5 0%, #e9e9e9 100%);
 }

@@ -18,6 +18,7 @@
             </div>
 
             <div class="header-actions">
+                <button id="open-settings-tab" class="hud-button" aria-label="設定">⚙ 設定</button>
                 <button id="reset-game-button">ゲームリセット</button>
             </div>
         </header>
@@ -27,9 +28,9 @@
                 <h2>プレイヤー</h2>
 
                 <div class="character-panel">
-                    <div class="character-icon player-icon face-normal"></div>
+                    <div class="character-icon player-icon char-chizuru face-normal"></div>
                     <div class="character-name-row">
-                        <div class="character-name">プレイヤー</div>
+                        <div id="player-hud-name" class="character-name">プレイヤー</div>
                         <div class="side-score">現在の得点: <span id="player-side-score">0</span></div>
                     </div>
                 </div>
@@ -52,8 +53,8 @@
                 <div class="panel-box">
                     <h3>加工アイテム交換（各3点）</h3>
                     <div class="shop-buttons">
-                        <button id="buy-knife-button">包丁</button>
-                        <button id="buy-freezer-button">冷凍庫</button>
+                        <button id="buy-knife-button">エコバッグ</button>
+                        <button id="buy-freezer-button">冷蔵庫</button>
                         <button id="buy-board-button">まな板</button>
                     </div>
                 </div>
@@ -73,7 +74,7 @@
                 </div>
 
                 <div class="bottom-info-grid">
-                    <div class="panel-box small-box">
+                    <div class="panel-box small-box candidate-recipes-panel">
                         <h3>料理候補</h3>
                         <div id="candidate-recipes" class="candidate-area">料理を作るボタンを押すと候補が出ます。</div>
                     </div>
@@ -130,6 +131,27 @@
                     </div>
                 </div>
 
+                <div id="pack-confirm-panel" class="panel-box selection-panel hidden">
+                    <h3>加工アイテム交換確認</h3>
+                    <div id="pack-confirm-description" class="selection-description"></div>
+                    <div class="selection-actions">
+                        <button id="pack-confirm-yes-button">交換する</button>
+                        <button id="pack-confirm-no-button">キャンセル</button>
+                    </div>
+                </div>
+
+                <div id="ingredient-action-panel" class="panel-box selection-panel hidden">
+                    <h3 id="ingredient-action-title">材料アクション</h3>
+                    <div id="ingredient-action-description" class="selection-description"></div>
+                    <div id="ingredient-combo-list" class="ingredient-combo-list hidden"></div>
+                    <div class="selection-actions">
+                        <button id="ingredient-action-set-button" class="hidden">セットする</button>
+                        <button id="ingredient-action-combo-button">組み合わせ</button>
+                        <button id="ingredient-action-back-button" class="hidden">戻る</button>
+                        <button id="ingredient-action-close-button">閉じる</button>
+                    </div>
+                </div>
+
                 <div id="event-confirm-panel" class="panel-box selection-panel hidden">
                     <h3>イベントカード発動確認</h3>
                     <div id="event-confirm-description" class="selection-description"></div>
@@ -179,9 +201,9 @@
                 <h2>CPU</h2>
 
                 <div class="character-panel">
-                    <div class="character-icon cpu-icon face-normal"></div>
+                    <div class="character-icon cpu-icon char-mai face-normal"></div>
                     <div class="character-name-row">
-                        <div class="character-name">CPU</div>
+                        <div id="cpu-hud-name" class="character-name">CPU</div>
                         <div class="side-score">現在の得点: <span id="cpu-side-score">0</span></div>
                     </div>
                 </div>
@@ -220,10 +242,10 @@
 
                 <div class="mini-rule-box">
                     <div class="mini-rule-title">かんたんルール解説</div>
-                    <div class="mini-rule-text">
+                    <div id="mini-rule-simple" class="mini-rule-text">
                         ・先に10点以上取ったら勝利<br>
                         ・イベントカードは1ターンに1枚まで使用可能<br>
-                        ・ターン終了時、手札は2枚まで残せます<br>
+                        ・ターン終了時、手札は通常2枚まで、エコバッグ所持時は3枚まで残せます<br>
                         ・セットカードも料理の材料に使えます<br>
                         ・山札がなくなったら捨て札を混ぜて再利用します
                     </div>
@@ -231,28 +253,39 @@
 
                 <div class="mini-rule-box">
                     <div class="mini-rule-title">詳細ルール</div>
-                    <div class="mini-rule-text">
+                    <div id="mini-rule-detail" class="mini-rule-text">
                         ・手札は「材料カード」と「イベントカード」を合わせた合計枚数で管理します<br>
                         ・ドローフェイズでは、通常は合計5枚になるまで補充します<br>
                         ・「まな板」を持っている場合は、合計6枚になるまで補充します<br>
                         ・材料カードはセットできますが、イベントカードはセットできません<br>
-                        ・セット上限は通常2枚まで、「冷凍庫」があれば3枚までです<br>
+                        ・セット上限は通常2枚まで、「冷蔵庫」があれば3枚までです<br>
                         ・セットカードは自分だけ確認でき、料理作成時に公開された扱いになります<br>
-                        ・「包丁」があると、料理作成時に材料1種類を2枚扱いにできます<br>
+                        ・「エコバッグ」があると、エンドフェイズ手札上限が3枚になります<br>
                         ・料理を作っても、そのままメインフェイズを続けられます<br>
-                        ・「創作料理」「緊急調理」は手札だけでなくセットカードも使えます<br>
-                        ・ただし「創作料理」「緊急調理」を使ったターンは、他の料理を作れません<br>
-                        ・エンドフェイズ開始時に手札が3枚以上ある場合、2枚だけ残して残りを捨てます
+                        ・「創作料理」は6点以下、「緊急料理」は3点以下で使用できます<br>
+                        ・「創作料理」「緊急料理」は手札だけでなくセットカードも使えます<br>
+                        ・「創作料理」「緊急料理」を使ったターンは通常料理できません（逆も同様）<br>
+                        ・エンドフェイズ開始時に手札上限を超えていれば、上限まで捨てます
                     </div>
                 </div>
 
                 <div class="mini-rule-box">
                     <div class="mini-rule-title">特殊勝利条件</div>
-                    <div class="mini-rule-text">
-                        ・料理の鉄人：鶏肉・豚肉・牛肉・魚肉を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利<br>
-                        ・満腹の達人：ターン開始時に自分の得点が相手より低い状態から、その1ターン中に3つ以上の料理を完成させたら即勝利
+                    <div id="mini-rule-special" class="mini-rule-text">
+                        ・料理の達人：鶏肉・豚肉・牛肉・魚を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利<br>
+                        ・満腹マスター：ターン開始時に自分の得点が相手より低い状態から、その1ターン中に3つ以上の料理を完成させたら即勝利
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section id="info-overlay" class="info-overlay hidden">
+            <div class="info-overlay-panel">
+                <div class="info-overlay-header">
+                    <h2 id="info-overlay-title">情報</h2>
+                    <button id="info-overlay-close-button">閉じる</button>
+                </div>
+                <div id="info-overlay-content" class="info-overlay-content"></div>
             </div>
         </section>
     </div>
@@ -268,6 +301,43 @@
                 <div id="spotlight-art" class="spotlight-art"></div>
                 <div id="spotlight-name" class="spotlight-name">カード名</div>
                 <div id="spotlight-sub" class="spotlight-sub">説明</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="start-overlay" class="start-overlay">
+        <div class="start-panel">
+            <h1 class="start-title">Battle a la carte</h1>
+            <p class="start-subtitle">キャラを選んでスタート</p>
+
+            <div class="start-char-select">
+                <button class="start-char-button active" data-character-id="chizuru">
+                    <span class="start-char-portrait char-chizuru"></span>
+                    <span class="start-char-name">千鶴</span>
+                </button>
+                <button class="start-char-button" data-character-id="mai">
+                    <span class="start-char-portrait char-mai"></span>
+                    <span class="start-char-name">舞依</span>
+                </button>
+                <button class="start-char-button" data-character-id="takumi">
+                    <span class="start-char-portrait char-takumi"></span>
+                    <span class="start-char-name">拓海</span>
+                </button>
+                <button class="start-char-button" data-character-id="akatsuki">
+                    <span class="start-char-portrait char-akatsuki"></span>
+                    <span class="start-char-name">暁</span>
+                </button>
+            </div>
+
+            <button id="start-setup-button" class="start-main-button">スタート</button>
+
+            <div id="start-turn-stage" class="start-turn-stage hidden">
+                <p id="start-turn-message" class="start-turn-message">カードを1枚選んでください</p>
+                <div class="start-turn-cards">
+                    <button id="start-turn-card-left" class="start-turn-card">カードA</button>
+                    <button id="start-turn-card-right" class="start-turn-card">カードB</button>
+                </div>
+                <div id="start-battle-message" class="start-battle-message"></div>
             </div>
         </div>
     </div>

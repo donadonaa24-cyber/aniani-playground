@@ -1,9 +1,23 @@
-const CPU_THINK_DELAY = 3000;
+﻿const CPU_THINK_DELAY = 3000;
 const CPU_ACTION_DELAY = 900;
 const CPU_BIG_ACTION_DELAY = 1200;
 
+function isCpuFastMode() {
+    return GameState?.settings?.cpuSpeed === 'fast';
+}
+
+function resolveCpuDelay(ms) {
+    return isCpuFastMode() ? 0 : ms;
+}
+
+function getCpuTurnStartDelay() {
+    return resolveCpuDelay(CPU_THINK_DELAY);
+}
+
 function cpuPause(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    const waitMs = resolveCpuDelay(ms);
+    if (waitMs <= 0) return Promise.resolve();
+    return new Promise(resolve => setTimeout(resolve, waitMs));
 }
 
 function getCpuSelectableIngredientCards(cpu) {
@@ -23,7 +37,7 @@ async function cpuTurn() {
     await cpuPause(CPU_THINK_DELAY);
     if (GameState.gameEnded) return;
 
-    setCPUStatus('CPUがドロー中...');
+    setCPUStatus('CPUドロー中...');
     GameState.currentPhase = 'ドローフェイズ';
     updateUI();
 
@@ -33,25 +47,19 @@ async function cpuTurn() {
         const drawn = drawOneResolved(cpu);
         if (!drawn) break;
 
-        if (drawn.type === 'ingredient') {
-            addLog('CPUが材料カードを1枚引きました。');
-        } else if (drawn.type === 'event') {
-            addLog(`CPUがイベントカード「${drawn.name}」を引きました。`);
-        }
-
         updateUI();
         await cpuPause(CPU_ACTION_DELAY);
         if (GameState.gameEnded) return;
     }
 
     GameState.currentPhase = 'メインフェイズ';
-    setCPUStatus('CPUが行動を選択中...');
+    setCPUStatus('CPU行動選択中...');
     updateUI();
     await cpuPause(CPU_ACTION_DELAY);
 
     const boughtPack = cpuTryBuyPack(cpu);
     if (boughtPack) {
-        setCPUStatus('CPUが加工カードを交換中...');
+        setCPUStatus('CPU加工アイテム購入中...');
         updateUI();
         await cpuPause(CPU_BIG_ACTION_DELAY);
         if (GameState.gameEnded) return;
@@ -59,7 +67,7 @@ async function cpuTurn() {
 
     const usedEvent = await cpuTryUseEvent(cpu, player);
     if (usedEvent) {
-        setCPUStatus('CPUがイベントカードを使用中...');
+        setCPUStatus('CPUイベントカード使用中...');
         updateUI();
         await cpuPause(CPU_BIG_ACTION_DELAY);
         if (GameState.gameEnded) return;
@@ -69,19 +77,15 @@ async function cpuTurn() {
         let possible = findPossibleRecipesForPlayer(cpu);
 
         while (possible.length > 0) {
-            setCPUStatus('CPUが料理を作成中...');
+            setCPUStatus('CPU料理中...');
             updateUI();
 
             const bestPlan = possible[0];
             const success = applyRecipePlan(cpu, bestPlan);
             if (!success) break;
 
-            const knifeText = bestPlan.doubledName
-                ? `（包丁で ${bestPlan.doubledName} を2枚扱い）`
-                : '';
-
-            addLog(`CPUは ${bestPlan.recipe.name} を作成して ${bestPlan.recipe.points}点獲得しました。${knifeText}`);
-            playSfx('cook');
+            addLog(`CPUは「${bestPlan.recipe.name}」を作りました（+${bestPlan.recipe.points}点）`);
+            if (window.playCookBgm) { playCookBgm(); } else { playSfx('cook'); }
 
             if (window.showSpotlightRecipeCardAsync) {
                 await window.showSpotlightRecipeCardAsync(bestPlan.recipe);
@@ -113,11 +117,9 @@ async function cpuTurn() {
             const index = cpu.hand.findIndex(item => item.id === card.id);
             if (index === -1) break;
 
-            setCPUStatus('CPUがカードをセット中...');
+            setCPUStatus('CPUカードセット中...');
             const moved = cpu.hand.splice(index, 1)[0];
             cpu.set.push(moved);
-
-            addLog('CPUはカードを1枚セットしました。');
             updateUI();
 
             await cpuPause(CPU_ACTION_DELAY);
@@ -130,19 +132,20 @@ async function cpuTurn() {
     }
 
     GameState.currentPhase = 'エンドフェイズ';
-    setCPUStatus('CPUが手札整理中...');
+    setCPUStatus('CPU終了処理中...');
     updateUI();
     await cpuPause(500);
 
-    while (getCurrentTotalHandCount(cpu) > 2) {
+    const handLimit = getEndPhaseHandLimit(cpu);
+    while (getCurrentTotalHandCount(cpu) > handLimit) {
         if (cpu.hand.length > 0) {
             const discarded = cpu.hand.shift();
             moveCardToDiscard(discarded);
-            addLog(`CPUは ${discarded.name} を1枚捨てました。`);
+            addLog(`CPUは手札「${discarded.name}」を捨てました。`);
         } else if (cpu.events.length > 0) {
             const discardedEvent = cpu.events.shift();
             moveCardToDiscard(discardedEvent);
-            addLog(`CPUはイベントカード「${discardedEvent.name}」を1枚捨てました。`);
+            addLog(`CPUはイベント「${discardedEvent.name}」を捨てました。`);
         } else {
             break;
         }
@@ -154,6 +157,7 @@ async function cpuTurn() {
 
     cpu.usedEventThisTurn = false;
     cpu.lockedCookingThisTurn = false;
+    cpu.knifeUsedThisTurn = false;
 
     const winner = checkWinner();
     if (winner) {
@@ -163,6 +167,10 @@ async function cpuTurn() {
 
     GameState.currentTurn = 'player';
     GameState.currentPhase = 'ドローフェイズ';
+    player.usedEventThisTurn = false;
+    player.lockedCookingThisTurn = false;
+    player.knifeSelectedName = null;
+    player.knifeUsedThisTurn = false;
     markTurnStartStatus(player, cpu);
     setCPUStatus('');
     updateUI();
@@ -170,7 +178,7 @@ async function cpuTurn() {
     await cpuPause(400);
 
     drawUntilTargetHand(player);
-    addLog('あなたのターンです。');
+    addLog('あなたのドローフェイズです。手札を補充しました。');
     playSfx('turnStart');
 
     GameState.currentPhase = 'メインフェイズ';
@@ -179,13 +187,13 @@ async function cpuTurn() {
 }
 
 function cpuTryBuyPack(cpu) {
-    const priorities = ['board', 'freezer', 'knife'];
+    const priorities = ['board', 'freezer', 'ecoBag'];
 
     for (const packKey of priorities) {
         if (canBuyPack(cpu, packKey)) {
             buyPack(cpu, packKey);
             const def = getPackDefinition(packKey);
-            addLog(`CPUは ${def.name} を交換しました。`);
+            addLog(`CPUは加工アイテム「${def.name}」を購入しました（-${def.cost}点）。`);
             return true;
         }
     }
@@ -197,13 +205,13 @@ async function cpuTryUseEvent(cpu, player) {
     if (cpu.events.length === 0) return false;
 
     const priorityNames = [
-        '緊急調理',
+        '緊急料理',
         '創作料理',
         '爆買い',
         '食材探索',
         '大掃除',
         'ゴミ収集車',
-        'やっぱやーめたっ！',
+        'やっぱやめた',
         'やり直し',
         '物々交換'
     ];
@@ -233,7 +241,7 @@ async function cpuTryUseEvent(cpu, player) {
     cpu.usedEventThisTurn = true;
 
     const extra = buildCpuEventExtra(cpu, player, eventCard);
-    addLog(`CPUはイベントカード「${eventCard.name}」を発動しました。`);
+    addLog(`CPUはイベント「${eventCard.name}」を発動しました。`);
     executeEventEffect(cpu, player, eventCard, 'cpu', extra);
     return true;
 }
@@ -270,7 +278,7 @@ function buildCpuEventExtra(cpu, player, eventCard) {
             };
         }
 
-        case '緊急調理': {
+        case '緊急料理': {
             const target = getCpuSelectableIngredientCards(cpu)[0];
             return { selectedIds: target ? [target.id] : [] };
         }
@@ -284,10 +292,15 @@ function isCpuEventUseful(cpu, player, card, targetName) {
     if (card.name !== targetName) return false;
 
     switch (card.name) {
-        case '緊急調理':
-            return cpu.score <= 5 && getCpuSelectableIngredientCards(cpu).length >= 1;
+        case '緊急料理':
+            return cpu.score <= 3 &&
+                getCpuSelectableIngredientCards(cpu).length >= 1 &&
+                (cpu.recipesCookedThisTurn || 0) === 0;
         case '創作料理':
-            return getCpuSelectableIngredientCards(cpu).length >= 2 && findPossibleRecipesForPlayer(cpu).length === 0;
+            return cpu.score <= 6 &&
+                getCpuSelectableIngredientCards(cpu).length >= 2 &&
+                findPossibleRecipesForPlayer(cpu).length === 0 &&
+                (cpu.recipesCookedThisTurn || 0) === 0;
         case '爆買い':
             return true;
         case '食材探索':
@@ -296,7 +309,7 @@ function isCpuEventUseful(cpu, player, card, targetName) {
             return getCurrentTotalHandCount(player) >= 2 || player.set.length > 0;
         case 'ゴミ収集車':
             return GameState.discard.some(card => card.type === 'ingredient');
-        case 'やっぱやーめたっ！':
+        case 'やっぱやめた':
             return cpu.set.length > 0;
         case 'やり直し':
             return getCurrentTotalHandCount(cpu) >= 3 && findPossibleRecipesForPlayer(cpu).length === 0;
@@ -331,3 +344,10 @@ function chooseBestSetCard(cpu) {
 }
 
 window.cpuTurn = cpuTurn;
+window.getCpuTurnStartDelay = getCpuTurnStartDelay;
+
+
+
+
+
+

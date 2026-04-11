@@ -21,7 +21,8 @@ body {
 #game-container.mobile-field-ui {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    min-height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background:
         radial-gradient(circle at center, rgba(50,120,255,0.18) 0%, rgba(3,14,45,0.08) 45%, rgba(1,7,22,0.92) 100%),
@@ -160,7 +161,8 @@ body {
     inset: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 8px;
     padding: 62px 8px 86px 8px;
     box-sizing: border-box;
 }
@@ -173,11 +175,11 @@ body {
 }
 
 .cpu-side {
-    min-height: 21vh;
+    min-height: clamp(150px, 21vh, 190px);
 }
 
 .player-side {
-    min-height: 30vh;
+    min-height: clamp(210px, 30vh, 250px);
 }
 
 .player-hud {
@@ -352,7 +354,7 @@ body {
 
 .center-field {
     position: absolute;
-    inset: 22% 0 31% 0;
+    inset: clamp(132px, 22%, 190px) 0 clamp(160px, 31%, 230px) 0;
     z-index: 4;
     pointer-events: none;
 }

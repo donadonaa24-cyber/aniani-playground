@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>Battle a la carte - Smartphone Field UI</title>
-    <link rel="stylesheet" href="style-sp.css">
+    <link rel="stylesheet" href="style-sp.css?v=20260412g">
 </head>
 <body>
     <div id="game-container" class="mobile-field-ui">
@@ -316,48 +316,175 @@
 
     <div id="start-overlay" class="start-overlay">
         <div class="start-panel">
-            <h1 class="start-title">Battle a la carte</h1>
-            <p class="start-subtitle">キャラを選んでスタート</p>
-
-            <div class="start-char-select">
-                <button class="start-char-button active" data-character-id="chizuru">
-                    <span class="start-char-portrait char-chizuru"></span>
-                    <span class="start-char-name">千鶴</span>
-                </button>
-                <button class="start-char-button" data-character-id="mai">
-                    <span class="start-char-portrait char-mai"></span>
-                    <span class="start-char-name">舞依</span>
-                </button>
-                <button class="start-char-button" data-character-id="takumi">
-                    <span class="start-char-portrait char-takumi"></span>
-                    <span class="start-char-name">拓海</span>
-                </button>
-                <button class="start-char-button" data-character-id="akatsuki">
-                    <span class="start-char-portrait char-akatsuki"></span>
-                    <span class="start-char-name">暁</span>
-                </button>
+            <div id="start-title-stage" class="start-stage">
+                <h1 class="start-title">Battle a la carte</h1>
+                <p class="start-subtitle">料理で勝負するカードバトル</p>
             </div>
 
-            <button id="start-setup-button" class="start-main-button">スタート</button>
+            <div id="start-menu-stage" class="start-stage hidden">
+                <div id="start-menu-floating-bg" class="start-menu-floating-bg"></div>
+                <div class="start-menu-content">
+                    <h1 class="start-title">Battle a la carte</h1>
+                    <p class="start-subtitle">モードを選んでください</p>
 
-            <div id="start-turn-stage" class="start-turn-stage hidden">
-                <p id="start-turn-message" class="start-turn-message">カードを1枚選んでください</p>
-                <div class="start-turn-cards">
-                    <button id="start-turn-card-left" class="start-turn-card">カードA</button>
-                    <button id="start-turn-card-right" class="start-turn-card">カードB</button>
+                    <div class="start-menu-buttons">
+                        <button id="menu-cpu-button" class="start-main-button">料理開始（CPU戦）</button>
+                        <button id="menu-friend-button" class="start-menu-button">料理開始（フレンド戦）</button>
+                        <button id="menu-online-button" class="start-menu-button">オンライン対戦</button>
+                        <button id="menu-coin-button" class="start-menu-button">コイン交換所</button>
+                        <button id="menu-rules-button" class="start-menu-button">ルールページ</button>
+                        <button id="menu-gallery-button" class="start-menu-button">ギャラリーページ</button>
+                        <button id="menu-user-button" class="start-menu-button">ユーザー情報</button>
+                        <button id="menu-home-button" class="start-menu-button home-link">公式ホームページへ戻る</button>
+                    </div>
+
+                    <p id="start-menu-message" class="start-menu-message"></p>
                 </div>
-                <div id="start-battle-message" class="start-battle-message"></div>
+            </div>
+
+            <div id="start-cpu-setup-stage" class="start-stage hidden">
+                <h2 class="start-section-title">CPU戦セットアップ</h2>
+                <p class="start-subtitle">キャラを選んでスタート</p>
+
+                <div class="start-char-select">
+                    <button class="start-char-button active" data-character-id="chizuru">
+                        <span class="start-char-portrait char-chizuru"></span>
+                        <span class="start-char-name">千鶴</span>
+                    </button>
+                    <button class="start-char-button" data-character-id="mai">
+                        <span class="start-char-portrait char-mai"></span>
+                        <span class="start-char-name">舞依</span>
+                    </button>
+                    <button class="start-char-button" data-character-id="takumi">
+                        <span class="start-char-portrait char-takumi"></span>
+                        <span class="start-char-name">拓海</span>
+                    </button>
+                    <button class="start-char-button" data-character-id="akatsuki">
+                        <span class="start-char-portrait char-akatsuki"></span>
+                        <span class="start-char-name">暁</span>
+                    </button>
+                </div>
+
+                <div class="start-setup-actions">
+                    <button id="start-back-menu-button" class="start-sub-button">メニューへ戻る</button>
+                    <button id="start-setup-button" class="start-main-button">スタート</button>
+                </div>
+
+                <div id="start-turn-stage" class="start-turn-stage hidden">
+                    <p id="start-turn-message" class="start-turn-message">カードを1枚選んでください</p>
+                    <div class="start-turn-cards">
+                        <button id="start-turn-card-left" class="start-turn-card">カードA</button>
+                        <button id="start-turn-card-right" class="start-turn-card">カードB</button>
+                    </div>
+                    <div id="start-battle-message" class="start-battle-message"></div>
+                </div>
+            </div>
+
+            <div id="start-rules-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ルールページ</h2>
+                <div class="start-rules-scroll">
+                    <div class="start-rule-box">
+                        <h3>かんたんルール</h3>
+                        <p>先に10点獲得したら勝利。イベントカードは1ターンに1回まで使用できます。</p>
+                    </div>
+                    <div class="start-rule-box">
+                        <h3>手札とセット</h3>
+                        <p>手札は「材料+イベント」の合計。材料カードはセットでき、セットカードも料理素材に使えます。</p>
+                    </div>
+                    <div class="start-rule-box">
+                        <h3>特殊勝利</h3>
+                        <p>料理の達人・満腹マスターなど、通常得点以外の勝利条件があります。</p>
+                    </div>
+                </div>
+                <button id="start-rules-back-button" class="start-sub-button wide">メニューへ戻る</button>
+            </div>
+
+            <div id="start-gallery-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ギャラリーページ</h2>
+                <div class="start-gallery-filters">
+                    <button class="start-gallery-filter active" data-gallery-type="characters">キャラクター一覧</button>
+                    <button class="start-gallery-filter" data-gallery-type="ingredients">材料カード一覧</button>
+                    <button class="start-gallery-filter" data-gallery-type="events">イベントカード一覧</button>
+                    <button class="start-gallery-filter" data-gallery-type="recipes">料理カード一覧</button>
+                </div>
+                <div id="start-gallery-list" class="start-gallery-list"></div>
+                <button id="start-gallery-back-button" class="start-sub-button wide">メニューへ戻る</button>
+            </div>
+
+            <div id="start-friend-stage" class="start-stage hidden">
+                <h2 class="start-section-title">フレンド戦セットアップ</h2>
+                <p class="start-subtitle">合言葉を使ってルームを作成/参加します</p>
+
+                <div class="start-user-form">
+                    <label class="start-field-label" for="friend-passphrase-input">合言葉</label>
+                    <input id="friend-passphrase-input" class="start-text-input" type="text" maxlength="40" placeholder="例: dinner-2026">
+                </div>
+
+                <div class="start-setup-actions">
+                    <button id="friend-create-button" class="start-main-button">ルーム作成</button>
+                    <button id="friend-join-button" class="start-sub-button">ルーム参加</button>
+                </div>
+
+                <p id="friend-room-message" class="start-menu-message"></p>
+                <div class="start-rule-box">
+                    <h3>接続メモ</h3>
+                    <p>Firebase設定済みならリアルタイム対戦、未設定ならローカル検証モードで動作します。</p>
+                </div>
+                <button id="start-friend-back-button" class="start-sub-button wide">メニューへ戻る</button>
+            </div>
+
+            <div id="start-user-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ユーザー情報</h2>
+                <p class="start-subtitle">名前・推しキャラ・統計・コイン</p>
+
+                <div class="start-user-form">
+                    <label class="start-field-label" for="user-name-input">ユーザー名</label>
+                    <input id="user-name-input" class="start-text-input" type="text" maxlength="24" placeholder="ユーザー名を入力">
+
+                    <label class="start-field-label" for="user-favorite-character">お気に入りキャラ</label>
+                    <select id="user-favorite-character" class="start-select-input">
+                        <option value="chizuru">千鶴</option>
+                        <option value="mai">舞依</option>
+                        <option value="takumi">拓海</option>
+                        <option value="akatsuki">暁</option>
+                    </select>
+
+                    <div class="start-user-stats">
+                        <div class="start-user-stat-row"><span>コイン</span><strong id="user-coins-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>対戦回数</span><strong id="user-matches-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>勝利数</span><strong id="user-wins-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>料理作成回数</span><strong id="user-dishes-value">0</strong></div>
+                    </div>
+
+                    <div class="start-bg-shop-wrap">
+                        <label class="start-field-label">背景デザイン交換（コイン）</label>
+                        <div id="user-background-shop" class="start-bg-shop"></div>
+                    </div>
+                </div>
+
+                <div class="start-setup-actions">
+                    <button id="user-save-button" class="start-main-button">保存</button>
+                    <button id="user-reset-button" class="start-sub-button">初期化</button>
+                </div>
+                <p id="user-stage-message" class="start-menu-message"></p>
+                <button id="start-user-back-button" class="start-sub-button wide">メニューへ戻る</button>
             </div>
         </div>
     </div>
 
-    <script src="cards-sp.js"></script>
-    <script src="state-sp.js"></script>
-    <script src="rules-sp.js"></script>
-    <script src="player-sp.js"></script>
-    <script src="cpu-sp.js"></script>
-    <script src="render-sp.js"></script>
-    <script src="audio-sp.js"></script>
-    <script src="main-sp.js"></script>
+    <script src="cards-sp.js?v=20260412g"></script>
+    <script src="state-sp.js?v=20260412g"></script>
+    <script src="../profile.js?v=20260412g"></script>
+    <script src="rules-sp.js?v=20260412g"></script>
+    <script src="player-sp.js?v=20260412g"></script>
+    <script src="cpu-sp.js?v=20260412g"></script>
+    <script src="render-sp.js?v=20260412g"></script>
+    <script src="audio-sp.js?v=20260412g"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="../firebase-config.js?v=20260412g"></script>
+    <script src="../friend-battle-firebase.js?v=20260412g"></script>
+    <script src="main-sp.js?v=20260412g"></script>
 </body>
 </html>

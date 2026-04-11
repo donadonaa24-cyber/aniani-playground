@@ -3,6 +3,14 @@ let eventBookRendered = false;
 let packBookRendered = false;
 let renderEventsBound = false;
 const realtimeLogHistory = [];
+const HORIZONTAL_SCROLL_ROW_IDS = [
+    'player-hand-mixed',
+    'cpu-hand-mixed',
+    'player-set',
+    'cpu-set',
+    'player-packs',
+    'cpu-packs'
+];
 
 const INGREDIENT_IMAGE_MAP = {
     'ごはん': 'rice.png',
@@ -81,6 +89,91 @@ function getPackImagePath(packKey) {
     return fileName ? `../assets/images/packs/${fileName}` : null;
 }
 
+function getBackgroundDesignCatalogSafe() {
+    const fallback = [{
+        key: 'default',
+        label: 'デフォルト',
+        description: '通常の背景',
+        eventName: null,
+        cost: 0,
+        unlockedByDefault: true
+    }];
+
+    if (typeof getBackgroundDesignCatalog !== 'function') {
+        return fallback;
+    }
+
+    const raw = getBackgroundDesignCatalog();
+    if (!Array.isArray(raw) || raw.length === 0) {
+        return fallback;
+    }
+
+    const normalized = raw
+        .filter(item => item && typeof item === 'object' && typeof item.key === 'string')
+        .map(item => ({
+            key: item.key,
+            label: String(item.label || item.eventName || item.key),
+            description: String(item.description || ''),
+            eventName: item.eventName ? String(item.eventName) : null,
+            cost: Number.isFinite(Number(item.cost)) ? Math.max(0, Math.floor(Number(item.cost))) : 0,
+            unlockedByDefault: item.unlockedByDefault === true || item.key === 'default'
+        }));
+
+    if (normalized.length === 0) return fallback;
+    if (!normalized.some(item => item.key === 'default')) {
+        normalized.unshift(fallback[0]);
+    }
+    return normalized;
+}
+
+function getBackgroundDesignByKeySafe(designKey, catalog = null) {
+    const list = Array.isArray(catalog) ? catalog : getBackgroundDesignCatalogSafe();
+    const key = String(designKey || '');
+    return list.find(item => item.key === key) || list.find(item => item.key === 'default') || null;
+}
+
+function getUnlockedBackgroundDesignSet(profile, catalog) {
+    const list = Array.isArray(catalog) ? catalog : getBackgroundDesignCatalogSafe();
+    const unlockedSet = new Set();
+
+    list.forEach(item => {
+        if (item.unlockedByDefault || item.key === 'default') {
+            unlockedSet.add(item.key);
+        }
+    });
+
+    if (profile && Array.isArray(profile.unlockedBackgroundDesignKeys)) {
+        profile.unlockedBackgroundDesignKeys.forEach(key => {
+            if (list.some(item => item.key === key)) unlockedSet.add(key);
+        });
+    }
+
+    if (!unlockedSet.has('default')) unlockedSet.add('default');
+    return unlockedSet;
+}
+
+function getBackgroundDesignDisplayName(design) {
+    if (!design || typeof design !== 'object') return '背景デザイン';
+    return String(design.label || design.eventName || design.key || '背景デザイン');
+}
+
+function applyBackgroundDesign(designKey) {
+    const container = byId('game-container');
+    if (!container) return;
+
+    const catalog = getBackgroundDesignCatalogSafe();
+    const target = getBackgroundDesignByKeySafe(designKey, catalog);
+    const imagePath = target && target.eventName ? getEventImagePath(target.eventName) : null;
+
+    if (imagePath) {
+        container.style.setProperty('--bg-design-image', `url("${imagePath}")`);
+        container.classList.add('has-bg-design');
+    } else {
+        container.style.setProperty('--bg-design-image', 'none');
+        container.classList.remove('has-bg-design');
+    }
+}
+
 function getDetailedEventEffectText(eventName) {
     switch (eventName) {
         case 'ゴミ収集車': return '捨て札の材料カードを1枚選び、手札に加えます。';
@@ -151,7 +244,19 @@ function applyBackgroundTheme(themeKey) {
 
 function applyRuntimeSettings() {
     const settings = ensureGameSettings();
+    const profile = typeof getUserProfile === 'function' ? getUserProfile() : null;
+    const catalog = getBackgroundDesignCatalogSafe();
+    const unlockedSet = getUnlockedBackgroundDesignSet(profile, catalog);
+
+    if (profile?.selectedBackgroundDesignKey && unlockedSet.has(profile.selectedBackgroundDesignKey)) {
+        settings.backgroundDesign = profile.selectedBackgroundDesignKey;
+    }
+    if (!unlockedSet.has(settings.backgroundDesign)) {
+        settings.backgroundDesign = 'default';
+    }
+
     applyBackgroundTheme(settings.backgroundTheme);
+    applyBackgroundDesign(settings.backgroundDesign);
 
     if (typeof setBgmTrack === 'function') {
         setBgmTrack(settings.bgmTrack || 'default');
@@ -184,6 +289,7 @@ function bindSettingsOverlayControls() {
     const resetButton = byId('settings-reset-button');
     const speedSelect = byId('settings-cpu-speed');
     const bgThemeSelect = byId('settings-bg-theme');
+    const bgDesignSelect = byId('settings-bg-design');
     const bgmEnabledSelect = byId('settings-bgm-enabled');
     const bgmTrackSelect = byId('settings-bgm-track');
 
@@ -212,6 +318,64 @@ function bindSettingsOverlayControls() {
             updateUI();
         });
     }
+
+    if (bgDesignSelect) {
+        bgDesignSelect.value = settings.backgroundDesign || 'default';
+        bgDesignSelect.addEventListener('change', () => {
+            const selected = bgDesignSelect.value || 'default';
+            let changed = true;
+
+            if (typeof setSelectedBackgroundDesign === 'function') {
+                const result = setSelectedBackgroundDesign(selected);
+                changed = !!(result && result.ok);
+            }
+
+            if (!changed) {
+                bgDesignSelect.value = settings.backgroundDesign || 'default';
+                addLog('設定: 未所持の背景デザインは選択できません。');
+                return;
+            }
+
+            settings.backgroundDesign = selected;
+            const design = getBackgroundDesignByKeySafe(selected);
+            applyBackgroundDesign(settings.backgroundDesign);
+            addLog(`設定: 背景デザインを「${getBackgroundDesignDisplayName(design)}」に変更しました。`);
+            updateUI();
+        });
+    }
+
+    document.querySelectorAll('.settings-bg-buy-button[data-design-key]').forEach(button => {
+        button.addEventListener('click', () => {
+            const designKey = button.getAttribute('data-design-key') || '';
+            if (typeof purchaseBackgroundDesign !== 'function') {
+                addLog('設定: コイン交換機能が利用できません。');
+                return;
+            }
+
+            const result = purchaseBackgroundDesign(designKey);
+            if (!result || !result.ok) {
+                if (result?.reason === 'not-enough-coins') {
+                    addLog('設定: コインが不足しています。');
+                } else if (result?.reason === 'already-owned') {
+                    addLog('設定: その背景デザインはすでに所持しています。');
+                } else {
+                    addLog('設定: 背景デザインの交換に失敗しました。');
+                }
+                updateUI();
+                return;
+            }
+
+            settings.backgroundDesign = designKey;
+            if (typeof setSelectedBackgroundDesign === 'function') {
+                setSelectedBackgroundDesign(designKey);
+            }
+            applyBackgroundDesign(settings.backgroundDesign);
+
+            const designName = getBackgroundDesignDisplayName(result.design || getBackgroundDesignByKeySafe(designKey));
+            addLog(`設定: 背景デザイン「${designName}」を交換しました（-${result.spentCoins || 0}コイン）。`);
+            updateUI();
+        });
+    });
 
     if (bgmEnabledSelect) {
         bgmEnabledSelect.value = settings.bgmEnabled === false ? 'off' : 'on';
@@ -287,6 +451,85 @@ function bindRenderEventsOnce() {
     }
     if (infoOverlayClose) infoOverlayClose.addEventListener('click', closeInfoOverlay);
     if (infoOverlay) infoOverlay.addEventListener('click', e => { if (e.target === infoOverlay) closeInfoOverlay(); });
+
+    setupHorizontalScrollRows();
+}
+
+function enableHorizontalDragScroll(container) {
+    if (!container || container.dataset.dragScrollReady === '1') return;
+    container.dataset.dragScrollReady = '1';
+
+    let activePointerId = null;
+    let startX = 0;
+    let startLeft = 0;
+    let moved = false;
+    let suppressClickUntil = 0;
+
+    const clearDragState = () => {
+        activePointerId = null;
+        container.classList.remove('is-drag-scrolling');
+    };
+
+    container.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        if (container.scrollWidth <= container.clientWidth + 1) return;
+
+        activePointerId = event.pointerId;
+        startX = event.clientX;
+        startLeft = container.scrollLeft;
+        moved = false;
+        container.classList.add('is-drag-scrolling');
+
+        if (typeof container.setPointerCapture === 'function') {
+            try {
+                container.setPointerCapture(event.pointerId);
+            } catch (_) {
+                // noop
+            }
+        }
+    }, { passive: true });
+
+    container.addEventListener('pointermove', event => {
+        if (activePointerId === null || event.pointerId !== activePointerId) return;
+
+        const dx = event.clientX - startX;
+        if (Math.abs(dx) > 4) moved = true;
+        if (!moved) return;
+
+        container.scrollLeft = startLeft - dx;
+        event.preventDefault();
+    }, { passive: false });
+
+    const finishPointer = event => {
+        if (activePointerId === null || event.pointerId !== activePointerId) return;
+        if (moved) suppressClickUntil = Date.now() + 120;
+        clearDragState();
+    };
+
+    container.addEventListener('pointerup', finishPointer);
+    container.addEventListener('pointercancel', finishPointer);
+    container.addEventListener('lostpointercapture', clearDragState);
+
+    container.addEventListener('click', event => {
+        if (Date.now() < suppressClickUntil) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }, true);
+
+    container.addEventListener('wheel', event => {
+        if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+        if (container.scrollWidth <= container.clientWidth + 1) return;
+
+        container.scrollLeft += event.deltaY;
+        event.preventDefault();
+    }, { passive: false });
+}
+
+function setupHorizontalScrollRows() {
+    HORIZONTAL_SCROLL_ROW_IDS.forEach(id => {
+        enableHorizontalDragScroll(byId(id));
+    });
 }
 
 function openInfoOverlay(type) { ensureUiState(); GameState.ui.infoOverlayType = type; updateUI(); }
@@ -346,6 +589,34 @@ function renderInfoOverlay() {
 
     if (type === 'settings') {
         const settings = ensureGameSettings();
+        const profile = typeof getUserProfile === 'function' ? getUserProfile() : null;
+        const bgDesignCatalog = getBackgroundDesignCatalogSafe();
+        const unlockedBgDesignSet = getUnlockedBackgroundDesignSet(profile, bgDesignCatalog);
+
+        if (profile?.selectedBackgroundDesignKey && unlockedBgDesignSet.has(profile.selectedBackgroundDesignKey)) {
+            settings.backgroundDesign = profile.selectedBackgroundDesignKey;
+        }
+        if (!unlockedBgDesignSet.has(settings.backgroundDesign)) {
+            settings.backgroundDesign = 'default';
+        }
+
+        const bgDesignOptions = bgDesignCatalog
+            .filter(item => unlockedBgDesignSet.has(item.key))
+            .map(item => `<option value="${escapeHtml(item.key)}"${item.key === settings.backgroundDesign ? ' selected' : ''}>${escapeHtml(getBackgroundDesignDisplayName(item))}</option>`)
+            .join('');
+
+        const lockedBgDesigns = bgDesignCatalog.filter(item => item.key !== 'default' && !unlockedBgDesignSet.has(item.key));
+        const coinCount = Number.isFinite(Number(profile?.coins)) ? Math.max(0, Math.floor(Number(profile.coins))) : 0;
+        const lockedBgDesignHtml = lockedBgDesigns.length === 0
+            ? '<div class="settings-note">背景デザインはすべて交換済みです。</div>'
+            : lockedBgDesigns.map(item => {
+                const thumbPath = item.eventName ? getEventImagePath(item.eventName) : null;
+                const thumbHtml = thumbPath
+                    ? `<div class="settings-bg-thumb" style="background-image:url('${escapeHtml(thumbPath)}')"></div>`
+                    : '<div class="settings-bg-thumb"></div>';
+                return `<div class="settings-bg-shop-item">${thumbHtml}<div class="settings-bg-shop-meta"><div class="settings-bg-shop-name">${escapeHtml(getBackgroundDesignDisplayName(item))}</div><div class="settings-bg-shop-desc">${escapeHtml(item.description || '')}</div></div><button class="settings-bg-buy-button" data-design-key="${escapeHtml(item.key)}">交換 (${item.cost}コイン)</button></div>`;
+            }).join('');
+
         const bgmTrackOptions = getBgmTrackOptionsSafe()
             .map(item => `<option value="${escapeHtml(item.key)}"${item.key === settings.bgmTrack ? ' selected' : ''}>${escapeHtml(item.label)}</option>`)
             .join('');
@@ -386,10 +657,14 @@ function renderInfoOverlay() {
                         <option value="sunset"${settings.backgroundTheme === 'sunset' ? ' selected' : ''}>サンセット</option>
                     </select>
 
-                    <label class="settings-label" for="settings-bg-design">背景デザイン（今後実装予定）</label>
-                    <select id="settings-bg-design" class="settings-select" disabled>
-                        <option value="default">デフォルト（今後実装予定）</option>
-                    </select>
+                    <label class="settings-label" for="settings-bg-design">背景デザイン</label>
+                    <select id="settings-bg-design" class="settings-select">${bgDesignOptions}</select>
+                    <div class="settings-note">所持コイン: ${coinCount}</div>
+
+                    <div class="settings-bg-shop">
+                        <div class="settings-bg-shop-title">背景デザイン交換（イベントアート）</div>
+                        ${lockedBgDesignHtml}
+                    </div>
                 </div>
 
                 <div class="reference-item">
@@ -1142,6 +1417,8 @@ function renderCandidateRecipes() {
     const container = byId('candidate-recipes');
     if (!container) return;
     const panel = container.closest('.candidate-recipes-panel');
+    const candidateCount = Array.isArray(GameState.candidateRecipes) ? GameState.candidateRecipes.length : 0;
+    if (panel) panel.classList.toggle('expanded', candidateCount >= 4);
     container.innerHTML = '';
     if (GameState.candidateRecipes.length === 0) {
         if (panel) panel.classList.add('hidden');
@@ -1279,6 +1556,7 @@ function updateUI() {
     ensureUiState();
     ensureGameSettings();
     applyBackgroundTheme(GameState.settings.backgroundTheme);
+    applyBackgroundDesign(GameState.settings.backgroundDesign);
     bindRenderEventsOnce();
 
     const names = GameState.characterNames || { player: '千鶴', cpu: '舞依' };
@@ -1290,9 +1568,12 @@ function updateUI() {
     safeSetText('deck-count', String(GameState.deck.length));
     safeSetText('discard-count', String(GameState.discard.length));
 
+    const opponentLabel = typeof window.getOpponentLabelText === 'function'
+        ? window.getOpponentLabelText()
+        : 'CPU';
     safeSetText('turn-indicator', 'ターン: ' + (
         GameState.currentTurn === 'player' ? 'プレイヤー' :
-        GameState.currentTurn === 'cpu' ? 'CPU' :
+        GameState.currentTurn === 'cpu' ? opponentLabel :
         'ゲーム終了'
     ));
 
@@ -1325,6 +1606,9 @@ function updateUI() {
     renderInfoOverlay();
 
     if (GameState.selectionMode !== 'discard') hideDiscardBanner();
+    if (typeof window.__onGameStateUpdated === 'function') {
+        window.__onGameStateUpdated();
+    }
 }
 
 window.updateUI = updateUI;
@@ -1340,6 +1624,7 @@ window.requestPileView = requestPileView;
 window.confirmPileView = confirmPileView;
 window.cancelPileView = cancelPileView;
 window.closePileView = closePileView;
+window.getIngredientImagePath = getIngredientImagePath;
 window.getRecipeImagePath = getRecipeImagePath;
 window.getEventImagePath = getEventImagePath;
 window.getPackImagePath = getPackImagePath;

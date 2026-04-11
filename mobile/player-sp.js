@@ -218,6 +218,13 @@ function playerCookSelectedRecipe(recipeName) {
         return;
     }
 
+    if (typeof recordDishCooked === 'function') {
+        const reward = recordDishCooked(1);
+        if (reward && reward.coinsGained > 0) {
+            addLog(`料理ボーナス: コイン +${reward.coinsGained}`);
+        }
+    }
+
     addLog(`あなたは「${plan.recipe.name}」を作りました（+${plan.recipe.points}点）`);
     GameState.candidateRecipes = [];
     if (window.playCookBgm) { playCookBgm(); } else { playSfx('cook'); }
@@ -233,7 +240,9 @@ function playerCookSelectedRecipe(recipeName) {
 }
 
 function getActorDisplayName(side) {
-    return side === 'player' ? 'あなた' : 'CPU';
+    if (side === 'player') return 'あなた';
+    const isFriendMode = !!(window.FriendBattle && typeof window.FriendBattle.isActive === 'function' && window.FriendBattle.isActive());
+    return isFriendMode ? 'フレンド' : 'CPU';
 }
 
 function getZoneLabel(card) {
@@ -671,6 +680,9 @@ function pushSpecialEventDishHistory(player, dishName) {
         fromEvent: true
     });
     player.recipesCookedThisTurn = (player.recipesCookedThisTurn || 0) + 1;
+    if (player === GameState.players.player && typeof recordDishCooked === 'function') {
+        recordDishCooked(1);
+    }
 }
 
 function executeEventEffect(selfPlayer, enemyPlayer, eventCard, side, extra) {
@@ -1040,6 +1052,25 @@ function finishPlayerTurn() {
     GameState.candidateRecipes = [];
 
     hideDiscardBanner();
+
+    const isFriendMode = !!(window.FriendBattle && typeof window.FriendBattle.isActive === 'function' && window.FriendBattle.isActive());
+    if (isFriendMode) {
+        GameState.currentTurn = 'cpu';
+        GameState.currentPhase = 'ドローフェイズ';
+        cpu.usedEventThisTurn = false;
+        cpu.lockedCookingThisTurn = false;
+        cpu.knifeSelectedName = null;
+        cpu.knifeUsedThisTurn = false;
+        markTurnStartStatus(cpu, player);
+        drawUntilTargetHand(cpu);
+
+        GameState.currentPhase = 'メインフェイズ';
+        if (typeof setCPUStatus === 'function') setCPUStatus('フレンドのターンです');
+        addLog('あなたのターン終了。フレンドターンへ移行します。');
+        disablePlayerControls();
+        updateUI();
+        return;
+    }
 
     GameState.currentTurn = 'cpu';
     GameState.currentPhase = 'ドローフェイズ';

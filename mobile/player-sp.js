@@ -92,6 +92,10 @@ function openIngredientAction(cardId, sourceZone) {
     const zone = source === 'set' ? player.set : player.hand;
     const card = zone.find(item => item.id === cardId && item.type === 'ingredient');
     if (!card) return;
+    if (card.trapLocked === true || card.blockedByTrap === true) {
+        addLog('このカードはトラップ状態のため料理に使えません。');
+        return;
+    }
 
     GameState.selectionMode = 'ingredient-action';
     GameState.pendingIngredientAction = {
@@ -219,7 +223,7 @@ function playerCookSelectedRecipe(recipeName) {
     }
 
     if (typeof recordDishCooked === 'function') {
-        const reward = recordDishCooked(1);
+        const reward = recordDishCooked(1, plan.recipe?.name || recipeName);
         if (reward && reward.coinsGained > 0) {
             addLog(`料理ボーナス: コイン +${reward.coinsGained}`);
         }
@@ -259,7 +263,9 @@ function getLatestIngredientChoicesFromDiscard() {
 function getSelectableIngredientCards(player) {
     return [
         ...player.hand.map(card => ({ ...card, sourceZone: 'hand' })),
-        ...player.set.map(card => ({ ...card, sourceZone: 'set' }))
+        ...player.set
+            .filter(card => typeof isCardUsableForCooking === 'function' ? isCardUsableForCooking(card) : !card?.trapLocked)
+            .map(card => ({ ...card, sourceZone: 'set' }))
     ];
 }
 
@@ -282,6 +288,665 @@ function canActivateSpecialCookingEvent(selfPlayer, eventName) {
     return { ok: true, message: '' };
 }
 
+function getSelectedSkillDefinitionForPlayer(player) {
+    if (typeof ensurePlayerSkillState === 'function') ensurePlayerSkillState(player);
+    if (!player || !player.selectedSkillKey) return null;
+    if (typeof getSkillDefinitionByKey !== 'function') return null;
+    return getSkillDefinitionByKey(player.selectedSkillKey);
+}
+
+function getSelectedSkillDefinitionForSide(side) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const actor = GameState.players[safeSide];
+    return getSelectedSkillDefinitionForPlayer(actor);
+}
+
+function getSkillUseCount(player, skillKey) {
+    if (typeof getPlayerSkillUseCount === 'function') {
+        return getPlayerSkillUseCount(player, skillKey);
+    }
+    if (!player || !player.skillUseCounts || !skillKey) return 0;
+    const raw = Number(player.skillUseCounts[skillKey] || 0);
+    return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+function markSkillUsed(player, skillKey) {
+    if (!player || !skillKey) return;
+    if (typeof ensurePlayerSkillState === 'function') ensurePlayerSkillState(player);
+    if (!player.skillUseCounts || typeof player.skillUseCounts !== 'object') {
+        player.skillUseCounts = {};
+    }
+    const current = getSkillUseCount(player, skillKey);
+    player.skillUseCounts[skillKey] = current + 1;
+}
+
+function getRemainingEventUseCount(player) {
+    if (!player) return 0;
+    const extra = Math.max(0, Number(player.extraEventUsesRemainingThisTurn || 0));
+    if (!player.usedEventThisTurn) {
+        return 1 + extra;
+    }
+    return extra;
+}
+
+function canUseEventThisTurn(player) {
+    return getRemainingEventUseCount(player) > 0;
+}
+
+function consumeEventUse(player) {
+    if (!player) return;
+    if (player.usedEventThisTurn && player.extraEventUsesRemainingThisTurn > 0) {
+        player.extraEventUsesRemainingThisTurn = Math.max(0, player.extraEventUsesRemainingThisTurn - 1);
+    }
+    player.usedEventThisTurn = true;
+}
+
+function getOwnIngredientCandidatesForSkill(player) {
+    if (!player) return [];
+    const handCards = player.hand
+        .filter(card => card.type === 'ingredient')
+        .map(card => ({ ...card, sourceZone: 'hand' }));
+    const setCards = player.set
+        .filter(card => card.type === 'ingredient')
+        .filter(card => typeof isCardUsableForCooking === 'function' ? isCardUsableForCooking(card) : !card?.trapLocked)
+        .map(card => ({ ...card, sourceZone: 'set' }));
+    return [...handCards, ...setCards];
+}
+
+function getDeckIngredientCandidates() {
+    return (Array.isArray(GameState.deck) ? GameState.deck : [])
+        .filter(card => card && card.type === 'ingredient');
+}
+
+function getSkillActivationStatusForSide(side) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const selfPlayer = GameState.players[safeSide];
+    const enemyPlayer = GameState.players[safeSide === 'player' ? 'cpu' : 'player'];
+
+    if (!selfPlayer || !enemyPlayer) {
+        return { ok: false, reason: 'プレイヤー情報がありません。', side: safeSide, skill: null };
+    }
+
+    if (typeof ensurePlayerSkillState === 'function') {
+        ensurePlayerSkillState(selfPlayer);
+        ensurePlayerSkillState(enemyPlayer);
+    }
+
+    const skill = getSelectedSkillDefinitionForPlayer(selfPlayer);
+    if (!skill) {
+        return { ok: false, reason: 'スキル未設定です。', side: safeSide, skill: null };
+    }
+
+    const used = getSkillUseCount(selfPlayer, skill.key);
+    const maxUses = Number.isFinite(Number(skill.maxUses)) ? Math.max(1, Math.floor(Number(skill.maxUses))) : 1;
+    if (used >= maxUses) {
+        return { ok: false, reason: '使用回数上限です。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+    }
+
+    if (skill.requiresEventDiscard && selfPlayer.events.length === 0) {
+        return { ok: false, reason: 'コスト用のイベントカードがありません。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+    }
+
+    switch (skill.key) {
+        case 'lastOrder':
+            if (!(enemyPlayer.score >= 8 && enemyPlayer.score > selfPlayer.score)) {
+                return { ok: false, reason: '条件: 相手8点以上かつ自分より高得点。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            break;
+
+        case 'kitchenInfiltration':
+            if (!(selfPlayer.score < enemyPlayer.score && selfPlayer.score <= 5)) {
+                return { ok: false, reason: '条件: 自分が相手より低得点かつ5点以下。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            if (enemyPlayer.set.length === 0) {
+                return { ok: false, reason: '交換対象の相手セットがありません。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            if (selfPlayer.hand.length === 0) {
+                return { ok: false, reason: '交換に出す手札がありません。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            break;
+
+        case 'makanaiSupply':
+            if (enemyPlayer.score < 5) {
+                return { ok: false, reason: '条件: 相手5点以上。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            if ((selfPlayer.cookedRecipes || []).length > 0) {
+                return { ok: false, reason: '条件: 自分の料理履歴が0件。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            break;
+
+        case 'foodTrap': {
+            if (selfPlayer.score > 3) {
+                return { ok: false, reason: '条件: 自分3点以下。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            const setLimit = typeof getSetLimit === 'function' ? getSetLimit(enemyPlayer) : 2;
+            if (enemyPlayer.set.length >= setLimit) {
+                return { ok: false, reason: '相手セットに空きがありません。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            if (getOwnIngredientCandidatesForSkill(selfPlayer).length === 0) {
+                return { ok: false, reason: '配置する材料カードがありません。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            break;
+        }
+
+        case 'aceProcurement':
+            if (enemyPlayer.score < 8) {
+                return { ok: false, reason: '条件: 相手8点以上。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            if (getDeckIngredientCandidates().length === 0) {
+                return { ok: false, reason: '山札に材料カードがありません。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            break;
+
+        case 'tasteThief':
+            if (selfPlayer.score >= 9) {
+                return { ok: false, reason: '条件: 自分9点未満。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            }
+            break;
+
+        default:
+            return { ok: false, reason: '不明なスキルです。', side: safeSide, skill: null };
+    }
+
+    return { ok: true, reason: '', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+}
+
+function moveOwnIngredientCardToEnemySet(selfPlayer, enemyPlayer, cardId, side) {
+    const ownCards = getOwnIngredientCandidatesForSkill(selfPlayer);
+    const picked = ownCards.find(card => card.id === cardId) || ownCards[0];
+    if (!picked) return null;
+
+    const fromHand = picked.sourceZone === 'hand';
+    const source = fromHand ? selfPlayer.hand : selfPlayer.set;
+    const idx = source.findIndex(card => card.id === picked.id);
+    if (idx === -1) return null;
+
+    const moved = source.splice(idx, 1)[0];
+    moved.trapLocked = true;
+    moved.blockedByTrap = true;
+    moved.trapOwner = side === 'cpu' ? 'cpu' : 'player';
+    enemyPlayer.set.push(moved);
+    return moved;
+}
+
+function executeSkillEffect(selfPlayer, enemyPlayer, skill, side, extra) {
+    const actorName = getActorDisplayName(side);
+    const enemyName = side === 'player' ? 'CPU' : 'あなた';
+    const selectedIds = extra?.selectedIds || [];
+
+    switch (skill.key) {
+        case 'lastOrder': {
+            selfPlayer.extraEventUsesRemainingThisTurn = Math.max(0, Number(selfPlayer.extraEventUsesRemainingThisTurn || 0)) + 1;
+            addLog(`${actorName}はスキル「${skill.name}」を発動。イベントカードをこのターン追加で1回使えます。`);
+            break;
+        }
+
+        case 'kitchenInfiltration': {
+            const enemyCardId = selectedIds[0];
+            const myCardId = selectedIds[1];
+            const enemySetCard = removeCardByIdFromArray(enemyPlayer.set, enemyCardId || '');
+            const myHandCard = removeCardByIdFromArray(selfPlayer.hand, myCardId || '');
+
+            if (!enemySetCard || !myHandCard) {
+                if (enemySetCard) enemyPlayer.set.push(enemySetCard);
+                if (myHandCard) selfPlayer.hand.push(myHandCard);
+                addLog(`${actorName}はスキル「${skill.name}」を使いましたが交換に失敗しました。`);
+                break;
+            }
+
+            delete enemySetCard.trapLocked;
+            delete enemySetCard.blockedByTrap;
+            delete enemySetCard.trapOwner;
+            selfPlayer.hand.push(enemySetCard);
+            enemyPlayer.set.push(myHandCard);
+            addLog(`${actorName}はスキル「${skill.name}」で${enemyName}のセット「${enemySetCard.name}」と手札「${myHandCard.name}」を交換しました。`);
+            break;
+        }
+
+        case 'makanaiSupply': {
+            const drawn = [];
+            for (let i = 0; i < 2; i++) {
+                const card = drawOneResolved(selfPlayer);
+                if (card) drawn.push(card.name);
+            }
+            addLog(`${actorName}はスキル「${skill.name}」で${drawn.join('、') || 'カードなし'}を引きました。`);
+            break;
+        }
+
+        case 'foodTrap': {
+            const moved = moveOwnIngredientCardToEnemySet(selfPlayer, enemyPlayer, selectedIds[0], side);
+            if (!moved) {
+                addLog(`${actorName}はスキル「${skill.name}」を使いましたが配置に失敗しました。`);
+                break;
+            }
+            addLog(`${actorName}はスキル「${skill.name}」で「${moved.name}」を${enemyName}フィールドにトラップ配置しました。`);
+            break;
+        }
+
+        case 'aceProcurement': {
+            const allIngredients = getDeckIngredientCandidates();
+            let picked = allIngredients.find(card => card.id === selectedIds[0]) || null;
+            if (!picked) picked = allIngredients[0] || null;
+            if (!picked) {
+                addLog(`${actorName}はスキル「${skill.name}」を使いましたが材料を確保できませんでした。`);
+                break;
+            }
+
+            const deckIndex = GameState.deck.findIndex(card => card.id === picked.id);
+            if (deckIndex === -1) {
+                addLog(`${actorName}はスキル「${skill.name}」の対象を取得できませんでした。`);
+                break;
+            }
+
+            const card = GameState.deck.splice(deckIndex, 1)[0];
+            selfPlayer.hand.push(card);
+            addLog(`${actorName}はスキル「${skill.name}」で山札から「${card.name}」を手札に加えました。`);
+            break;
+        }
+
+        case 'tasteThief': {
+            const beforeEnemy = enemyPlayer.score;
+            enemyPlayer.score = Math.max(0, enemyPlayer.score - 1);
+            selfPlayer.score += 1;
+            addLog(`${actorName}はスキル「${skill.name}」で${enemyName}の点数を${beforeEnemy}→${enemyPlayer.score}、自分を+1しました。`);
+            break;
+        }
+
+        default:
+            addLog(`${actorName}はスキル「${skill.name}」を発動しました。`);
+            break;
+    }
+}
+
+function consumeSkillEventCost(selfPlayer, skill, side, costEventId) {
+    if (!skill?.requiresEventDiscard) return true;
+    if (!selfPlayer.events || selfPlayer.events.length === 0) return false;
+    let discardIndex = 0;
+    if (costEventId !== undefined && costEventId !== null && costEventId !== '') {
+        const wantedId = String(costEventId);
+        discardIndex = selfPlayer.events.findIndex(card => String(card?.id ?? '') === wantedId);
+        if (discardIndex === -1) return false;
+    }
+    const [discarded] = selfPlayer.events.splice(discardIndex, 1);
+    if (!discarded) return false;
+    moveCardToDiscard(discarded);
+    addLog(`${getActorDisplayName(side)}はスキル「${skill.name}」のコストでイベント「${discarded.name}」を捨てました。`);
+    return true;
+}
+
+function skillNeedsSelection(skillKey) {
+    return skillKey === 'kitchenInfiltration' || skillKey === 'foodTrap' || skillKey === 'aceProcurement';
+}
+
+function buildSkillSelectionOptions(skillKey, selfPlayer, enemyPlayer, step = 1) {
+    if (skillKey === 'kitchenInfiltration') {
+        if (step === 1) {
+            return enemyPlayer.set.map(card => ({ id: card.id, label: `相手セット: ${card.name}` }));
+        }
+        return selfPlayer.hand.map(card => ({ id: card.id, label: `自分手札: ${card.name}` }));
+    }
+
+    if (skillKey === 'foodTrap') {
+        return getOwnIngredientCandidatesForSkill(selfPlayer).map(card => ({
+            id: card.id,
+            label: `${card.name}${card.sourceZone === 'set' ? '（セット）' : '（手札）'}`
+        }));
+    }
+
+    if (skillKey === 'aceProcurement') {
+        return getDeckIngredientCandidates().map(card => ({
+            id: card.id,
+            label: `山札: ${card.name}`
+        }));
+    }
+
+    return [];
+}
+
+function buildSkillCostOptions(selfPlayer) {
+    if (!selfPlayer || !Array.isArray(selfPlayer.events)) return [];
+    return selfPlayer.events.map(card => ({
+        id: card.id,
+        label: `コスト: ${card.name}`
+    }));
+}
+
+function openSkillCostSelection(side, status) {
+    const skill = status.skill;
+    const selfPlayer = status.selfPlayer;
+    if (!skill || !skill.requiresEventDiscard) return false;
+
+    const options = buildSkillCostOptions(selfPlayer);
+    if (options.length === 0) return false;
+
+    const context = {
+        actor: side,
+        skillKey: skill.key,
+        skillName: skill.name,
+        minSelect: 1,
+        maxSelect: 1,
+        step: 0,
+        stagedData: {},
+        options,
+        description: 'コストとして捨てるイベントカードを1枚選んでください。'
+    };
+
+    GameState.selectionMode = 'skill-target';
+    GameState.pendingSkillContext = context;
+    GameState.selectedTargetIds = [];
+    addLog(`${getActorDisplayName(side)}はスキル「${skill.name}」のコストを選択中です。`);
+    updateUI();
+    return true;
+}
+
+function openSkillTargetSelection(side, status) {
+    const skill = status.skill;
+    const selfPlayer = status.selfPlayer;
+    const enemyPlayer = status.enemyPlayer;
+    if (!skill) return false;
+
+    const context = {
+        actor: side,
+        skillKey: skill.key,
+        skillName: skill.name,
+        minSelect: 1,
+        maxSelect: 1,
+        step: 1,
+        stagedData: {},
+        options: []
+    };
+
+    if (skill.key === 'kitchenInfiltration') {
+        context.description = 'まず、相手セットから確認して交換する1枚を選んでください。';
+        context.options = buildSkillSelectionOptions(skill.key, selfPlayer, enemyPlayer, 1);
+    } else if (skill.key === 'foodTrap') {
+        context.description = '相手フィールドへ置く自分の材料カードを1枚選んでください。';
+        context.options = buildSkillSelectionOptions(skill.key, selfPlayer, enemyPlayer, 1);
+    } else if (skill.key === 'aceProcurement') {
+        context.description = '山札から手札に加える材料カードを1枚選んでください。';
+        context.options = buildSkillSelectionOptions(skill.key, selfPlayer, enemyPlayer, 1);
+    } else {
+        return false;
+    }
+
+    GameState.selectionMode = 'skill-target';
+    GameState.pendingSkillContext = context;
+    GameState.selectedTargetIds = [];
+    addLog(`${getActorDisplayName(side)}はスキル「${skill.name}」の対象を選択中です。`);
+    updateUI();
+    return true;
+}
+
+function buildCpuAutoSkillSelection(skill, selfPlayer, enemyPlayer) {
+    if (!skill) return [];
+
+    if (skill.key === 'kitchenInfiltration') {
+        const enemyTarget = enemyPlayer.set[0];
+        const myTarget = selfPlayer.hand[0];
+        return [enemyTarget?.id, myTarget?.id].filter(Boolean);
+    }
+
+    if (skill.key === 'foodTrap') {
+        const own = getOwnIngredientCandidatesForSkill(selfPlayer)[0];
+        return own ? [own.id] : [];
+    }
+
+    if (skill.key === 'aceProcurement') {
+        const allIngredients = getDeckIngredientCandidates();
+        if (allIngredients.length === 0) return [];
+
+        const personality = typeof normalizeCpuPersonalityKey === 'function'
+            ? normalizeCpuPersonalityKey(GameState?.settings?.cpuPersonality)
+            : 'default';
+        if (personality === 'comeback') {
+            const priorityNames = ['ごはん', 'のり', '魚'];
+            for (const name of priorityNames) {
+                const found = allIngredients.find(card => card.name === name);
+                if (found) return [found.id];
+            }
+        }
+        return [allIngredients[0].id];
+    }
+
+    return [];
+}
+
+function resolveSkillActivation(side, status, selectedIds) {
+    const skill = status.skill;
+    const selfPlayer = status.selfPlayer;
+    const enemyPlayer = status.enemyPlayer;
+    const costEventId = status.costEventId;
+    if (!skill) return false;
+
+    if (!consumeSkillEventCost(selfPlayer, skill, side, costEventId)) {
+        return false;
+    }
+
+    if (window.showSpotlightSkillCutin) {
+        window.showSpotlightSkillCutin(side, skill);
+    }
+
+    executeSkillEffect(selfPlayer, enemyPlayer, skill, side, { selectedIds });
+    markSkillUsed(selfPlayer, skill.key);
+    return true;
+}
+
+function activateSkillBySide(side, options) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const opts = options && typeof options === 'object' ? options : {};
+    const auto = !!opts.auto;
+    const silentFail = !!opts.silentFail;
+    const selectedIdsFromOptions = Array.isArray(opts.selectedIds)
+        ? opts.selectedIds.filter(Boolean)
+        : [];
+    const hasCostEventIdFromOptions = opts.costEventId !== undefined
+        && opts.costEventId !== null
+        && opts.costEventId !== '';
+    const costEventIdFromOptions = hasCostEventIdFromOptions ? opts.costEventId : '';
+    const hasResolvedSelection = selectedIdsFromOptions.length > 0;
+
+    const status = getSkillActivationStatusForSide(safeSide);
+    if (!status.ok) {
+        if (!silentFail) {
+            addLog(`${getActorDisplayName(safeSide)}のスキル発動失敗: ${status.reason}`);
+        }
+        return { ok: false, reason: status.reason, pending: false };
+    }
+
+    if (!auto && safeSide === 'player' && status.skill.requiresEventDiscard && !hasCostEventIdFromOptions) {
+        const openedCost = openSkillCostSelection(safeSide, status);
+        if (!openedCost) {
+            return { ok: false, reason: 'コスト選択の開始に失敗しました。', pending: false };
+        }
+        return { ok: true, reason: '', pending: true };
+    }
+
+    if (!auto && safeSide === 'player' && skillNeedsSelection(status.skill.key) && !hasResolvedSelection) {
+        const opened = openSkillTargetSelection(safeSide, status);
+        if (!opened) {
+            return { ok: false, reason: '対象選択の開始に失敗しました。', pending: false };
+        }
+        return { ok: true, reason: '', pending: true };
+    }
+
+    const selectedIds = auto
+        ? buildCpuAutoSkillSelection(status.skill, status.selfPlayer, status.enemyPlayer)
+        : selectedIdsFromOptions;
+    const done = resolveSkillActivation(
+        safeSide,
+        { ...status, costEventId: costEventIdFromOptions },
+        selectedIds
+    );
+    if (!done) {
+        if (!silentFail) {
+            addLog(`${getActorDisplayName(safeSide)}はスキル「${status.skill.name}」を発動できませんでした。`);
+        }
+        return { ok: false, reason: 'スキル解決に失敗しました。', pending: false };
+    }
+
+    const winner = checkWinner();
+    if (winner) {
+        endGame(winner);
+    }
+    updateUI();
+    return { ok: true, reason: '', pending: false };
+}
+
+function playerUseSkill() {
+    if (GameState.gameEnded) return;
+    if (GameState.selectionMode && GameState.selectionMode !== 'skill-confirm') return;
+
+    const skill = getSelectedSkillDefinitionForSide('player');
+    if (!skill) {
+        addLog('スキルが未設定です。');
+        return;
+    }
+
+    GameState.selectionMode = 'skill-confirm';
+    GameState.pendingSkillConfirm = {
+        actor: 'player',
+        skillKey: skill.key
+    };
+    updateUI();
+}
+
+function confirmSkillActivation() {
+    if (GameState.selectionMode !== 'skill-confirm') return;
+    if (GameState.gameEnded) return;
+
+    if (GameState.currentTurn !== 'player') {
+        addLog('スキル発動は自分のターン中のみ可能です。');
+        updateUI();
+        return;
+    }
+
+    const result = activateSkillBySide('player', { auto: false, silentFail: false });
+    if (!result.ok) {
+        updateUI();
+        return;
+    }
+
+    GameState.pendingSkillConfirm = null;
+
+    if (result.pending) {
+        return;
+    }
+
+    GameState.selectionMode = null;
+    updateUI();
+}
+
+function cancelSkillActivation() {
+    if (GameState.selectionMode !== 'skill-confirm') return;
+    GameState.selectionMode = null;
+    GameState.pendingSkillConfirm = null;
+    updateUI();
+}
+
+function confirmSkillSelection() {
+    if (GameState.selectionMode !== 'skill-target') return;
+    const context = GameState.pendingSkillContext;
+    if (!context) return;
+
+    const safeSide = context.actor === 'cpu' ? 'cpu' : 'player';
+    const selfPlayer = GameState.players[safeSide];
+    const enemyPlayer = GameState.players[safeSide === 'player' ? 'cpu' : 'player'];
+
+    if (context.step === 0) {
+        if (GameState.selectedTargetIds.length !== 1) {
+            addLog('コストに使うイベントを1枚選択してください。');
+            return;
+        }
+
+        context.stagedData.costEventId = GameState.selectedTargetIds[0];
+
+        if (skillNeedsSelection(context.skillKey)) {
+            context.step = 1;
+            if (context.skillKey === 'kitchenInfiltration') {
+                context.description = 'まず、相手セットから確認して交換する1枚を選んでください。';
+                context.options = buildSkillSelectionOptions(context.skillKey, selfPlayer, enemyPlayer, 1);
+            } else if (context.skillKey === 'foodTrap') {
+                context.description = '相手フィールドへ置く自分の材料カードを1枚選んでください。';
+                context.options = buildSkillSelectionOptions(context.skillKey, selfPlayer, enemyPlayer, 1);
+            } else if (context.skillKey === 'aceProcurement') {
+                context.description = '山札から手札に加える材料カードを1枚選んでください。';
+                context.options = buildSkillSelectionOptions(context.skillKey, selfPlayer, enemyPlayer, 1);
+            }
+            GameState.selectedTargetIds = [];
+            updateUI();
+            return;
+        }
+
+        const costOnlyResult = activateSkillBySide(safeSide, {
+            auto: false,
+            silentFail: false,
+            selectedIds: [],
+            costEventId: context.stagedData.costEventId
+        });
+        if (!costOnlyResult.ok || costOnlyResult.pending) {
+            return;
+        }
+
+        GameState.selectionMode = null;
+        GameState.pendingSkillContext = null;
+        GameState.selectedTargetIds = [];
+        updateUI();
+        return;
+    }
+
+    if (context.skillKey === 'kitchenInfiltration' && context.step === 1) {
+        if (GameState.selectedTargetIds.length !== 1) {
+            addLog('相手セットを1枚選択してください。');
+            return;
+        }
+        context.stagedData.enemySetId = GameState.selectedTargetIds[0];
+        context.step = 2;
+        context.description = '次に、交換で渡す自分の手札を1枚選んでください。';
+        context.options = buildSkillSelectionOptions(context.skillKey, selfPlayer, enemyPlayer, 2);
+        GameState.selectedTargetIds = [];
+        updateUI();
+        return;
+    }
+
+    if (GameState.selectedTargetIds.length < context.minSelect || GameState.selectedTargetIds.length > context.maxSelect) {
+        addLog(`選択枚数が不正です（${context.minSelect}〜${context.maxSelect}枚）。`);
+        return;
+    }
+
+    let selectedIds = [...GameState.selectedTargetIds];
+    if (context.skillKey === 'kitchenInfiltration' && context.step === 2) {
+        selectedIds = [context.stagedData.enemySetId, GameState.selectedTargetIds[0]].filter(Boolean);
+    }
+
+    const result = activateSkillBySide(safeSide, {
+        auto: false,
+        silentFail: false,
+        selectedIds,
+        costEventId: context.stagedData?.costEventId || ''
+    });
+
+    if (!result.ok) {
+        return;
+    }
+    if (result.pending) {
+        return;
+    }
+
+    GameState.selectionMode = null;
+    GameState.pendingSkillContext = null;
+    GameState.selectedTargetIds = [];
+    updateUI();
+}
+
+function cancelSkillSelection() {
+    if (GameState.selectionMode !== 'skill-target') return;
+    GameState.selectionMode = null;
+    GameState.pendingSkillContext = null;
+    GameState.selectedTargetIds = [];
+    addLog('スキル選択をキャンセルしました。');
+    updateUI();
+}
+
 function startKnifeSelection() {
     addLog('エコバッグは常時効果です。選択操作は不要です。');
 }
@@ -297,7 +962,7 @@ function playerUseEvent(eventId) {
 
     const player = GameState.players.player;
 
-    if (player.usedEventThisTurn) {
+    if (!canUseEventThisTurn(player)) {
         addLog('このターンはすでにイベントカードを使用しています。');
         return;
     }
@@ -346,7 +1011,7 @@ function confirmEventCard() {
 
     player.events.splice(index, 1);
     moveCardToDiscard(eventCard);
-    player.usedEventThisTurn = true;
+    consumeEventUse(player);
     executeEventEffect(player, cpu, eventCard, 'player', null);
     updateUI();
 
@@ -491,9 +1156,11 @@ function toggleEventTargetSelection(targetId) {
         return;
     }
 
-    if (GameState.selectionMode !== 'event-target') return;
+    if (GameState.selectionMode !== 'event-target' && GameState.selectionMode !== 'skill-target') return;
 
-    const context = GameState.pendingEventContext;
+    const context = GameState.selectionMode === 'skill-target'
+        ? GameState.pendingSkillContext
+        : GameState.pendingEventContext;
     if (!context) return;
 
     const idx = GameState.selectedTargetIds.indexOf(targetId);
@@ -538,6 +1205,11 @@ function confirmEventSelection() {
         return;
     }
 
+    if (GameState.selectionMode === 'skill-target') {
+        confirmSkillSelection();
+        return;
+    }
+
     if (GameState.selectionMode !== 'event-target') return;
 
     const context = GameState.pendingEventContext;
@@ -574,7 +1246,7 @@ function confirmEventSelection() {
 
     const eventCard = selfPlayer.events.splice(eventIndex, 1)[0];
     moveCardToDiscard(eventCard);
-    selfPlayer.usedEventThisTurn = true;
+    consumeEventUse(selfPlayer);
 
     let selectedIds = [...GameState.selectedTargetIds];
     if (context.eventName === '物々交換') {
@@ -603,6 +1275,11 @@ function cancelEventSelection() {
         GameState.selectedTargetIds = [];
         addLog('加工アイテム選択をキャンセルしました。');
         updateUI();
+        return;
+    }
+
+    if (GameState.selectionMode === 'skill-target') {
+        cancelSkillSelection();
         return;
     }
 
@@ -681,7 +1358,7 @@ function pushSpecialEventDishHistory(player, dishName) {
     });
     player.recipesCookedThisTurn = (player.recipesCookedThisTurn || 0) + 1;
     if (player === GameState.players.player && typeof recordDishCooked === 'function') {
-        recordDishCooked(1);
+        recordDishCooked(1, dishName);
     }
 }
 
@@ -1034,6 +1711,7 @@ function finishPlayerTurn() {
     const cpu = GameState.players.cpu;
 
     player.usedEventThisTurn = false;
+    player.extraEventUsesRemainingThisTurn = 0;
     player.lockedCookingThisTurn = false;
     player.knifeSelectedName = null;
     player.knifeUsedThisTurn = false;
@@ -1042,6 +1720,8 @@ function finishPlayerTurn() {
     GameState.discardNeedCount = 0;
     GameState.selectedCardIds = [];
     GameState.pendingEventContext = null;
+    GameState.pendingSkillContext = null;
+    GameState.pendingSkillConfirm = null;
     GameState.selectedTargetIds = [];
     GameState.pendingSetCardId = null;
     GameState.pendingEventCardId = null;
@@ -1058,6 +1738,7 @@ function finishPlayerTurn() {
         GameState.currentTurn = 'cpu';
         GameState.currentPhase = 'ドローフェイズ';
         cpu.usedEventThisTurn = false;
+        cpu.extraEventUsesRemainingThisTurn = 0;
         cpu.lockedCookingThisTurn = false;
         cpu.knifeSelectedName = null;
         cpu.knifeUsedThisTurn = false;
@@ -1075,6 +1756,7 @@ function finishPlayerTurn() {
     GameState.currentTurn = 'cpu';
     GameState.currentPhase = 'ドローフェイズ';
     cpu.knifeUsedThisTurn = false;
+    cpu.extraEventUsesRemainingThisTurn = 0;
     markTurnStartStatus(cpu, player);
 
     addLog('あなたのターン終了。CPUターンへ移行します。');
@@ -1099,6 +1781,9 @@ window.playerShowRecipeCandidates = playerShowRecipeCandidates;
 window.playerCancelRecipeCandidates = playerCancelRecipeCandidates;
 window.playerCookSelectedRecipe = playerCookSelectedRecipe;
 window.playerUseEvent = playerUseEvent;
+window.playerUseSkill = playerUseSkill;
+window.confirmSkillActivation = confirmSkillActivation;
+window.cancelSkillActivation = cancelSkillActivation;
 window.confirmEventCard = confirmEventCard;
 window.cancelEventCard = cancelEventCard;
 window.playerBuyPack = playerBuyPack;
@@ -1114,6 +1799,11 @@ window.confirmEventSelection = confirmEventSelection;
 window.cancelEventSelection = cancelEventSelection;
 window.executeEventEffect = executeEventEffect;
 window.drawFromDeckRaw = drawFromDeckRaw;
+window.getSkillActivationStatusForSide = getSkillActivationStatusForSide;
+window.activateSkillBySide = activateSkillBySide;
+window.getSelectedSkillDefinitionForSide = getSelectedSkillDefinitionForSide;
+window.getRemainingEventUseCount = getRemainingEventUseCount;
+window.canUseEventThisTurn = canUseEventThisTurn;
 
 
 

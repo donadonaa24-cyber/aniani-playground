@@ -6,9 +6,19 @@ let gameStartedOnce = false;
 let selectedStartCharacter = 'chizuru';
 let selectedTurnCard = null;
 let turnCardRoleMap = null;
+let selectedStartSkillKey = 'lastOrder';
+let selectedCpuPersonality = 'default';
 let startTitleTimer = null;
 let startMenuFloatTimer = null;
 let selectedGalleryType = 'characters';
+let startCpuSetupStep = 1;
+const SPOTLIGHT_DISPLAY_MS = 2000;
+const SKILL_CUTIN_IMAGE_PATHS = {
+    chizuru: '../assets/images/skill-cutins/chizuru-skill-cutin.png',
+    mai: '../assets/images/skill-cutins/mai-skill-cutin.png',
+    takumi: '../assets/images/skill-cutins/takumi-skill-cutin.png',
+    akatsuki: '../assets/images/skill-cutins/akatsuki-skill-cutin.png'
+};
 
 const START_CHARACTER_OPTIONS = [
     { id: 'chizuru', name: '千鶴' },
@@ -31,6 +41,7 @@ const START_STAGE_IDS = [
     'start-rules-stage',
     'start-gallery-stage',
     'start-friend-stage',
+    'start-coin-stage',
     'start-user-stage'
 ];
 
@@ -44,6 +55,96 @@ function getPreferredStartCharacterId() {
     return getStartCharacterOptionById(profile.favoriteCharacterId)
         ? profile.favoriteCharacterId
         : 'chizuru';
+}
+
+function getPreferredStartSkillKey() {
+    const defs = getSkillDefinitionsSafe();
+    const fallback = defs[0]?.key || 'lastOrder';
+    if (typeof getUserProfile !== 'function') return fallback;
+    const profile = getUserProfile();
+    const preferred = String(profile?.favoriteSkillKey || '').trim();
+    return defs.some(skill => skill.key === preferred) ? preferred : fallback;
+}
+
+function getSkillDefinitionsSafe() {
+    const defs = typeof getSkillDefinitions === 'function' ? getSkillDefinitions() : [];
+    if (Array.isArray(defs) && defs.length > 0) return defs;
+    return [{
+        key: 'lastOrder',
+        name: 'ラストオーダー',
+        condition: '相手が8点以上で自分より高得点',
+        effect: 'イベントを1枚捨て、このターンにイベントを追加で1回使用可能',
+        maxUses: 1
+    }];
+}
+
+function getSkillDefinitionByKeySafe(skillKey) {
+    if (typeof getSkillDefinitionByKey === 'function') {
+        return getSkillDefinitionByKey(skillKey);
+    }
+    return getSkillDefinitionsSafe().find(item => item.key === skillKey) || null;
+}
+
+function getCpuPersonalityOptionsSafe() {
+    const options = typeof getCpuPersonalityOptions === 'function' ? getCpuPersonalityOptions() : [];
+    if (Array.isArray(options) && options.length > 0) return options;
+    return [{ key: 'default', label: '標準' }];
+}
+
+function normalizeStartCpuPersonality(value) {
+    if (typeof normalizeCpuPersonalityKey === 'function') {
+        return normalizeCpuPersonalityKey(value);
+    }
+    const safe = String(value || 'default');
+    return getCpuPersonalityOptionsSafe().some(item => item.key === safe) ? safe : 'default';
+}
+
+function pickCpuSkillByPersonality(personalityKey) {
+    const defs = getSkillDefinitionsSafe();
+    const allSkillKeys = defs.map(item => item.key);
+    if (allSkillKeys.length === 0) return null;
+
+    const priority = typeof getCpuPersonalitySkillPriority === 'function'
+        ? getCpuPersonalitySkillPriority(personalityKey)
+        : allSkillKeys;
+    const validPriority = (Array.isArray(priority) ? priority : [])
+        .filter(key => allSkillKeys.includes(key));
+
+    if (validPriority.length === 0) {
+        return allSkillKeys[Math.floor(Math.random() * allSkillKeys.length)];
+    }
+
+    const topPool = validPriority.slice(0, Math.min(2, validPriority.length));
+    return topPool[Math.floor(Math.random() * topPool.length)] || validPriority[0];
+}
+
+function applyBattleSkillSetup() {
+    const player = GameState.players.player;
+    const cpu = GameState.players.cpu;
+    if (!player || !cpu) return;
+
+    const personality = normalizeStartCpuPersonality(selectedCpuPersonality);
+    if (GameState.settings) {
+        GameState.settings.cpuPersonality = personality;
+    }
+
+    const playerSkill = getSkillDefinitionByKeySafe(selectedStartSkillKey) || getSkillDefinitionsSafe()[0] || null;
+    const cpuSkillKey = pickCpuSkillByPersonality(personality);
+    const cpuSkill = getSkillDefinitionByKeySafe(cpuSkillKey);
+
+    if (typeof setPlayerSelectedSkill === 'function') {
+        setPlayerSelectedSkill(player, playerSkill?.key || null);
+        setPlayerSelectedSkill(cpu, cpuSkill?.key || null);
+    } else {
+        player.selectedSkillKey = playerSkill?.key || null;
+        player.skillUseCounts = {};
+        player.extraEventUsesRemainingThisTurn = 0;
+        cpu.selectedSkillKey = cpuSkill?.key || null;
+        cpu.skillUseCounts = {};
+        cpu.extraEventUsesRemainingThisTurn = 0;
+    }
+
+    addLog(`スキル選択: あなた「${playerSkill?.name || 'なし'}」 / CPU「${cpuSkill?.name || 'なし'}」`);
 }
 
 function getOpponentLabelText() {
@@ -75,24 +176,81 @@ function setUserStageMessage(text) {
     messageEl.textContent = text || '';
 }
 
+function setCoinStageMessage(text) {
+    const messageEl = document.getElementById('coin-stage-message');
+    if (!messageEl) return;
+    messageEl.textContent = text || '';
+}
+
 function renderUserStageProfile() {
     if (typeof getUserProfile !== 'function') return;
     const profile = getUserProfile();
 
     const nameInput = document.getElementById('user-name-input');
-    const favoriteSelect = document.getElementById('user-favorite-character');
-    const coinsEl = document.getElementById('user-coins-value');
+    const favoriteCharacterSelect = document.getElementById('user-favorite-character');
+    const favoriteSkillSelect = document.getElementById('user-favorite-skill');
     const matchesEl = document.getElementById('user-matches-value');
     const winsEl = document.getElementById('user-wins-value');
     const dishesEl = document.getElementById('user-dishes-value');
 
     if (nameInput) nameInput.value = profile.name || 'プレイヤー';
-    if (favoriteSelect) favoriteSelect.value = profile.favoriteCharacterId || 'chizuru';
-    if (coinsEl) coinsEl.textContent = String(profile.coins || 0);
+    if (favoriteCharacterSelect) favoriteCharacterSelect.value = profile.favoriteCharacterId || 'chizuru';
+    if (favoriteSkillSelect) {
+        const defs = getSkillDefinitionsSafe();
+        favoriteSkillSelect.innerHTML = defs
+            .map(skill => `<option value="${escapeHtmlText(skill.key)}">${escapeHtmlText(skill.name)}</option>`)
+            .join('');
+        favoriteSkillSelect.value = defs.some(skill => skill.key === profile.favoriteSkillKey)
+            ? profile.favoriteSkillKey
+            : (defs[0]?.key || 'lastOrder');
+    }
     if (matchesEl) matchesEl.textContent = String(profile.stats?.matches || 0);
     if (winsEl) winsEl.textContent = String(profile.stats?.wins || 0);
     if (dishesEl) dishesEl.textContent = String(profile.stats?.dishes || 0);
-    renderUserStageBackgroundShop(profile);
+    renderUserRecentDishes(profile);
+}
+
+function renderUserRecentDishes(profile) {
+    const listEl = document.getElementById('user-recent-dishes');
+    if (!listEl) return;
+
+    const history = Array.isArray(profile?.recentDishes) ? profile.recentDishes : [];
+    if (history.length === 0) {
+        listEl.innerHTML = '<div class="start-user-recent-empty">まだ料理履歴がありません。</div>';
+        return;
+    }
+
+    const counter = new Map();
+    history.forEach(item => {
+        const key = String(item?.name || '').trim();
+        if (!key) return;
+        counter.set(key, (counter.get(key) || 0) + 1);
+    });
+
+    const top = Array.from(counter.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+
+    listEl.innerHTML = top.map(([name, count]) => `
+        <div class="start-user-recent-item">
+            <span>${escapeHtmlText(name)}</span>
+            <strong>x${count}</strong>
+        </div>
+    `).join('');
+}
+
+function renderCoinStageProfile() {
+    if (typeof getUserProfile !== 'function') return;
+    const profile = getUserProfile();
+    const coinsEl = document.getElementById('coin-coins-value');
+    const rulesEl = document.getElementById('coin-rules-value');
+    const rules = typeof getUserCoinRules === 'function'
+        ? getUserCoinRules()
+        : { perMatch: 2, perWin: 4, perDishCook: 1 };
+
+    if (coinsEl) coinsEl.textContent = String(profile.coins || 0);
+    if (rulesEl) rulesEl.textContent = `対戦+${rules.perMatch} / 勝利+${rules.perWin} / 料理+${rules.perDishCook}`;
+    renderCoinStageBackgroundShop(profile);
 }
 
 function getBackgroundDesignCatalogForUserStage() {
@@ -147,8 +305,8 @@ function getBackgroundDesignNameForUserStage(design) {
     return String(design.label || design.eventName || design.key || '背景デザイン');
 }
 
-function renderUserStageBackgroundShop(profile) {
-    const shop = document.getElementById('user-background-shop');
+function renderCoinStageBackgroundShop(profile) {
+    const shop = document.getElementById('coin-background-shop');
     if (!shop) return;
 
     const currentProfile = profile && typeof profile === 'object'
@@ -459,6 +617,14 @@ function bindMainEvents() {
         playerEndTurn();
     });
 
+    bindIfExists('player-skill-button', () => {
+        unlockAudio();
+        startBgmOnce();
+        if (typeof playerUseSkill === 'function') {
+            playerUseSkill();
+        }
+    });
+
     bindIfExists('buy-knife-button', () => {
         unlockAudio();
         startBgmOnce();
@@ -523,6 +689,22 @@ function bindMainEvents() {
         unlockAudio();
         startBgmOnce();
         cancelEventCard();
+    });
+
+    bindIfExists('skill-confirm-yes-button', () => {
+        unlockAudio();
+        startBgmOnce();
+        if (typeof confirmSkillActivation === 'function') {
+            confirmSkillActivation();
+        }
+    });
+
+    bindIfExists('skill-confirm-no-button', () => {
+        unlockAudio();
+        startBgmOnce();
+        if (typeof cancelSkillActivation === 'function') {
+            cancelSkillActivation();
+        }
     });
 
     bindIfExists('set-view-close-button', () => {
@@ -697,6 +879,7 @@ function revealTurnCards(chosenSide) {
 function beginMatchByRole(role) {
     safeStartGame();
     applyCharacterChoice();
+    applyBattleSkillSetup();
     stopMenuFloatingBackground();
     if (startTitleTimer) {
         clearTimeout(startTitleTimer);
@@ -781,6 +964,7 @@ function setupStartOverlay() {
     const rulesBackButton = document.getElementById('start-rules-back-button');
     const galleryBackButton = document.getElementById('start-gallery-back-button');
     const friendBackButton = document.getElementById('start-friend-back-button');
+    const coinBackButton = document.getElementById('start-coin-back-button');
     const userBackButton = document.getElementById('start-user-back-button');
     const friendCreateButton = document.getElementById('friend-create-button');
     const friendJoinButton = document.getElementById('friend-join-button');
@@ -788,13 +972,22 @@ function setupStartOverlay() {
     const userSaveButton = document.getElementById('user-save-button');
     const userResetButton = document.getElementById('user-reset-button');
     const userNameInput = document.getElementById('user-name-input');
-    const userFavoriteSelect = document.getElementById('user-favorite-character');
-    const userBackgroundShop = document.getElementById('user-background-shop');
+    const userFavoriteCharacterSelect = document.getElementById('user-favorite-character');
+    const userFavoriteSkillSelect = document.getElementById('user-favorite-skill');
+    const coinBackgroundShop = document.getElementById('coin-background-shop');
+    const startCpuPersonalitySelect = document.getElementById('start-cpu-personality');
+    const startSkillList = document.getElementById('start-skill-list');
+    const startSkillDetail = document.getElementById('start-skill-detail');
+    const startSkillMessage = document.getElementById('start-skill-message');
+    const startSkillRulesList = document.getElementById('start-skill-rules-list');
+    const startCharacterStep = document.getElementById('start-character-step');
+    const startSkillStep = document.getElementById('start-skill-step');
+    const startCpuSetupSubtitle = document.getElementById('start-cpu-setup-subtitle');
     const galleryFilterButtons = document.querySelectorAll('.start-gallery-filter[data-gallery-type]');
 
     const resetTurnStage = () => {
-        if (turnStage) turnStage.classList.add('hidden');
         selectedTurnCard = null;
+        turnCardRoleMap = null;
         if (battleMsg) battleMsg.textContent = '';
         if (msg) msg.textContent = 'カードを1枚選んでください';
         if (left) {
@@ -807,11 +1000,68 @@ function setupStartOverlay() {
         }
     };
 
+    const renderCpuSetupStep = () => {
+        if (startCharacterStep) startCharacterStep.classList.toggle('hidden', startCpuSetupStep !== 1);
+        if (startSkillStep) startSkillStep.classList.toggle('hidden', startCpuSetupStep !== 2);
+        if (turnStage) turnStage.classList.toggle('hidden', startCpuSetupStep !== 3);
+
+        if (startCpuSetupSubtitle) {
+            if (startCpuSetupStep === 1) {
+                startCpuSetupSubtitle.textContent = '1/3 キャラを選択';
+            } else if (startCpuSetupStep === 2) {
+                startCpuSetupSubtitle.textContent = '2/3 スキルを選択';
+            } else {
+                startCpuSetupSubtitle.textContent = '3/3 先攻・後攻を決定';
+            }
+        }
+
+        if (startButton) {
+            if (startCpuSetupStep === 1) {
+                startButton.classList.remove('hidden');
+                startButton.textContent = '次へ（スキル選択）';
+            } else if (startCpuSetupStep === 2) {
+                startButton.classList.remove('hidden');
+                startButton.textContent = '次へ（先攻・後攻決め）';
+            } else {
+                startButton.classList.add('hidden');
+            }
+        }
+
+        if (backMenuButton) {
+            if (startCpuSetupStep === 1) {
+                backMenuButton.textContent = 'メニューへ戻る';
+            } else if (startCpuSetupStep === 2) {
+                backMenuButton.textContent = 'キャラ選択へ戻る';
+            } else {
+                backMenuButton.textContent = 'スキル選択へ戻る';
+            }
+        }
+    };
+
+    const setCpuSetupStep = (nextStep) => {
+        startCpuSetupStep = Math.max(1, Math.min(3, Number(nextStep) || 1));
+        renderCpuSetupStep();
+    };
+
+    const openTurnDecisionStep = () => {
+        resetTurnStage();
+
+        const isLeftFirst = Math.random() < 0.5;
+        turnCardRoleMap = isLeftFirst
+            ? { left: '先攻', right: '後攻' }
+            : { left: '後攻', right: '先攻' };
+
+        setCpuSetupStep(3);
+    };
+
     const openMenuStage = () => {
         resetTurnStage();
+        setCpuSetupStep(1);
         setStartMenuMessage('');
         setFriendRoomMessage('');
+        setCoinStageMessage('');
         setUserStageMessage('');
+        setStartSkillMessage('');
         showStartStage('start-menu-stage');
     };
 
@@ -821,12 +1071,96 @@ function setupStartOverlay() {
 
     const openUserStage = () => {
         setStartMenuMessage('');
-        const rules = typeof getUserCoinRules === 'function'
-            ? getUserCoinRules()
-            : { perMatch: 2, perWin: 4, perDishCook: 1 };
-        setUserStageMessage(`コイン獲得: 対戦+${rules.perMatch} / 勝利+${rules.perWin} / 料理+${rules.perDishCook} / 背景デザイン交換はこの画面でできます。`);
+        setCoinStageMessage('');
+        setUserStageMessage('推しキャラ・推しスキルを保存すると、次回から初期選択に反映されます。');
         renderUserStageProfile();
         showStartStage('start-user-stage');
+    };
+
+    const openCoinStage = () => {
+        setStartMenuMessage('');
+        setUserStageMessage('');
+        setCoinStageMessage('交換した背景は「設定」からいつでも使用できます。');
+        renderCoinStageProfile();
+        showStartStage('start-coin-stage');
+    };
+
+    const setStartSkillMessage = (text) => {
+        if (!startSkillMessage) return;
+        startSkillMessage.textContent = text || '';
+    };
+
+    const renderStartSkillSelection = () => {
+        if (!startSkillList) return;
+
+        const defs = getSkillDefinitionsSafe();
+        if (defs.length === 0) {
+            startSkillList.innerHTML = '<div class="start-gallery-empty">スキル情報を読み込めませんでした。</div>';
+            if (startSkillDetail) startSkillDetail.innerHTML = '';
+            return;
+        }
+
+        if (!defs.some(item => item.key === selectedStartSkillKey)) {
+            selectedStartSkillKey = defs[0].key;
+        }
+
+        startSkillList.innerHTML = defs.map(skill => {
+            const selected = skill.key === selectedStartSkillKey;
+            const maxUses = Number.isFinite(Number(skill.maxUses)) ? Math.max(1, Math.floor(Number(skill.maxUses))) : 1;
+            return `
+                <button type="button" class="start-skill-tile${selected ? ' active' : ''}" data-pick-skill-key="${escapeHtmlText(skill.key)}" aria-pressed="${selected ? 'true' : 'false'}">
+                    <span class="start-skill-tile-name">${escapeHtmlText(skill.name)}</span>
+                    <span class="start-skill-tile-uses">${maxUses}回</span>
+                </button>
+            `;
+        }).join('');
+
+        const picked = defs.find(item => item.key === selectedStartSkillKey);
+        if (startSkillDetail) {
+            if (!picked) {
+                startSkillDetail.innerHTML = '';
+            } else {
+                const maxUses = Number.isFinite(Number(picked.maxUses)) ? Math.max(1, Math.floor(Number(picked.maxUses))) : 1;
+                startSkillDetail.innerHTML = `
+                    <div class="start-skill-detail-name">${escapeHtmlText(picked.name)}</div>
+                    <div class="start-skill-detail-row"><span>条件</span><strong>${escapeHtmlText(picked.condition || 'なし')}</strong></div>
+                    <div class="start-skill-detail-row"><span>効果</span><strong>${escapeHtmlText(picked.effect || 'なし')}</strong></div>
+                    <div class="start-skill-detail-row"><span>使用回数</span><strong>${maxUses}回</strong></div>
+                `;
+            }
+        }
+        setStartSkillMessage(picked ? `現在の選択: ${picked.name}` : 'スキルを1つ選択してください。');
+    };
+
+    const renderStartSkillRules = () => {
+        if (!startSkillRulesList) return;
+        const defs = getSkillDefinitionsSafe();
+        if (!Array.isArray(defs) || defs.length === 0) {
+            startSkillRulesList.innerHTML = '<div class="start-gallery-empty">スキル情報を読み込めませんでした。</div>';
+            return;
+        }
+        startSkillRulesList.innerHTML = defs.map(skill => {
+            const maxUses = Number.isFinite(Number(skill.maxUses)) ? Math.max(1, Math.floor(Number(skill.maxUses))) : 1;
+            return `
+                <div class="start-skill-rule-item">
+                    <div class="start-skill-rule-name">${escapeHtmlText(skill.name || 'スキル')}</div>
+                    <div>条件: ${escapeHtmlText(skill.condition || 'なし')}</div>
+                    <div>効果: ${escapeHtmlText(skill.effect || 'なし')}</div>
+                    <div>使用回数: ${maxUses}回</div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const syncStartCpuPersonalitySelect = () => {
+        if (!startCpuPersonalitySelect) return;
+        const options = getCpuPersonalityOptionsSafe();
+        const current = normalizeStartCpuPersonality(selectedCpuPersonality || GameState?.settings?.cpuPersonality || 'default');
+        selectedCpuPersonality = current;
+        startCpuPersonalitySelect.innerHTML = options
+            .map(item => `<option value="${escapeHtmlText(item.key)}"${item.key === current ? ' selected' : ''}>${escapeHtmlText(item.label)}</option>`)
+            .join('');
+        startCpuPersonalitySelect.value = current;
     };
 
     charButtons.forEach(button => {
@@ -836,28 +1170,51 @@ function setupStartOverlay() {
         });
     });
 
+    if (startCpuPersonalitySelect) {
+        startCpuPersonalitySelect.addEventListener('change', () => {
+            selectedCpuPersonality = normalizeStartCpuPersonality(startCpuPersonalitySelect.value);
+            if (GameState.settings) {
+                GameState.settings.cpuPersonality = selectedCpuPersonality;
+            }
+        });
+    }
+
+    if (startSkillList) {
+        startSkillList.addEventListener('click', event => {
+            const button = event.target.closest('button[data-pick-skill-key]');
+            if (!button) return;
+            const skillKey = button.getAttribute('data-pick-skill-key') || '';
+            const skill = getSkillDefinitionByKeySafe(skillKey);
+            if (!skill) return;
+            selectedStartSkillKey = skill.key;
+            renderStartSkillSelection();
+        });
+    }
+
     if (left) left.addEventListener('click', () => onTurnCardSelected('left'));
     if (right) right.addEventListener('click', () => onTurnCardSelected('right'));
 
     if (startButton) {
         startButton.addEventListener('click', () => {
-            if (turnStage) turnStage.classList.remove('hidden');
-            selectedTurnCard = null;
-            if (battleMsg) battleMsg.textContent = '';
-            if (msg) msg.textContent = 'カードを1枚選んでください';
-            if (left) {
-                left.textContent = 'カードA';
-                left.classList.remove('revealed', 'chosen');
-            }
-            if (right) {
-                right.textContent = 'カードB';
-                right.classList.remove('revealed', 'chosen');
+            if (startCpuSetupStep === 1) {
+                setCpuSetupStep(2);
+                return;
             }
 
-            const isLeftFirst = Math.random() < 0.5;
-            turnCardRoleMap = isLeftFirst
-                ? { left: '先攻', right: '後攻' }
-                : { left: '後攻', right: '先攻' };
+            if (startCpuSetupStep === 2) {
+                const pickedSkill = getSkillDefinitionByKeySafe(selectedStartSkillKey);
+                if (!pickedSkill) {
+                    setStartSkillMessage('スキルを1つ選択してください。');
+                    return;
+                }
+
+                selectedCpuPersonality = normalizeStartCpuPersonality(startCpuPersonalitySelect?.value || selectedCpuPersonality);
+                if (GameState.settings) {
+                    GameState.settings.cpuPersonality = selectedCpuPersonality;
+                }
+
+                openTurnDecisionStep();
+            }
         });
     }
 
@@ -866,6 +1223,11 @@ function setupStartOverlay() {
             setStartMenuMessage('');
             resetTurnStage();
             setCharacterChoice(getPreferredStartCharacterId());
+            selectedStartSkillKey = getPreferredStartSkillKey();
+            selectedCpuPersonality = normalizeStartCpuPersonality(GameState?.settings?.cpuPersonality || selectedCpuPersonality);
+            syncStartCpuPersonalitySelect();
+            renderStartSkillSelection();
+            setCpuSetupStep(1);
             showStartStage('start-cpu-setup-stage');
         });
     }
@@ -886,13 +1248,14 @@ function setupStartOverlay() {
 
     if (menuCoinButton) {
         menuCoinButton.addEventListener('click', () => {
-            openUserStage();
+            openCoinStage();
         });
     }
 
     if (menuRulesButton) {
         menuRulesButton.addEventListener('click', () => {
             setStartMenuMessage('');
+            renderStartSkillRules();
             showStartStage('start-rules-stage');
         });
     }
@@ -920,7 +1283,14 @@ function setupStartOverlay() {
 
     if (backMenuButton) {
         backMenuButton.addEventListener('click', () => {
-            openMenuStage();
+            if (startCpuSetupStep <= 1) {
+                openMenuStage();
+                return;
+            }
+            if (startCpuSetupStep === 3) {
+                resetTurnStage();
+            }
+            setCpuSetupStep(startCpuSetupStep - 1);
         });
     }
 
@@ -944,6 +1314,12 @@ function setupStartOverlay() {
 
     if (userBackButton) {
         userBackButton.addEventListener('click', () => {
+            openMenuStage();
+        });
+    }
+
+    if (coinBackButton) {
+        coinBackButton.addEventListener('click', () => {
             openMenuStage();
         });
     }
@@ -1033,19 +1409,23 @@ function setupStartOverlay() {
         userSaveButton.addEventListener('click', () => {
             if (typeof updateUserBasicSettings !== 'function') return;
             const nextName = userNameInput?.value || '';
-            const nextFavorite = userFavoriteSelect?.value || 'chizuru';
+            const nextFavoriteCharacter = userFavoriteCharacterSelect?.value || 'chizuru';
+            const nextFavoriteSkill = userFavoriteSkillSelect?.value || getPreferredStartSkillKey();
             updateUserBasicSettings({
                 name: nextName,
-                favoriteCharacterId: nextFavorite
+                favoriteCharacterId: nextFavoriteCharacter,
+                favoriteSkillKey: nextFavoriteSkill
             });
+            selectedStartSkillKey = getPreferredStartSkillKey();
+            renderStartSkillSelection();
             renderUserStageProfile();
             setCharacterChoice(getPreferredStartCharacterId());
             setUserStageMessage('ユーザー情報を保存しました。');
         });
     }
 
-    if (userBackgroundShop) {
-        userBackgroundShop.addEventListener('click', event => {
+    if (coinBackgroundShop) {
+        coinBackgroundShop.addEventListener('click', event => {
             const button = event.target.closest('button[data-bg-action][data-bg-key]');
             if (!button) return;
 
@@ -1057,20 +1437,20 @@ function setupStartOverlay() {
 
             if (action === 'buy') {
                 if (typeof purchaseBackgroundDesign !== 'function') {
-                    setUserStageMessage('コイン交換機能を利用できません。');
+                    setCoinStageMessage('コイン交換機能を利用できません。');
                     return;
                 }
 
                 const result = purchaseBackgroundDesign(designKey);
                 if (!result || !result.ok) {
                     if (result?.reason === 'not-enough-coins') {
-                        setUserStageMessage(`コイン不足: 「${designName}」の交換には${design?.cost ?? 0}コイン必要です。`);
+                        setCoinStageMessage(`コイン不足: 「${designName}」の交換には${design?.cost ?? 0}コイン必要です。`);
                     } else if (result?.reason === 'already-owned') {
-                        setUserStageMessage(`「${designName}」はすでに交換済みです。`);
+                        setCoinStageMessage(`「${designName}」はすでに交換済みです。`);
                     } else {
-                        setUserStageMessage('背景デザインの交換に失敗しました。');
+                        setCoinStageMessage('背景デザインの交換に失敗しました。');
                     }
-                    renderUserStageProfile();
+                    renderCoinStageProfile();
                     return;
                 }
 
@@ -1083,21 +1463,21 @@ function setupStartOverlay() {
                 if (typeof applyRuntimeSettings === 'function') applyRuntimeSettings();
                 if (typeof updateUI === 'function' && gameStartedOnce) updateUI();
 
-                renderUserStageProfile();
-                setUserStageMessage(`背景デザイン「${designName}」を交換しました。残りコイン: ${result.profile?.coins ?? 0}`);
+                renderCoinStageProfile();
+                setCoinStageMessage(`背景デザイン「${designName}」を交換しました。残りコイン: ${result.profile?.coins ?? 0}`);
                 return;
             }
 
             if (action === 'select') {
                 if (typeof setSelectedBackgroundDesign !== 'function') {
-                    setUserStageMessage('背景デザイン設定を利用できません。');
+                    setCoinStageMessage('背景デザイン設定を利用できません。');
                     return;
                 }
 
                 const result = setSelectedBackgroundDesign(designKey);
                 if (!result || !result.ok) {
-                    setUserStageMessage('未所持の背景デザインは選択できません。');
-                    renderUserStageProfile();
+                    setCoinStageMessage('未所持の背景デザインは選択できません。');
+                    renderCoinStageProfile();
                     return;
                 }
 
@@ -1107,8 +1487,8 @@ function setupStartOverlay() {
                 if (typeof applyRuntimeSettings === 'function') applyRuntimeSettings();
                 if (typeof updateUI === 'function' && gameStartedOnce) updateUI();
 
-                renderUserStageProfile();
-                setUserStageMessage(`背景デザイン「${designName}」を使用中にしました。`);
+                renderCoinStageProfile();
+                setCoinStageMessage(`背景デザイン「${designName}」を使用中にしました。`);
             }
         });
     }
@@ -1123,7 +1503,10 @@ function setupStartOverlay() {
             if (typeof applyRuntimeSettings === 'function') applyRuntimeSettings();
             if (typeof updateUI === 'function' && gameStartedOnce) updateUI();
             renderUserStageProfile();
+            renderCoinStageProfile();
             setCharacterChoice(getPreferredStartCharacterId());
+            selectedStartSkillKey = getPreferredStartSkillKey();
+            renderStartSkillSelection();
             setUserStageMessage('ユーザー情報を初期化しました。');
         });
     }
@@ -1136,12 +1519,21 @@ function setupStartOverlay() {
     });
 
     setCharacterChoice(getPreferredStartCharacterId());
+    selectedStartSkillKey = getPreferredStartSkillKey();
+    selectedCpuPersonality = normalizeStartCpuPersonality(GameState?.settings?.cpuPersonality || selectedCpuPersonality);
+    syncStartCpuPersonalitySelect();
+    renderStartSkillSelection();
+    renderStartSkillRules();
     setStartMenuMessage('');
     setFriendRoomMessage('');
+    setCoinStageMessage('');
     setUserStageMessage('');
+    setStartSkillMessage('');
     renderUserStageProfile();
+    renderCoinStageProfile();
     renderStartGallery('characters');
     resetTurnStage();
+    setCpuSetupStep(1);
     showStartStage('start-title-stage');
 
     if (startTitleTimer) {
@@ -1178,6 +1570,23 @@ function hideResultOverlay() {
     }
 }
 
+function getCharacterIdForSide(side) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const ids = GameState?.characterIds || {};
+    return ids[safeSide] || (safeSide === 'player' ? 'chizuru' : 'mai');
+}
+
+function getCharacterNameForSide(side) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const names = GameState?.characterNames || {};
+    return names[safeSide] || (safeSide === 'player' ? 'あなた' : 'CPU');
+}
+
+function getSkillCutinImagePathForSide(side) {
+    const characterId = getCharacterIdForSide(side);
+    return SKILL_CUTIN_IMAGE_PATHS[characterId] || SKILL_CUTIN_IMAGE_PATHS.chizuru;
+}
+
 function showSpotlightCard({ badge, name, sub, imagePath, kind }) {
     const overlay = document.getElementById('spotlight-overlay');
     const badgeEl = document.getElementById('spotlight-badge');
@@ -1193,9 +1602,12 @@ function showSpotlightCard({ badge, name, sub, imagePath, kind }) {
         spotlightTimer = null;
     }
 
+    const cardKind = kind || 'recipe';
+    overlay.classList.remove('spotlight-skill');
+    overlay.classList.toggle('spotlight-skill', cardKind === 'skill');
     overlay.classList.remove('hidden');
-    cardEl.classList.remove('event', 'recipe', 'pack');
-    cardEl.classList.add(kind || 'recipe');
+    cardEl.classList.remove('event', 'recipe', 'pack', 'skill');
+    cardEl.classList.add(cardKind);
 
     badgeEl.textContent = badge || '';
     nameEl.textContent = name || '';
@@ -1204,7 +1616,7 @@ function showSpotlightCard({ badge, name, sub, imagePath, kind }) {
 
     spotlightTimer = setTimeout(() => {
         hideSpotlightCard();
-    }, 2000);
+    }, SPOTLIGHT_DISPLAY_MS);
 }
 
 function hideSpotlightCard() {
@@ -1212,6 +1624,7 @@ function hideSpotlightCard() {
     if (!overlay) return;
 
     overlay.classList.add('hidden');
+    overlay.classList.remove('spotlight-skill');
 
     if (spotlightTimer) {
         clearTimeout(spotlightTimer);
@@ -1222,7 +1635,7 @@ function hideSpotlightCard() {
 function showSpotlightCardAsync(config) {
     showSpotlightCard(config);
     return new Promise(resolve => {
-        setTimeout(() => resolve(), 2000);
+        setTimeout(() => resolve(), SPOTLIGHT_DISPLAY_MS);
     });
 }
 
@@ -1245,6 +1658,32 @@ function showSpotlightEventCardAsync(eventCard) {
         sub: eventCard.description || '',
         imagePath,
         kind: 'event'
+    });
+}
+
+function showSpotlightSkillCutin(side, skill) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const actorName = getCharacterNameForSide(safeSide);
+    const imagePath = getSkillCutinImagePathForSide(safeSide);
+    showSpotlightCard({
+        badge: `${actorName} スキル発動！`,
+        name: skill?.name || 'スキル',
+        sub: skill?.effect || 'スキル効果が発動しました。',
+        imagePath,
+        kind: 'skill'
+    });
+}
+
+function showSpotlightSkillCutinAsync(side, skill) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const actorName = getCharacterNameForSide(safeSide);
+    const imagePath = getSkillCutinImagePathForSide(safeSide);
+    return showSpotlightCardAsync({
+        badge: `${actorName} スキル発動！`,
+        name: skill?.name || 'スキル',
+        sub: skill?.effect || 'スキル効果が発動しました。',
+        imagePath,
+        kind: 'skill'
     });
 }
 
@@ -1313,6 +1752,7 @@ function endGame(winner) {
     GameState.currentPhase = 'ゲーム終了';
     GameState.selectionMode = null;
     GameState.pendingEventContext = null;
+    GameState.pendingSkillContext = null;
     GameState.selectedTargetIds = [];
     GameState.pendingSetCardId = null;
     GameState.pendingEventCardId = null;
@@ -1370,6 +1810,8 @@ window.addEventListener('load', () => {
 window.endGame = endGame;
 window.showSpotlightEventCard = showSpotlightEventCard;
 window.showSpotlightEventCardAsync = showSpotlightEventCardAsync;
+window.showSpotlightSkillCutin = showSpotlightSkillCutin;
+window.showSpotlightSkillCutinAsync = showSpotlightSkillCutinAsync;
 window.showSpotlightRecipeCard = showSpotlightRecipeCard;
 window.showSpotlightRecipeCardAsync = showSpotlightRecipeCardAsync;
 window.showSpotlightPackCard = showSpotlightPackCard;

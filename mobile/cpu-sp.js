@@ -21,7 +21,42 @@ function cpuPause(ms) {
 }
 
 function getCpuSelectableIngredientCards(cpu) {
-    return [...cpu.hand, ...cpu.set];
+    return [...cpu.hand, ...cpu.set].filter(card =>
+        typeof isCardUsableForCooking === 'function'
+            ? isCardUsableForCooking(card)
+            : !(card?.trapLocked === true || card?.blockedByTrap === true)
+    );
+}
+
+function getCpuPersonalityKey() {
+    const raw = GameState?.settings?.cpuPersonality || 'default';
+    if (typeof normalizeCpuPersonalityKey === 'function') {
+        return normalizeCpuPersonalityKey(raw);
+    }
+    return ['default', 'balance', 'disrupt', 'comeback'].includes(raw) ? raw : 'default';
+}
+
+function pickCpuRecipePlan(possiblePlans) {
+    if (!Array.isArray(possiblePlans) || possiblePlans.length === 0) return null;
+
+    const personality = getCpuPersonalityKey();
+    if (personality === 'comeback') {
+        const bombPlan = possiblePlans.find(plan => plan?.recipe?.name === '爆弾おにぎり');
+        if (bombPlan) return bombPlan;
+    }
+
+    return possiblePlans[0];
+}
+
+function getCpuEventPriorityNames() {
+    const personality = getCpuPersonalityKey();
+    if (personality === 'disrupt') {
+        return ['大掃除', '物々交換', '食材探索', '爆買い', 'ゴミ収集車', 'やっぱやめた', 'やり直し', '創作料理', '緊急料理'];
+    }
+    if (personality === 'comeback') {
+        return ['緊急料理', '創作料理', '爆買い', '食材探索', 'ゴミ収集車', 'やり直し', '物々交換', '大掃除', 'やっぱやめた'];
+    }
+    return ['緊急料理', '創作料理', '爆買い', '食材探索', '大掃除', 'ゴミ収集車', 'やっぱやめた', 'やり直し', '物々交換'];
 }
 
 async function cpuTurn() {
@@ -65,8 +100,22 @@ async function cpuTurn() {
         if (GameState.gameEnded) return;
     }
 
-    const usedEvent = await cpuTryUseEvent(cpu, player);
-    if (usedEvent) {
+    if (typeof activateSkillBySide === 'function') {
+        const skillResult = activateSkillBySide('cpu', {
+            auto: true,
+            silentFail: true
+        });
+        if (skillResult?.ok) {
+            setCPUStatus('CPUスキル発動中...');
+            updateUI();
+            await cpuPause(CPU_BIG_ACTION_DELAY);
+            if (GameState.gameEnded) return;
+        }
+    }
+
+    for (let i = 0; i < 2; i++) {
+        const usedEvent = await cpuTryUseEvent(cpu, player);
+        if (!usedEvent) break;
         setCPUStatus('CPUイベントカード使用中...');
         updateUI();
         await cpuPause(CPU_BIG_ACTION_DELAY);
@@ -80,7 +129,8 @@ async function cpuTurn() {
             setCPUStatus('CPU料理中...');
             updateUI();
 
-            const bestPlan = possible[0];
+            const bestPlan = pickCpuRecipePlan(possible);
+            if (!bestPlan) break;
             const success = applyRecipePlan(cpu, bestPlan);
             if (!success) break;
 
@@ -156,6 +206,7 @@ async function cpuTurn() {
     }
 
     cpu.usedEventThisTurn = false;
+    cpu.extraEventUsesRemainingThisTurn = 0;
     cpu.lockedCookingThisTurn = false;
     cpu.knifeUsedThisTurn = false;
 
@@ -168,6 +219,7 @@ async function cpuTurn() {
     GameState.currentTurn = 'player';
     GameState.currentPhase = 'ドローフェイズ';
     player.usedEventThisTurn = false;
+    player.extraEventUsesRemainingThisTurn = 0;
     player.lockedCookingThisTurn = false;
     player.knifeSelectedName = null;
     player.knifeUsedThisTurn = false;
@@ -201,20 +253,14 @@ function cpuTryBuyPack(cpu) {
 }
 
 async function cpuTryUseEvent(cpu, player) {
-    if (cpu.usedEventThisTurn) return false;
+    if (typeof canUseEventThisTurn === 'function') {
+        if (!canUseEventThisTurn(cpu)) return false;
+    } else if (cpu.usedEventThisTurn) {
+        return false;
+    }
     if (cpu.events.length === 0) return false;
 
-    const priorityNames = [
-        '緊急料理',
-        '創作料理',
-        '爆買い',
-        '食材探索',
-        '大掃除',
-        'ゴミ収集車',
-        'やっぱやめた',
-        'やり直し',
-        '物々交換'
-    ];
+    const priorityNames = getCpuEventPriorityNames();
 
     let selected = null;
 
@@ -238,7 +284,11 @@ async function cpuTryUseEvent(cpu, player) {
     }
 
     moveCardToDiscard(eventCard);
-    cpu.usedEventThisTurn = true;
+    if (typeof consumeEventUse === 'function') {
+        consumeEventUse(cpu);
+    } else {
+        cpu.usedEventThisTurn = true;
+    }
 
     const extra = buildCpuEventExtra(cpu, player, eventCard);
     addLog(`CPUはイベント「${eventCard.name}」を発動しました。`);
@@ -325,6 +375,8 @@ function chooseBestSetCard(cpu) {
 
     let bestCard = cpu.hand[0];
     let bestValue = -1;
+    const personality = getCpuPersonalityKey();
+    const comebackFocus = new Set(['ごはん', 'のり', '魚']);
 
     cpu.hand.forEach(card => {
         let value = 0;
@@ -333,6 +385,10 @@ function chooseBestSetCard(cpu) {
                 value += recipe.points;
             }
         });
+
+        if (personality === 'comeback' && comebackFocus.has(card.name)) {
+            value += 60;
+        }
 
         if (value > bestValue) {
             bestValue = value;

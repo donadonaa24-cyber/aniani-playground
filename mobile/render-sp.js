@@ -287,6 +287,7 @@ function bindSettingsOverlayControls() {
     const settings = ensureGameSettings();
 
     const resetButton = byId('settings-reset-button');
+    const personalitySelect = byId('settings-cpu-personality');
     const speedSelect = byId('settings-cpu-speed');
     const bgThemeSelect = byId('settings-bg-theme');
     const bgDesignSelect = byId('settings-bg-design');
@@ -297,6 +298,29 @@ function bindSettingsOverlayControls() {
         resetButton.addEventListener('click', () => {
             if (typeof stopBGM === 'function') stopBGM();
             location.reload();
+        });
+    }
+
+    if (personalitySelect) {
+        const options = typeof getCpuPersonalityOptions === 'function'
+            ? getCpuPersonalityOptions()
+            : [{ key: 'default', label: '標準' }];
+        const current = typeof normalizeCpuPersonalityKey === 'function'
+            ? normalizeCpuPersonalityKey(settings.cpuPersonality)
+            : (settings.cpuPersonality || 'default');
+        personalitySelect.innerHTML = options
+            .map(item => `<option value="${escapeHtml(item.key)}"${item.key === current ? ' selected' : ''}>${escapeHtml(item.label)}</option>`)
+            .join('');
+        personalitySelect.value = current;
+        settings.cpuPersonality = current;
+
+        personalitySelect.addEventListener('change', () => {
+            const next = typeof normalizeCpuPersonalityKey === 'function'
+                ? normalizeCpuPersonalityKey(personalitySelect.value)
+                : (personalitySelect.value || 'default');
+            settings.cpuPersonality = next;
+            addLog(`設定: CPU性格を「${personalitySelect.options[personalitySelect.selectedIndex]?.text || next}」に変更しました。`);
+            updateUI();
         });
     }
 
@@ -580,10 +604,34 @@ function renderInfoOverlay() {
 
     if (type === 'rules') {
         title.textContent = 'ルール';
-        const s = byId('mini-rule-simple')?.innerHTML || '';
-        const d = byId('mini-rule-detail')?.innerHTML || '';
-        const sp = byId('mini-rule-special')?.innerHTML || '';
-        content.innerHTML = `<div class="info-rule-block"><div class="info-rule-title">かんたんルール</div><div>${s}</div></div><div class="info-rule-block"><div class="info-rule-title">詳細ルール</div><div>${d}</div></div><div class="info-rule-block"><div class="info-rule-title">特殊勝利条件</div><div>${sp}</div></div>`;
+        const s = byId('mini-rule-simple')?.innerHTML || [
+            '・先に10点獲得したら勝利',
+            '・イベントカードは1ターンに1回まで使用可能',
+            '・ターン終了時、手札は通常2枚まで。エコバッグ所持時は3枚まで残せます',
+            '・セットカードも料理の材料に使えます',
+            '・山札がなくなったら捨て札を混ぜて再利用します'
+        ].join('<br>');
+        const d = byId('mini-rule-detail')?.innerHTML || [
+            '・手札は「材料カード」と「イベントカード」を合わせた合計枚数で管理します',
+            '・ドローフェイズでは通常、合計5枚になるまで補充します',
+            '・「まな板」を持っている場合、合計6枚まで補充します',
+            '・材料カードはセットできますが、イベントカードはセットできません',
+            '・セット上限は通常2枚、「冷蔵庫」があれば3枚です',
+            '・「緊急料理」は3点以下、「創作料理」は6点以下でのみ使用できます'
+        ].join('<br>');
+        const sp = byId('mini-rule-special')?.innerHTML || [
+            '・料理の達人: 鶏肉・豚肉・牛肉・魚を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利',
+            '・満腹マスター: ターン開始時に点数で負けている状態から、その1ターン中に3つ以上料理を完成すると即勝利'
+        ].join('<br>');
+        const flow = 'ドローフェイズ → 料理＆セット＆イベント発動フェイズ → エンドフェイズ → 手札調整フェイズ';
+        const skillDefs = typeof getSkillDefinitions === 'function' ? getSkillDefinitions() : [];
+        const skillHtml = Array.isArray(skillDefs) && skillDefs.length > 0
+            ? skillDefs.map(skill => {
+                const maxUses = Number.isFinite(Number(skill.maxUses)) ? Math.max(1, Math.floor(Number(skill.maxUses))) : 1;
+                return `<div class="reference-item"><div class="reference-title">${escapeHtml(skill.name || 'スキル')}</div><div>条件: ${escapeHtml(skill.condition || 'なし')}</div><div>効果: ${escapeHtml(skill.effect || 'なし')}</div><div>使用回数: ${maxUses}回</div></div>`;
+            }).join('')
+            : '<div>スキル情報はまだありません。</div>';
+        content.innerHTML = `<div class="info-rule-block"><div class="info-rule-title">フェイズ進行</div><div>${flow}</div></div><div class="info-rule-block"><div class="info-rule-title">かんたんルール</div><div>${s}</div></div><div class="info-rule-block"><div class="info-rule-title">詳細ルール</div><div>${d}</div></div><div class="info-rule-block"><div class="info-rule-title">特殊勝利条件</div><div>${sp}</div></div><div class="info-rule-block"><div class="info-rule-title">スキル一覧</div><div>${skillHtml}</div></div>`;
         return;
     }
 
@@ -620,6 +668,9 @@ function renderInfoOverlay() {
         const bgmTrackOptions = getBgmTrackOptionsSafe()
             .map(item => `<option value="${escapeHtml(item.key)}"${item.key === settings.bgmTrack ? ' selected' : ''}>${escapeHtml(item.label)}</option>`)
             .join('');
+        const personalityOptions = (typeof getCpuPersonalityOptions === 'function' ? getCpuPersonalityOptions() : [{ key: 'default', label: '標準' }])
+            .map(item => `<option value="${escapeHtml(item.key)}"${item.key === (typeof normalizeCpuPersonalityKey === 'function' ? normalizeCpuPersonalityKey(settings.cpuPersonality) : (settings.cpuPersonality || 'default')) ? ' selected' : ''}>${escapeHtml(item.label)}</option>`)
+            .join('');
 
         title.textContent = '設定';
         content.innerHTML = `
@@ -632,11 +683,9 @@ function renderInfoOverlay() {
 
                 <div class="reference-item">
                     <div class="reference-title">CPU設定</div>
-                    <label class="settings-label" for="settings-cpu-personality">CPUキャラの性格（今後実装予定）</label>
-                    <select id="settings-cpu-personality" class="settings-select" disabled>
-                        <option value="default">標準（今後実装予定）</option>
-                    </select>
-                    <div class="settings-placeholder">※性格による行動差は今後対応予定です。</div>
+                    <label class="settings-label" for="settings-cpu-personality">CPUキャラの性格</label>
+                    <select id="settings-cpu-personality" class="settings-select">${personalityOptions}</select>
+                    <div class="settings-note">逆転型は爆弾おにぎり系の逆転ルートを優先します。</div>
 
                     <label class="settings-label" for="settings-cpu-speed">CPUキャラの処理速度</label>
                     <select id="settings-cpu-speed" class="settings-select">
@@ -845,8 +894,13 @@ function renderPlayerSet() {
     if (player.set.length === 0) { container.textContent = 'セットなし'; return; }
 
     player.set.forEach(card => {
-        const el = createFaceCard({ ...card, description: 'セット中の材料カード' }, 'ingredient-card');
-        if (!GameState.selectionMode && !GameState.gameEnded) {
+        const isTrap = card.trapLocked === true || card.blockedByTrap === true;
+        const description = isTrap
+            ? 'トラップ状態のため料理に使えません。'
+            : 'セット中の材料カード';
+        const className = isTrap ? 'ingredient-card trap-locked-card' : 'ingredient-card';
+        const el = createFaceCard({ ...card, description }, className);
+        if (!GameState.selectionMode && !GameState.gameEnded && !isTrap) {
             el.addEventListener('click', () => openIngredientAction(card.id, 'set'));
         }
         container.appendChild(el);
@@ -872,7 +926,18 @@ function renderCpuSet() {
 
     const cpu = GameState.players.cpu;
     if (cpu.set.length === 0) { container.textContent = 'セットなし'; return; }
-    cpu.set.forEach(() => container.appendChild(createBackCard('CPU', 'セット')));
+    cpu.set.forEach(card => {
+        const isTrap = card.trapLocked === true || card.blockedByTrap === true;
+        if (isTrap) {
+            const trapCard = createFaceCard({
+                ...card,
+                description: 'トラップ配置中（料理不可）'
+            }, 'ingredient-card trap-locked-card');
+            container.appendChild(trapCard);
+            return;
+        }
+        container.appendChild(createBackCard('CPU', 'セット'));
+    });
 }
 
 function renderPacks(player, container) {
@@ -1076,7 +1141,9 @@ function renderSelectionPanel() {
         return;
     }
 
-    if (GameState.selectionMode !== 'event-target' || !GameState.pendingEventContext) {
+    const isEventTargetMode = GameState.selectionMode === 'event-target' && !!GameState.pendingEventContext;
+    const isSkillTargetMode = GameState.selectionMode === 'skill-target' && !!GameState.pendingSkillContext;
+    if (!isEventTargetMode && !isSkillTargetMode) {
         panel.classList.add('hidden');
         options.innerHTML = '';
         return;
@@ -1084,8 +1151,10 @@ function renderSelectionPanel() {
 
     panel.classList.remove('hidden');
 
-    const ctx = GameState.pendingEventContext;
-    title.textContent = `イベント対象選択: ${ctx.eventName}`;
+    const ctx = isSkillTargetMode ? GameState.pendingSkillContext : GameState.pendingEventContext;
+    title.textContent = isSkillTargetMode
+        ? `スキル対象選択: ${ctx.skillName}`
+        : `イベント対象選択: ${ctx.eventName}`;
     desc.textContent = ctx.description || '';
     options.innerHTML = '';
 
@@ -1461,6 +1530,126 @@ function renderCandidateRecipes() {
     container.appendChild(cancelRow);
 }
 
+function formatSkillUsageText(player, skill) {
+    if (!player || !skill) return '未設定';
+    const used = typeof getPlayerSkillUseCount === 'function'
+        ? getPlayerSkillUseCount(player, skill.key)
+        : Math.max(0, Number(player.skillUseCounts?.[skill.key] || 0));
+    const maxUses = Number.isFinite(Number(skill.maxUses)) ? Math.max(1, Math.floor(Number(skill.maxUses))) : 1;
+    if (maxUses <= 1) {
+        return used > 0 ? '使用済み' : '未使用';
+    }
+    return `使用 ${used}/${maxUses}（残り${Math.max(0, maxUses - used)}）`;
+}
+
+function renderSkillHud() {
+    const playerSkill = typeof getSelectedSkillDefinitionForSide === 'function'
+        ? getSelectedSkillDefinitionForSide('player')
+        : null;
+    const cpuSkill = typeof getSelectedSkillDefinitionForSide === 'function'
+        ? getSelectedSkillDefinitionForSide('cpu')
+        : null;
+    const playerState = GameState.players.player;
+    const cpuState = GameState.players.cpu;
+
+    safeSetText('player-skill-name', playerSkill ? `スキル: ${playerSkill.name}` : 'スキル: 未選択');
+    safeSetText('cpu-skill-name', cpuSkill ? `スキル: ${cpuSkill.name}` : 'スキル: 未選択');
+    safeSetText('player-skill-state', formatSkillUsageText(playerState, playerSkill));
+    safeSetText('cpu-skill-state', formatSkillUsageText(cpuState, cpuSkill));
+
+    const button = byId('player-skill-button');
+    if (!button) return;
+
+    const status = typeof getSkillActivationStatusForSide === 'function'
+        ? getSkillActivationStatusForSide('player')
+        : { ok: false, reason: 'スキル未対応' };
+    const isSkillConfirmMode = GameState.selectionMode === 'skill-confirm';
+    const blockedBySelection = !!GameState.selectionMode && !isSkillConfirmMode;
+    const canOpenDetail = !!playerSkill && !GameState.gameEnded && !blockedBySelection;
+    const canUseNow = !!playerSkill &&
+        !GameState.gameEnded &&
+        GameState.currentTurn === 'player' &&
+        !blockedBySelection &&
+        status.ok;
+
+    button.disabled = !canOpenDetail;
+    button.classList.toggle('ready', canUseNow);
+    button.textContent = playerSkill ? (canUseNow ? 'スキル発動' : 'スキル詳細') : 'スキル未選択';
+
+    if (!playerSkill) {
+        button.title = 'スキルが未設定です。';
+    } else if (canUseNow) {
+        button.title = `${playerSkill.name}を発動できます。`;
+    } else if (GameState.currentTurn !== 'player') {
+        button.title = `${playerSkill.name}の詳細を確認できます（発動は自分のターン中のみ）。`;
+    } else {
+        button.title = status.reason || `${playerSkill.name}の詳細を確認できます。`;
+    }
+}
+
+function renderSkillConfirmPanel() {
+    const panel = byId('skill-confirm-panel');
+    const nameEl = byId('skill-confirm-name');
+    const conditionEl = byId('skill-confirm-condition');
+    const effectEl = byId('skill-confirm-effect');
+    const usageEl = byId('skill-confirm-usage');
+    const statusEl = byId('skill-confirm-status');
+    const yesButton = byId('skill-confirm-yes-button');
+    if (!panel || !nameEl || !conditionEl || !effectEl || !usageEl || !statusEl || !yesButton) return;
+
+    if (GameState.selectionMode !== 'skill-confirm') {
+        panel.classList.add('hidden');
+        return;
+    }
+
+    panel.classList.remove('hidden');
+    const skill = typeof getSelectedSkillDefinitionForSide === 'function'
+        ? getSelectedSkillDefinitionForSide('player')
+        : null;
+    const status = typeof getSkillActivationStatusForSide === 'function'
+        ? getSkillActivationStatusForSide('player')
+        : { ok: false, reason: 'スキル未対応' };
+    const player = GameState.players.player;
+
+    if (!skill) {
+        nameEl.textContent = 'スキル未選択';
+        conditionEl.textContent = '条件: -';
+        effectEl.textContent = '効果: -';
+        usageEl.textContent = '使用回数: -';
+        statusEl.textContent = 'スキルが設定されていません。';
+        yesButton.disabled = true;
+        return;
+    }
+
+    const maxUses = Number.isFinite(Number(skill.maxUses)) ? Math.max(1, Math.floor(Number(skill.maxUses))) : 1;
+    const used = typeof getPlayerSkillUseCount === 'function'
+        ? getPlayerSkillUseCount(player, skill.key)
+        : Math.max(0, Number(player?.skillUseCounts?.[skill.key] || 0));
+
+    const turnBlocked = GameState.currentTurn !== 'player';
+    const gameEnded = !!GameState.gameEnded;
+    const canActivate = !turnBlocked && !gameEnded && status.ok;
+
+    nameEl.textContent = `スキル: ${skill.name}`;
+    conditionEl.textContent = `条件: ${skill.condition || 'なし'}`;
+    effectEl.textContent = `効果: ${skill.effect || 'なし'}`;
+    usageEl.textContent = `使用回数: ${used}/${maxUses}`;
+
+    if (gameEnded) {
+        statusEl.textContent = 'ゲーム終了後は発動できません。';
+    } else if (turnBlocked) {
+        statusEl.textContent = '自分のターン中のみ発動できます。';
+    } else if (canActivate) {
+        statusEl.textContent = '発動可能です。';
+    } else {
+        statusEl.textContent = status.reason || '現在は発動できません。';
+    }
+
+    yesButton.disabled = !canActivate;
+    yesButton.classList.toggle('ready', canActivate);
+    yesButton.textContent = 'このスキルを発動';
+}
+
 function renderShopButtons() {
     const player = GameState.players.player;
     const disabled = GameState.currentTurn !== 'player' || !!GameState.selectionMode || GameState.gameEnded;
@@ -1588,6 +1777,7 @@ function updateUI() {
     renderPacks(GameState.players.player, byId('player-packs'));
     renderPacks(GameState.players.cpu, byId('cpu-packs'));
     renderCandidateRecipes();
+    renderSkillHud();
     renderShopButtons();
     renderDiscardButton();
     renderDishSummaries();
@@ -1599,6 +1789,7 @@ function updateUI() {
     renderEventConfirmPanel();
     renderSetViewPanel();
     renderIngredientActionPanel();
+    renderSkillConfirmPanel();
     renderPileConfirmPanel();
     renderPileViewPanel();
     renderEndTurnConfirmPanel();

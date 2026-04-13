@@ -5,6 +5,7 @@ const USER_COIN_RULES = Object.freeze({
     perMatch: 2,
     perWin: 4
 });
+const USER_RECENT_DISH_LIMIT = 24;
 
 const DEFAULT_BACKGROUND_DESIGN_KEY = 'default';
 
@@ -64,6 +65,7 @@ function createDefaultUserProfile() {
         userId: `user-${Math.random().toString(36).slice(2, 10)}`,
         name: 'Player',
         favoriteCharacterId: 'chizuru',
+        favoriteSkillKey: 'lastOrder',
         coins: 0,
         unlockedBackgroundDesignKeys: [DEFAULT_BACKGROUND_DESIGN_KEY],
         selectedBackgroundDesignKey: DEFAULT_BACKGROUND_DESIGN_KEY,
@@ -72,6 +74,7 @@ function createDefaultUserProfile() {
             wins: 0,
             dishes: 0
         },
+        recentDishes: [],
         updatedAt: Date.now()
     };
 }
@@ -87,11 +90,44 @@ function sanitizeCharacterId(characterId) {
     return valid.includes(characterId) ? characterId : 'chizuru';
 }
 
+function sanitizeSkillKey(skillKey) {
+    const safe = String(skillKey || '').trim();
+    if (!safe) return 'lastOrder';
+
+    const fallback = 'lastOrder';
+    const defs = typeof getSkillDefinitions === 'function' ? getSkillDefinitions() : null;
+    if (!Array.isArray(defs) || defs.length === 0) return fallback;
+    return defs.some(item => item && item.key === safe) ? safe : (defs[0]?.key || fallback);
+}
+
+function sanitizeDishName(name) {
+    const text = String(name ?? '').trim();
+    if (!text) return '';
+    return text.slice(0, 40);
+}
+
 function sanitizeNumber(value, fallback = 0) {
     const n = Number(value);
     if (!Number.isFinite(n)) return fallback;
     if (n < 0) return 0;
     return Math.floor(n);
+}
+
+function normalizeRecentDishes(rawList) {
+    if (!Array.isArray(rawList)) return [];
+
+    const normalized = [];
+    rawList.forEach(item => {
+        if (!item || typeof item !== 'object') return;
+        const name = sanitizeDishName(item.name);
+        if (!name) return;
+        normalized.push({
+            name,
+            cookedAt: sanitizeNumber(item.cookedAt, Date.now())
+        });
+    });
+
+    return normalized.slice(0, USER_RECENT_DISH_LIMIT);
 }
 
 function getBackgroundDesignByKey(designKey) {
@@ -139,6 +175,7 @@ function normalizeUserProfile(raw) {
         userId: String(source.userId || defaults.userId),
         name: sanitizeName(source.name),
         favoriteCharacterId: sanitizeCharacterId(source.favoriteCharacterId),
+        favoriteSkillKey: sanitizeSkillKey(source.favoriteSkillKey),
         coins: sanitizeNumber(source.coins, 0),
         unlockedBackgroundDesignKeys,
         selectedBackgroundDesignKey,
@@ -147,6 +184,7 @@ function normalizeUserProfile(raw) {
             wins: sanitizeNumber(stats.wins, 0),
             dishes: sanitizeNumber(stats.dishes, 0)
         },
+        recentDishes: normalizeRecentDishes(source.recentDishes),
         updatedAt: sanitizeNumber(source.updatedAt, Date.now())
     };
 }
@@ -198,10 +236,11 @@ function mutateUserProfile(mutator) {
     return saveUserProfileToStorage(next);
 }
 
-function updateUserBasicSettings({ name, favoriteCharacterId }) {
+function updateUserBasicSettings({ name, favoriteCharacterId, favoriteSkillKey }) {
     return mutateUserProfile(profile => {
         profile.name = sanitizeName(name ?? profile.name);
         profile.favoriteCharacterId = sanitizeCharacterId(favoriteCharacterId ?? profile.favoriteCharacterId);
+        profile.favoriteSkillKey = sanitizeSkillKey(favoriteSkillKey ?? profile.favoriteSkillKey);
         return profile;
     });
 }
@@ -210,15 +249,24 @@ function resetUserProfile() {
     return saveUserProfileToStorage(createDefaultUserProfile());
 }
 
-function recordDishCooked(count = 1) {
+function recordDishCooked(count = 1, dishName = '') {
     const addCount = sanitizeNumber(count, 0);
     if (addCount <= 0) return { coinsGained: 0, profile: getUserProfile() };
+    const safeDishName = sanitizeDishName(dishName);
 
     let gained = 0;
     const updated = mutateUserProfile(profile => {
         profile.stats.dishes += addCount;
         gained = USER_COIN_RULES.perDishCook * addCount;
         profile.coins += gained;
+        if (safeDishName) {
+            const history = Array.isArray(profile.recentDishes) ? profile.recentDishes : [];
+            history.unshift({
+                name: safeDishName,
+                cookedAt: Date.now()
+            });
+            profile.recentDishes = normalizeRecentDishes(history);
+        }
         return profile;
     });
     return { coinsGained: gained, profile: updated };

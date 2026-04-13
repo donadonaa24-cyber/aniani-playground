@@ -1,125 +1,295 @@
-Battle a la carte - UPDATE LOG
+﻿Battle a la carte - 更新ログ
 ================================
 
-Rule
-----
-- Update this file every time we modify or improve the project.
-- Add newest entry at the top.
-- Keep each entry short: Goal / Changes / Scope / Checks.
+記載ルール
+----------
+- このファイルは原則として日本語で記載する。
+- 修正・改善を行うたびに更新する。
+- 最新の記録を先頭に追記する。
+- 各記録は「目的 / 変更点 / 範囲 / 確認」で簡潔に書く。
 
-2026-04-12 (latest)
--------------------
-Goal:
-- Implement real coin exchange for background designs.
-- Make event card illustrations usable as subtle duel background designs.
-- Enable same behavior in web and mobile.
+2026-04-14 (最新)
+-----------------
+目的:
+- 更新ログを日本語中心に統一し、読みやすくする。
 
-Changes:
-- profile.js
-  - Added background design catalog data (default + event-based designs).
-  - Added persistent ownership/selection fields:
-    `unlockedBackgroundDesignKeys`, `selectedBackgroundDesignKey`.
-  - Added APIs:
-    `getBackgroundDesignCatalog`, `purchaseBackgroundDesign`, `setSelectedBackgroundDesign`.
-- render.js / mobile/render-sp.js
-  - Added runtime application for `backgroundDesign` (event art overlays).
-  - Added settings UI for:
-    - selecting owned background designs,
-    - buying locked designs with coins,
-    - showing current coin amount.
-  - Added purchase/select handlers with logs and immediate UI refresh.
-- main.js / mobile/main-sp.js
-  - Added user-stage coin shop renderer for background designs.
-  - Added buy/use interactions in user stage.
-  - Updated "coin shop" menu flow from placeholder to working exchange flow.
-- web.html / mobile/mobile.html
-  - Added `#user-background-shop` container to user stage.
-  - Bumped cache version to `20260412g`.
-- style.css / mobile/style-sp.css
-  - Added soft background-design overlay layers (low-opacity, readability-safe).
-  - Added settings-shop card styles.
-  - Added user-stage background shop styles.
+変更点:
+- `UPDATE_LOG.txt` の全体構成と本文を日本語へ統一。
+- 今後の運用ルール（日本語記載）を明文化。
 
-Scope:
-- Web and mobile: start menu user stage + in-battle settings.
-- Profile persistence and coin spending flow.
+範囲:
+- ドキュメント（更新ログ）
 
-Checks:
-- Owned designs can be selected.
-- Locked designs require coins and deduct on purchase.
-- Purchased design applies immediately to duel background.
-- Background art is intentionally faded to avoid blocking field readability.
+確認:
+- 見出し・項目名・本文が日本語で読めること。
 
-2026-04-12 (previous)
--------------------
-Goal:
-- Web: make first-turn cards use the same card-back style as mobile.
-- Web: ensure cook button shows "!" when recipes are available.
-- Web: remove duplicate log display.
-- Web: remove bottom static info and replace with simple phase flow guide.
+2026-04-14 (前回)
+-----------------
+目的:
+- スタート画面の使い勝手を改善する。
+- ユーザー情報とコイン交換を分離する。
 
-Changes:
-- web.html
-  - Removed duplicate log area element (`#log-area`) from realtime log panel.
-  - Replaced bottom `reference-layout` section with a compact phase flow guide section.
-  - Bumped cache query version to `20260412f`.
-- style.css
-  - Added `#cook-button.has-recipe-alert` badge style ("!").
-  - Updated web start-turn card style to use card-back image like mobile.
-  - Added `phase-guide-layout` / `phase-guide-box` styles.
-- render.js
-  - Rules overlay now has fallback rule text when mini-rule DOM blocks are not present.
-  - Added phase flow block in rules overlay:
-    `Draw -> Cook/Set/Event -> End -> Hand Adjust`.
+変更点:
+- `web.html` / `mobile/mobile.html`
+  - `コイン交換所` 用の独立ステージ（`start-coin-stage`）を追加。
+  - `ユーザー情報` から交換UIを分離。
+  - `推しスキル` 選択UIを追加。
+  - `よく作る料理` 表示エリアを追加。
+  - スキル選択に詳細表示エリア（`#start-skill-detail`）を追加。
+- `main.js` / `mobile/main-sp.js`
+  - `getPreferredStartSkillKey()` を追加し、対戦前の初期選択に反映。
+  - コイン画面専用の表示・メッセージ処理を追加。
+  - メニュー遷移を整理（`コイン交換所` と `ユーザー情報` を分離）。
+  - スキル選択を 2列×3行の固定タイル表示に変更。
+- `profile.js`
+  - `favoriteSkillKey` をプロフィール保存項目に追加。
+  - `recentDishes`（最近作った料理履歴）を追加。
+  - `recordDishCooked(count, dishName)` で料理名を保存可能に変更。
+- `player.js` / `mobile/player-sp.js`
+  - 料理作成時に料理名を `recordDishCooked` へ渡すよう更新。
+- `style.css` / `mobile/style-sp.css`
+  - 2x3スキルタイル、スキル詳細欄、料理履歴表示のスタイル追加。
+  - 戻るボタンを押しやすくするため、下部固定フッターを追加。
+- キャッシュ対策
+  - 参照バージョンを `20260414b` に更新。
 
-Scope:
-- Web UI only (desktop page).
+範囲:
+- Web版・モバイル版のスタート画面UIとプロフィール保存ロジック。
 
-Checks:
-- First-turn cards in web now display card-back design.
-- Cook button can display "!" when recipe candidates are available.
-- Realtime log panel no longer shows duplicate lines.
-- Bottom area now shows phase flow summary instead of old static lists.
+確認:
+- ユーザー情報とコイン交換所が別画面で開くこと。
+- 推しキャラ・推しスキルが次回セットアップの初期値に反映されること。
+- スキル6種が1画面で選択しやすいこと。
 
-2026-04-12 (previous)
----------------------
-Goal:
-- Improve usability for crowded hands and long recipe candidate lists.
+2026-04-14 (前回)
+-----------------
+目的:
+- 残っていた文字化けを解消する。
 
-Changes:
-- render.js / mobile/render-sp.js
-  - Added horizontal drag-scroll for hand/set/pack rows.
-  - Added wheel-to-horizontal scroll behavior.
-  - Added post-drag accidental click suppression.
-  - Added `expanded` class toggle for candidate panel when many recipes exist.
-- style.css / mobile/style-sp.css
-  - Updated hand/set/pack rows for horizontal scroll layout.
-  - Added drag state visuals (`grabbing`, `user-select` lock).
-  - Added candidate panel expansion styles.
-  - Made cancel row sticky so "Not now" stays reachable.
-- web.html / mobile/mobile.html
-  - Bumped cache query version to `20260412e`.
+変更点:
+- `web.html` / `mobile/mobile.html` の文字化け文言を修正。
+  - 例: `確認すめ -> 確認する`, `捨てめ -> 捨てる`, `保孁 -> 保存` など。
+- キャッシュ更新のため参照バージョンを `20260414a` に更新。
 
-Scope:
-- Web + Mobile duel screens.
+範囲:
+- Web版・モバイル版HTML文言。
 
-Checks:
-- Can reach end cards when hand is large.
-- "Not now" button stays accessible with many recipe candidates.
-- Dragging does not trigger unwanted card clicks.
+確認:
+- 捨て札/山札確認ボタン、ユーザー情報保存まわりの文言が正常表示されること。
 
-2026-04-12 (previous)
----------------------
-Goal:
-- Implement production friend battle with Firebase.
+2026-04-13 (前回)
+-----------------
+目的:
+- 対戦開始前の導線を分かりやすくする。
+- スキル確認UIを追加する。
 
-Changes:
-- Added Firestore real-time friend battle module (`friend-battle-firebase.js`).
-- Wired Firebase SDK and module into web/mobile HTML.
-- Added friend mode flow changes in main/player/render scripts.
-- Added `winner` state to web/mobile state files for sync consistency.
-- Added and updated Firebase setup files/docs.
+変更点:
+- セットアップを 3段階に整理（キャラ -> スキル -> 先攻後攻）。
+- スキル発動前に詳細確認できるパネルを追加。
+- ルール表示にスキル一覧を追加。
+- 一部HTMLの文字崩れとタグ崩れを修復。
 
-Checks:
-- With valid `firebase-config.js`, two devices can create/join by passphrase.
-- Firebase Anonymous Auth and Firestore rules are enabled.
+範囲:
+- Web版・モバイル版のスタート画面と対戦中スキルUI。
+
+確認:
+- 3段階遷移が正常に進むこと。
+- スキル確認から発動できること。
+
+2026-04-13 (前回)
+-----------------
+目的:
+- HTMLの文字コード不整合で発生していた文字化けを修正。
+
+変更点:
+- `web.html` / `mobile/mobile.html` を UTF-8 前提で整備。
+- 読めない表示を日本語として復旧。
+
+範囲:
+- Web版・モバイル版HTML。
+
+確認:
+- 主要UI文言が文字化けしないこと。
+
+2026-04-13 (前回)
+-----------------
+目的:
+- スキルシステムを試作実装し、CPU挙動と連携する。
+
+変更点:
+- スキル6種を実装（使用回数・条件・効果を管理）。
+- CPU性格（バランス/妨害/逆転）とスキル優先ロジックを追加。
+- 対戦HUDでスキル状態（未使用/使用済み/発動可）を表示。
+- フレンド同期対象にスキル関連状態を追加。
+
+範囲:
+- 戦闘ロジック、UI、CPU挙動、同期データ。
+
+確認:
+- 1戦1スキル選択、回数制限、対象選択系スキルが機能すること。
+
+2026-04-12 (前回)
+-----------------
+目的:
+- Firestoreのセキュリティを参加者限定に強化する。
+
+変更点:
+- `firestore.rules` をホスト/ゲストUIDのみ読書き可の方針に更新。
+- `FIREBASE_SETUP.md` に運用チェック手順を追記。
+
+範囲:
+- Firebase Firestore セキュリティ設定。
+
+確認:
+- 参加者以外がルーム文書へアクセスできないこと。
+
+2026-04-12 (前回)
+-----------------
+目的:
+- コイン交換所を本格運用できる状態にする。
+
+変更点:
+- 背景デザインのカタログ/購入/選択ロジックを追加。
+- イベントカードイラスト背景を交換対象として追加。
+- 設定画面とユーザー画面に交換UIを追加。
+
+範囲:
+- プロフィール、設定UI、背景描画。
+
+確認:
+- コイン消費、解放、選択反映が正常に動くこと。
+
+2026-04-12 (前回)
+-----------------
+目的:
+- Web版UIの視認性・重複表示を改善する。
+
+変更点:
+- 先攻後攻カードをモバイル同等の裏面デザインに統一。
+- 料理作成ボタンの `!` 表示対応。
+- 重複ログ表示を削除。
+- 画面下の固定情報を整理し、フェイズ進行説明に置換。
+
+範囲:
+- Web版UI。
+
+確認:
+- ログ重複が解消され、進行説明が表示されること。
+
+2026-04-12 (前回)
+-----------------
+目的:
+- 手札が多い時の操作性を改善する。
+
+変更点:
+- 手札・セット・加工エリアに横ドラッグスクロールを追加。
+- 候補料理が多い時の表示領域を拡張。
+- 「やめる」ボタンを押しやすくするため固定表示を調整。
+
+範囲:
+- Web版・モバイル版の対戦画面UI。
+
+確認:
+- 大量手札でもカード選択しやすいこと。
+
+2026-04-12 (前回)
+-----------------
+目的:
+- Firebaseを使ったフレンド対戦の基盤を導入する。
+
+変更点:
+- `friend-battle-firebase.js` を追加。
+- Web版/モバイル版にFirebase SDKと連携処理を組み込み。
+- ルーム作成・参加の基本導線を追加。
+
+範囲:
+- フレンド対戦のリアルタイム同期基盤。
+
+確認:
+- Firebase設定済み環境で、合言葉ルームの作成/参加が行えること。
+
+2026-04-14
+-----------------
+目的:
+- スキル発動時のイベントカードコストを自動破棄ではなく、プレイヤーが選択できるようにする。
+
+変更点:
+- Web版/モバイル版で、イベントコストが必要なスキル発動時に「捨てるイベントカード選択」ステップを追加。
+- 選択したイベントカードIDを使ってコスト処理するように変更（先頭カードの自動破棄を廃止）。
+- コスト選択後に対象選択が必要なスキルはそのまま次ステップへ遷移するよう調整。
+
+範囲:
+- スキル発動フロー（Web版/モバイル版）。
+
+確認:
+- コストが必要なスキルで、任意のイベントカードを選んで発動できること。
+- コストのみのスキル、コスト+対象選択スキルの両方で正常動作すること。
+
+2026-04-14
+-----------------
+目的:
+- 公式ホームページのXリンク先アカウントを変更する。
+
+変更点:
+- `index.html` のXリンクURLを `https://x.com/aniani_asobiba` に変更。
+- 表示文言のアカウント名も `@aniani_asobiba` に変更。
+
+範囲:
+- 公式ホームページの外部リンク表示。
+
+確認:
+- ホームページのXボタンから新アカウントに遷移すること。
+
+2026-04-14
+-----------------
+目的:
+- スキル発動時にキャラクター別のカットイン演出を追加する。
+
+変更点:
+- 4キャラ分のスキル発動カットイン画像を `assets/images/skill-cutins/` に追加。
+- Web版/モバイル版で、スキル発動時に専用スポットライト（2秒）を表示する処理を追加。
+- 演出中の見た目を強化するため、スキル専用のオーバーレイ/カード演出（発光・シーン）を追加。
+- GitHub Pagesのキャッシュ対策として `web.html` と `mobile/mobile.html` の読み込みバージョンを `20260414c` に更新。
+
+範囲:
+- スキル発動演出（Web版/モバイル版）、スポットライトCSS、静的画像アセット。
+
+確認:
+- プレイヤー/CPUどちらのスキル発動でも、選択キャラに応じたカットイン画像が表示されること。
+- イベントカード演出と同じ表示時間（約2秒）で自動で消えること。
+
+2026-04-14
+-----------------
+目的:
+- 味見泥棒などイベントコスト選択付きスキルの確定不具合を修正し、Web版の手札調整案内を見やすくする。
+
+変更点:
+- スキルコスト選択で `costEventId` が数値IDでも正しく判定できるように修正（文字列限定判定を廃止）。
+- コストID比較を型差異に強い比較へ変更し、選択後に確定が無反応になる問題を修正。
+- Web版の「エンドフェイズ: あと◯枚捨ててください」を画面中央の強調表示に変更。
+- キャッシュ更新のため `web.html` / `mobile/mobile.html` の読み込みバージョンを `20260414d` に更新。
+
+範囲:
+- スキル発動フロー（Web版/モバイル版）、Web版の捨て札案内表示、HTMLバージョン文字列。
+
+確認:
+- 味見泥棒でイベントコストを選択→確定すると発動すること。
+- Web版で手札調整が必要なとき、中央に案内が表示されること。
+
+2026-04-14
+-----------------
+目的:
+- Web版のリセットボタン重複を解消し、設定内リセットのみ残す。
+
+変更点:
+- `web.html` のヘッダー（ゲーム画面上部）にあった `ゲームリセット` ボタンを削除。
+- `main.js` の `reset-game-button` 用イベント登録を削除。
+- 設定オーバーレイ内の `settings-reset-button` はそのまま維持。
+- Web版キャッシュ更新のため `web.html` の読み込みバージョンを `20260414e` に更新。
+
+範囲:
+- Web版ヘッダーUI、Web版イベントバインド、Web版HTMLバージョン文字列。
+
+確認:
+- ゲーム画面上部にリセットボタンが表示されないこと。
+- 設定画面内のリセットボタンは引き続き利用できること。

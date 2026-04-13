@@ -8,11 +8,14 @@
         knifeSelectedName: null,
         knifeUsedThisTurn: false,
         usedEventThisTurn: false,
+        extraEventUsesRemainingThisTurn: 0,
         lockedCookingThisTurn: false,
         cookedRecipes: [],
         cookedMeatTypes: [],
         recipesCookedThisTurn: 0,
-        startedTurnBehindThisTurn: false
+        startedTurnBehindThisTurn: false,
+        selectedSkillKey: null,
+        skillUseCounts: {}
     };
 }
 
@@ -25,6 +28,127 @@ function createGameSettings() {
         bgmEnabled: true,
         bgmTrack: 'default'
     };
+}
+
+const SKILL_DEFINITIONS = [
+    {
+        key: 'lastOrder',
+        name: 'ラストオーダー',
+        condition: '相手が8点以上で、自分より得点が高い',
+        effect: 'イベント1枚を捨てる。このターン、イベントカードを追加で1回使える。',
+        maxUses: 1,
+        requiresEventDiscard: true
+    },
+    {
+        key: 'kitchenInfiltration',
+        name: '厨房潜入',
+        condition: '自分の得点が相手より低く、かつ5点以下',
+        effect: 'イベント1枚を捨てる。相手セット1枚と自分手札1枚を交換する。',
+        maxUses: 1,
+        requiresEventDiscard: true
+    },
+    {
+        key: 'makanaiSupply',
+        name: 'まかない補給',
+        condition: '相手が5点以上で、自分の料理履歴が0件',
+        effect: '山札から2枚引く。',
+        maxUses: 1,
+        requiresEventDiscard: false
+    },
+    {
+        key: 'foodTrap',
+        name: '食材トラップ',
+        condition: '自分が3点以下で、相手セットに空きがある',
+        effect: '自分の材料1枚を相手セットに公開配置（相手は料理に使えない）。',
+        maxUses: 1,
+        requiresEventDiscard: false
+    },
+    {
+        key: 'aceProcurement',
+        name: '切り札調達',
+        condition: '相手が8点以上',
+        effect: '山札から材料カード1枚を選んで手札に加える。',
+        maxUses: 1,
+        requiresEventDiscard: false
+    },
+    {
+        key: 'tasteThief',
+        name: '味見泥棒',
+        condition: '自分の得点が9点未満',
+        effect: 'イベント1枚を捨てる。相手-1点、自分+1点。',
+        maxUses: 2,
+        requiresEventDiscard: true
+    }
+];
+
+const CPU_PERSONALITY_OPTIONS = [
+    { key: 'default', label: '標準' },
+    { key: 'balance', label: 'バランス型' },
+    { key: 'disrupt', label: '妨害型' },
+    { key: 'comeback', label: '逆転型' }
+];
+
+const CPU_PERSONALITY_SKILL_PRIORITY = {
+    default: ['makanaiSupply', 'aceProcurement', 'lastOrder', 'tasteThief', 'kitchenInfiltration', 'foodTrap'],
+    balance: ['makanaiSupply', 'aceProcurement', 'lastOrder', 'tasteThief', 'kitchenInfiltration', 'foodTrap'],
+    disrupt: ['kitchenInfiltration', 'foodTrap', 'tasteThief', 'lastOrder', 'makanaiSupply', 'aceProcurement'],
+    comeback: ['lastOrder', 'tasteThief', 'aceProcurement', 'makanaiSupply', 'kitchenInfiltration', 'foodTrap']
+};
+
+function getSkillDefinitions() {
+    return SKILL_DEFINITIONS;
+}
+
+function getSkillDefinitionByKey(skillKey) {
+    return SKILL_DEFINITIONS.find(item => item.key === skillKey) || null;
+}
+
+function getCpuPersonalityOptions() {
+    return CPU_PERSONALITY_OPTIONS;
+}
+
+function normalizeCpuPersonalityKey(key) {
+    const value = String(key || 'default');
+    return CPU_PERSONALITY_OPTIONS.some(item => item.key === value) ? value : 'default';
+}
+
+function getCpuPersonalitySkillPriority(personalityKey) {
+    const key = normalizeCpuPersonalityKey(personalityKey);
+    return CPU_PERSONALITY_SKILL_PRIORITY[key] || CPU_PERSONALITY_SKILL_PRIORITY.default;
+}
+
+function ensurePlayerSkillState(player) {
+    if (!player || typeof player !== 'object') return;
+
+    if (!player.selectedSkillKey || !getSkillDefinitionByKey(player.selectedSkillKey)) {
+        player.selectedSkillKey = null;
+    }
+
+    if (!player.skillUseCounts || typeof player.skillUseCounts !== 'object' || Array.isArray(player.skillUseCounts)) {
+        player.skillUseCounts = {};
+    }
+
+    if (!Number.isFinite(Number(player.extraEventUsesRemainingThisTurn))) {
+        player.extraEventUsesRemainingThisTurn = 0;
+    } else {
+        player.extraEventUsesRemainingThisTurn = Math.max(0, Math.floor(Number(player.extraEventUsesRemainingThisTurn)));
+    }
+}
+
+function getPlayerSkillUseCount(player, skillKey) {
+    ensurePlayerSkillState(player);
+    if (!skillKey) return 0;
+
+    const raw = Number(player.skillUseCounts[skillKey] || 0);
+    return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+function setPlayerSelectedSkill(player, skillKey) {
+    ensurePlayerSkillState(player);
+    const def = getSkillDefinitionByKey(skillKey);
+    player.selectedSkillKey = def ? def.key : null;
+    player.skillUseCounts = {};
+    player.extraEventUsesRemainingThisTurn = 0;
 }
 
 const GameState = {
@@ -43,6 +167,8 @@ const GameState = {
     gameEnded: false,
     winner: null,
     pendingEventContext: null,
+    pendingSkillContext: null,
+    pendingSkillConfirm: null,
     selectedTargetIds: [],
     pendingSetCardId: null,
     pendingEventCardId: null,
@@ -90,11 +216,14 @@ function resetPlayerState(player) {
     player.knifeSelectedName = null;
     player.knifeUsedThisTurn = false;
     player.usedEventThisTurn = false;
+    player.extraEventUsesRemainingThisTurn = 0;
     player.lockedCookingThisTurn = false;
     player.cookedRecipes = [];
     player.cookedMeatTypes = [];
     player.recipesCookedThisTurn = 0;
     player.startedTurnBehindThisTurn = false;
+    player.selectedSkillKey = null;
+    player.skillUseCounts = {};
 }
 
 function resetUiState() {
@@ -105,6 +234,8 @@ function resetUiState() {
     GameState.gameEnded = false;
     GameState.winner = null;
     GameState.pendingEventContext = null;
+    GameState.pendingSkillContext = null;
+    GameState.pendingSkillConfirm = null;
     GameState.selectedTargetIds = [];
     GameState.pendingSetCardId = null;
     GameState.pendingEventCardId = null;
@@ -122,8 +253,10 @@ function resetUiState() {
 }
 
 function markTurnStartStatus(currentPlayer, opponentPlayer) {
+    ensurePlayerSkillState(currentPlayer);
     currentPlayer.recipesCookedThisTurn = 0;
     currentPlayer.startedTurnBehindThisTurn = currentPlayer.score < opponentPlayer.score;
+    currentPlayer.extraEventUsesRemainingThisTurn = 0;
 }
 
 function ensureDeckExists() {
@@ -283,6 +416,8 @@ function initGame() {
     ensureDeckExists();
     drawUntilTargetHand(GameState.players.player);
     drawUntilTargetHand(GameState.players.cpu);
+    ensurePlayerSkillState(GameState.players.player);
+    ensurePlayerSkillState(GameState.players.cpu);
 
     markTurnStartStatus(GameState.players.player, GameState.players.cpu);
     markTurnStartStatus(GameState.players.cpu, GameState.players.player);
@@ -330,5 +465,14 @@ window.reshuffleDiscardIntoDeckIfNeeded = reshuffleDiscardIntoDeckIfNeeded;
 window.markTurnStartStatus = markTurnStartStatus;
 window.ensureDeckExists = ensureDeckExists;
 window.getCardZoneSummary = getCardZoneSummary;
+window.getSkillDefinitions = getSkillDefinitions;
+window.getSkillDefinitionByKey = getSkillDefinitionByKey;
+window.getCpuPersonalityOptions = getCpuPersonalityOptions;
+window.normalizeCpuPersonalityKey = normalizeCpuPersonalityKey;
+window.getCpuPersonalitySkillPriority = getCpuPersonalitySkillPriority;
+window.ensurePlayerSkillState = ensurePlayerSkillState;
+window.getPlayerSkillUseCount = getPlayerSkillUseCount;
+window.setPlayerSelectedSkill = setPlayerSelectedSkill;
+
 
 

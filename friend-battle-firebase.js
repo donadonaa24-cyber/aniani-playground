@@ -95,6 +95,9 @@
             next.pendingEventContext.selfPlayerKey = swapSideKey(next.pendingEventContext.selfPlayerKey);
             next.pendingEventContext.enemyPlayerKey = swapSideKey(next.pendingEventContext.enemyPlayerKey);
         }
+        if (next.pendingSkillConfirm && typeof next.pendingSkillConfirm === 'object') {
+            next.pendingSkillConfirm.actor = swapSideKey(next.pendingSkillConfirm.actor);
+        }
 
         return next;
     }
@@ -177,11 +180,14 @@
             knifeSelectedName: null,
             knifeUsedThisTurn: false,
             usedEventThisTurn: false,
+            extraEventUsesRemainingThisTurn: 0,
             lockedCookingThisTurn: false,
             cookedRecipes: [],
             cookedMeatTypes: [],
             recipesCookedThisTurn: 0,
-            startedTurnBehindThisTurn: false
+            startedTurnBehindThisTurn: false,
+            selectedSkillKey: null,
+            skillUseCounts: {}
         };
     }
 
@@ -219,6 +225,8 @@
         GameState.gameEnded = !!source.gameEnded;
         GameState.winner = source.winner || null;
         GameState.pendingEventContext = source.pendingEventContext || null;
+        GameState.pendingSkillContext = source.pendingSkillContext || null;
+        GameState.pendingSkillConfirm = source.pendingSkillConfirm || null;
         GameState.selectedTargetIds = Array.isArray(source.selectedTargetIds) ? source.selectedTargetIds : [];
         GameState.pendingSetCardId = source.pendingSetCardId || null;
         GameState.pendingEventCardId = source.pendingEventCardId || null;

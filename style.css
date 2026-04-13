@@ -50,14 +50,40 @@ body {
 }
 
 .discard-banner {
-    margin-top: 6px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: #ffefc7;
-    border: 2px solid #e2ad35;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9400;
+    width: min(92vw, 560px);
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(255, 246, 220, 0.96);
+    border: 3px solid #e2ad35;
     color: #8a4c00;
-    font-size: 18px;
-    font-weight: bold;
+    text-align: center;
+    font-size: clamp(19px, 2vw, 28px);
+    font-weight: 900;
+    line-height: 1.45;
+    letter-spacing: 0.2px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+    pointer-events: none;
+    animation: discardBannerPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes discardBannerPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.02);
+        box-shadow: 0 14px 42px rgba(0, 0, 0, 0.42);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+    }
 }
 
 .hidden {
@@ -160,6 +186,79 @@ body {
 .spotlight-card.recipe {
     border-color: #efb44f;
     background: linear-gradient(180deg, #fff8ea 0%, #ffe0a6 100%);
+}
+
+.spotlight-overlay.spotlight-skill {
+    background: rgba(12, 7, 2, 0.6);
+    backdrop-filter: blur(2px) saturate(1.15);
+}
+
+.spotlight-overlay.spotlight-skill .spotlight-card-shell {
+    animation: skillCutinPop 0.28s ease-out;
+}
+
+.spotlight-card.skill {
+    width: min(92vw, 960px);
+    min-height: 0;
+    border-color: #ffd878;
+    background: radial-gradient(circle at 50% 20%, #fff0c4 0%, #e28600 72%, #8f4300 100%);
+    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.46);
+}
+
+.spotlight-card.skill::before {
+    content: '';
+    position: absolute;
+    inset: -32% -58%;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0) 35%, rgba(255, 245, 208, 0.82) 50%, rgba(255, 255, 255, 0) 65%);
+    transform: translateX(-65%) rotate(10deg);
+    animation: skillCutinSheen 1.8s ease-out 1;
+}
+
+.spotlight-card.skill .spotlight-art {
+    height: clamp(220px, 56vh, 560px);
+    background-size: cover;
+    background-position: center top;
+    background-color: rgba(35, 16, 0, 0.58);
+    filter: saturate(1.12) contrast(1.08);
+}
+
+.spotlight-card.skill .spotlight-name {
+    font-size: clamp(22px, 3.2vw, 38px);
+    letter-spacing: 1px;
+    color: #fff5d0;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.68);
+}
+
+.spotlight-card.skill .spotlight-sub {
+    font-size: clamp(13px, 1.45vw, 20px);
+    color: #ffe8ad;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes skillCutinPop {
+    0% {
+        opacity: 0;
+        transform: translateX(18px) scale(0.96);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes skillCutinSheen {
+    0% {
+        opacity: 0;
+        transform: translateX(-68%) rotate(10deg);
+    }
+    25% {
+        opacity: 0.95;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(66%) rotate(10deg);
+    }
 }
 
 .spotlight-art {
@@ -273,6 +372,52 @@ body {
     width: fit-content;
 }
 
+.side-skill-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: #6f3d00;
+}
+
+.side-skill-state {
+    font-size: 11px;
+    color: #7b4e13;
+}
+
+.side-skill-button {
+    width: fit-content;
+    border: 1px solid #b67b3b;
+    border-radius: 999px;
+    background: #f4e5cc;
+    color: #6a3a00;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 4px 10px;
+}
+
+.side-skill-button:disabled {
+    opacity: 0.56;
+}
+
+.side-skill-button.ready {
+    border-color: #ff9b2f;
+    background: linear-gradient(180deg, #ffe49f 0%, #ffc66a 100%);
+    box-shadow: 0 0 10px rgba(255, 173, 66, 0.52);
+    animation: skill-ready-glow 1.6s ease-in-out infinite;
+}
+
+#skill-confirm-yes-button.ready {
+    border-color: #ff9b2f;
+    background: linear-gradient(180deg, #ffe49f 0%, #ffc66a 100%);
+    box-shadow: 0 0 10px rgba(255, 173, 66, 0.52);
+    animation: skill-ready-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes skill-ready-glow {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.14); }
+    100% { filter: brightness(1); }
+}
+
 .panel-box {
     padding: 8px;
     margin-bottom: 8px;
@@ -317,6 +462,24 @@ body {
 
 .card:hover {
     transform: translateY(-2px);
+}
+
+.trap-locked-card {
+    border-color: #ff7b7b;
+    box-shadow: 0 0 0 2px rgba(255, 120, 120, 0.22), 0 1px 6px rgba(0,0,0,0.2);
+}
+
+.trap-locked-card::after {
+    content: 'トラップ';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    padding: 1px 5px;
+    font-size: 9px;
+    border-radius: 8px;
+    background: rgba(171, 23, 23, 0.88);
+    color: #fff5f5;
+    font-weight: 900;
 }
 
 .card-title {
@@ -954,6 +1117,22 @@ button:disabled {
     .spotlight-badge {
         font-size: 17px;
     }
+
+    .spotlight-card.skill {
+        width: min(94vw, 760px);
+    }
+
+    .spotlight-card.skill .spotlight-art {
+        height: clamp(190px, 44vw, 380px);
+    }
+
+    .spotlight-card.skill .spotlight-name {
+        font-size: clamp(18px, 4.6vw, 30px);
+    }
+
+    .spotlight-card.skill .spotlight-sub {
+        font-size: clamp(12px, 3.2vw, 18px);
+    }
 }
 
 /* ===== v2 feature bridge (desktop web keeps existing layout) ===== */
@@ -1482,7 +1661,7 @@ button:disabled {
     background: linear-gradient(180deg, rgba(8,20,58,0.97) 0%, rgba(11,30,78,0.97) 100%);
     border: 1px solid rgba(140, 204, 255, 0.28);
     box-shadow: 0 20px 56px rgba(0,0,0,0.45);
-    padding: 16px;
+    padding: 16px 16px 20px;
     box-sizing: border-box;
     text-align: center;
     overflow-y: auto;
@@ -1490,6 +1669,12 @@ button:disabled {
 }
 
 .start-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.start-setup-step {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1701,6 +1886,17 @@ button:disabled {
     margin-top: 4px;
 }
 
+.start-stage-footer {
+    position: sticky;
+    bottom: -6px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 8px;
+    background: linear-gradient(180deg, rgba(8,20,58,0) 0%, rgba(8,20,58,0.97) 24%);
+}
+
 .start-user-form {
     text-align: left;
     border-radius: 12px;
@@ -1710,6 +1906,105 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.start-skill-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+}
+
+.start-skill-tile {
+    border: 1px solid rgba(168, 214, 255, 0.24);
+    border-radius: 12px;
+    background: rgba(7, 20, 55, 0.66);
+    padding: 8px;
+    min-height: 72px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+    color: #eaf6ff;
+}
+
+.start-skill-tile.active {
+    border-color: rgba(255, 208, 126, 0.68);
+    box-shadow: 0 0 0 1px rgba(255, 208, 126, 0.45) inset;
+    background: linear-gradient(180deg, rgba(255, 214, 137, 0.26) 0%, rgba(31, 80, 148, 0.65) 100%);
+}
+
+.start-skill-tile-name {
+    font-size: 12px;
+    font-weight: 900;
+    color: #ffe8a8;
+    line-height: 1.3;
+}
+
+.start-skill-tile-uses {
+    font-size: 11px;
+    font-weight: 800;
+    color: #9fd7ff;
+}
+
+.start-skill-detail {
+    border-radius: 12px;
+    border: 1px solid rgba(168, 214, 255, 0.2);
+    background: rgba(4, 15, 44, 0.58);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.start-skill-detail-name {
+    font-size: 12px;
+    font-weight: 900;
+    color: #ffe9ac;
+}
+
+.start-skill-detail-row {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.start-skill-detail-row span {
+    color: #9dcdf9;
+    font-weight: 900;
+}
+
+.start-skill-detail-row strong {
+    color: #e4f2ff;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.start-skill-rules-list {
+    display: grid;
+    gap: 8px;
+}
+
+.start-skill-rule-item {
+    border: 1px solid rgba(168, 214, 255, 0.24);
+    border-radius: 10px;
+    background: rgba(7, 20, 55, 0.66);
+    padding: 8px;
+    text-align: left;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #dff2ff;
+}
+
+.start-skill-rule-name {
+    color: #ffe8a8;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 4px;
 }
 
 .start-field-label {
@@ -1743,6 +2038,42 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.start-user-recent-wrap {
+    margin-top: 4px;
+}
+
+.start-user-recent-list {
+    margin-top: 2px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.start-user-recent-item {
+    border: 1px solid rgba(168, 214, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(4, 15, 44, 0.58);
+    padding: 6px 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    color: #dcefff;
+}
+
+.start-user-recent-item strong {
+    color: #ffe490;
+}
+
+.start-user-recent-empty {
+    border: 1px solid rgba(168, 214, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(4, 15, 44, 0.58);
+    padding: 8px;
+    font-size: 11px;
+    color: #c9e2fb;
 }
 
 .start-user-stat-row {

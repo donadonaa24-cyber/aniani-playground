@@ -47,8 +47,19 @@ function canRecipeBeMadeWithCounts(recipe, counts) {
     return true;
 }
 
+function isCardUsableForCooking(card) {
+    if (!card || card.type !== 'ingredient') return false;
+    return !(card.trapLocked === true || card.blockedByTrap === true);
+}
+
+function getUsableIngredientCards(player) {
+    const handCards = Array.isArray(player?.hand) ? player.hand.filter(isCardUsableForCooking) : [];
+    const setCards = Array.isArray(player?.set) ? player.set.filter(isCardUsableForCooking) : [];
+    return [...handCards, ...setCards];
+}
+
 function getRecipePlan(player, recipe) {
-    const allCards = [...player.hand, ...player.set];
+    const allCards = getUsableIngredientCards(player);
     const counts = countNamesFromCards(allCards);
     return canRecipeBeMadeWithCounts(recipe, counts)
         ? { recipe, doubledName: null, isValid: true }
@@ -78,6 +89,7 @@ function buildRequiredCountsForConsumption(recipe, doubledName) {
 function consumeCardsFromZone(zone, requiredCounts, usedCards) {
     for (let i = zone.length - 1; i >= 0; i--) {
         const card = zone[i];
+        if (!isCardUsableForCooking(card)) continue;
         if (requiredCounts[card.name] && requiredCounts[card.name] > 0) {
             requiredCounts[card.name]--;
             usedCards.push(zone.splice(i, 1)[0]);
@@ -143,3 +155,5 @@ window.countNamesFromCards = countNamesFromCards;
 window.findPossibleRecipesForPlayer = findPossibleRecipesForPlayer;
 window.getRecipePlan = getRecipePlan;
 window.applyRecipePlan = applyRecipePlan;
+window.getUsableIngredientCards = getUsableIngredientCards;
+window.isCardUsableForCooking = isCardUsableForCooking;

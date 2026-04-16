@@ -185,6 +185,9 @@
             cookedRecipes: [],
             cookedMeatTypes: [],
             recipesCookedThisTurn: 0,
+            battleALaCarteModeActive: false,
+            battleALaCarteModeBonusDrawUsedThisTurn: false,
+            battleALaCarteModeDiscardPickupUsedThisTurn: false,
             startedTurnBehindThisTurn: false,
             selectedSkillKey: null,
             skillUseCounts: {}

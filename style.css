@@ -193,8 +193,36 @@ body {
     backdrop-filter: blur(2px) saturate(1.15);
 }
 
+.spotlight-overlay.spotlight-battle-mode {
+    background: radial-gradient(circle at center, rgba(255, 206, 82, 0.28) 0%, rgba(18, 8, 2, 0.88) 72%);
+    backdrop-filter: blur(3px) saturate(1.3);
+    animation: battleModeSpotlightPulse 0.9s ease-in-out infinite alternate;
+}
+
+.spotlight-overlay.spotlight-battle-mode::before,
+.spotlight-overlay.spotlight-battle-mode::after {
+    content: '';
+    position: absolute;
+    inset: -24%;
+    pointer-events: none;
+}
+
+.spotlight-overlay.spotlight-battle-mode::before {
+    background: conic-gradient(from 0deg, rgba(255, 236, 174, 0.15), rgba(255, 153, 0, 0.38), rgba(255, 236, 174, 0.15));
+    filter: blur(18px);
+    animation: battleModeSpotlightSpark 2.3s linear infinite;
+}
+
+.spotlight-overlay.spotlight-battle-mode::after {
+    background: radial-gradient(circle, rgba(255, 244, 206, 0.2) 0%, rgba(255, 208, 121, 0.08) 36%, rgba(0, 0, 0, 0) 66%);
+}
+
 .spotlight-overlay.spotlight-skill .spotlight-card-shell {
     animation: skillCutinPop 0.28s ease-out;
+}
+
+.spotlight-overlay.spotlight-battle-mode .spotlight-card-shell {
+    animation: battleModeCutinPop 0.42s cubic-bezier(.2,.88,.18,1.12);
 }
 
 .spotlight-card.skill {
@@ -203,6 +231,41 @@ body {
     border-color: #ffd878;
     background: radial-gradient(circle at 50% 20%, #fff0c4 0%, #e28600 72%, #8f4300 100%);
     box-shadow: 0 22px 58px rgba(0, 0, 0, 0.46);
+}
+
+.spotlight-card.battle-mode {
+    width: min(94vw, 1020px);
+    min-height: 0;
+    border-color: #fff0b0;
+    background: radial-gradient(circle at 50% 14%, #fff8dd 0%, #ffc957 38%, #d27700 72%, #613400 100%);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.56), 0 0 46px rgba(255, 191, 83, 0.46);
+}
+
+.spotlight-card.battle-mode-text {
+    width: min(88vw, 880px);
+    min-height: 0;
+    border-color: #ffe9a9;
+    background: linear-gradient(180deg, #fff3d0 0%, #e79a2e 100%);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), 0 0 24px rgba(255, 204, 111, 0.35);
+}
+
+.spotlight-card.battle-mode::before {
+    content: '';
+    position: absolute;
+    inset: -34% -62%;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.88) 50%, rgba(255, 255, 255, 0) 72%);
+    transform: translateX(-72%) rotate(10deg);
+    animation: battleModeCutinHalo 1.45s ease-out 1;
+}
+
+.spotlight-card.battle-mode::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    box-shadow: inset 0 0 32px rgba(255, 250, 220, 0.42);
 }
 
 .spotlight-card.skill::before {
@@ -236,6 +299,41 @@ body {
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
+.spotlight-card.battle-mode .spotlight-art {
+    height: clamp(240px, 60vh, 620px);
+    background-size: cover;
+    background-position: center top;
+    background-color: rgba(45, 20, 0, 0.5);
+    filter: saturate(1.2) contrast(1.1) brightness(1.07);
+    animation: battleModeArtPulse 1.1s ease-in-out infinite alternate;
+}
+
+.spotlight-card.battle-mode .spotlight-name {
+    font-size: clamp(26px, 3.8vw, 50px);
+    letter-spacing: 1.5px;
+    color: #fff8dc;
+    text-shadow: 0 4px 14px rgba(0, 0, 0, 0.76), 0 0 18px rgba(255, 217, 120, 0.5);
+}
+
+.spotlight-card.battle-mode .spotlight-sub {
+    font-size: clamp(14px, 1.65vw, 24px);
+    color: #fff0c2;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.68);
+}
+
+.spotlight-card.battle-mode-text .spotlight-art,
+.spotlight-card.battle-mode-text .spotlight-sub {
+    display: none;
+}
+
+.spotlight-card.battle-mode-text .spotlight-name {
+    padding: clamp(18px, 2.6vw, 28px) clamp(18px, 3.2vw, 42px);
+    font-size: clamp(30px, 5.2vw, 58px);
+    letter-spacing: 1.4px;
+    color: #fff9e8;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.72), 0 0 14px rgba(255, 210, 115, 0.55);
+}
+
 @keyframes skillCutinPop {
     0% {
         opacity: 0;
@@ -259,6 +357,50 @@ body {
         opacity: 0;
         transform: translateX(66%) rotate(10deg);
     }
+}
+
+@keyframes battleModeSpotlightPulse {
+    0% { opacity: 0.95; }
+    100% { opacity: 1; }
+}
+
+@keyframes battleModeSpotlightSpark {
+    0% { transform: rotate(0deg) scale(1); }
+    100% { transform: rotate(360deg) scale(1.06); }
+}
+
+@keyframes battleModeCutinPop {
+    0% {
+        opacity: 0;
+        transform: scale(0.88) translateY(20px);
+    }
+    62% {
+        opacity: 1;
+        transform: scale(1.04) translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes battleModeCutinHalo {
+    0% {
+        opacity: 0;
+        transform: translateX(-78%) rotate(10deg);
+    }
+    18% {
+        opacity: 0.95;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(78%) rotate(10deg);
+    }
+}
+
+@keyframes battleModeArtPulse {
+    0% { filter: saturate(1.14) contrast(1.08) brightness(1.02); }
+    100% { filter: saturate(1.26) contrast(1.14) brightness(1.12); }
 }
 
 .spotlight-art {
@@ -331,9 +473,9 @@ body {
 .character-icon {
     width: 96px;
     height: 96px;
-    background-image: url("assets/images/character-icons-sheet.png");
     background-repeat: no-repeat;
-    background-size: 300% 200%;
+    background-position: center;
+    background-size: cover;
     background-color: transparent;
     border: none;
     border-radius: 0;
@@ -341,12 +483,63 @@ body {
     flex-shrink: 0;
 }
 
-.player-icon.face-normal { background-position: 0% 0%; }
-.player-icon.face-happy { background-position: 50% 0%; }
-.player-icon.face-worried { background-position: 100% 0%; }
-.cpu-icon.face-normal { background-position: 0% 100%; }
-.cpu-icon.face-happy { background-position: 50% 100%; }
-.cpu-icon.face-worried { background-position: 100% 100%; }
+.character-icon.battle-mode-chef {
+    position: relative;
+    overflow: visible;
+    filter: saturate(1.12) contrast(1.06) brightness(1.04)
+        drop-shadow(0 0 4px rgba(255, 222, 154, 0.64))
+        drop-shadow(0 0 9px rgba(255, 184, 66, 0.42));
+    background-repeat: no-repeat;
+    background-color: transparent;
+    animation: battleModeIconGlow 2.8s ease-in-out infinite;
+}
+
+.character-icon.battle-mode-chef::before,
+.character-icon.battle-mode-chef::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    border-radius: 999px;
+}
+
+.character-icon.battle-mode-chef::before {
+    inset: -14%;
+    background: conic-gradient(from 0deg, rgba(255, 238, 181, 0.03), rgba(255, 178, 62, 0.22), rgba(255, 238, 181, 0.03));
+    filter: blur(5px);
+    animation: battleModeIconHaloSpin 4.8s linear infinite;
+}
+
+.character-icon.battle-mode-chef::after {
+    inset: -6%;
+    border: 1.2px solid rgba(255, 233, 174, 0.56);
+    box-shadow: 0 0 5px rgba(255, 218, 132, 0.46);
+    animation: battleModeIconHaloPulse 1.75s ease-in-out infinite;
+}
+
+@keyframes battleModeIconGlow {
+    0% {
+        transform: scale(1);
+        filter: saturate(1.1) contrast(1.05) brightness(1.03)
+            drop-shadow(0 0 4px rgba(255, 216, 130, 0.62))
+            drop-shadow(0 0 8px rgba(255, 170, 54, 0.4));
+    }
+    100% {
+        transform: scale(1.015);
+        filter: saturate(1.18) contrast(1.08) brightness(1.08)
+            drop-shadow(0 0 6px rgba(255, 235, 172, 0.8))
+            drop-shadow(0 0 11px rgba(255, 196, 83, 0.52));
+    }
+}
+
+@keyframes battleModeIconHaloSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes battleModeIconHaloPulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.99); }
+    50% { opacity: 0.75; transform: scale(1.02); }
+}
 
 .character-name-row {
     display: flex;
@@ -1118,19 +1311,24 @@ button:disabled {
         font-size: 17px;
     }
 
-    .spotlight-card.skill {
+    .spotlight-card.skill,
+    .spotlight-card.battle-mode,
+    .spotlight-card.battle-mode-text {
         width: min(94vw, 760px);
     }
 
-    .spotlight-card.skill .spotlight-art {
+    .spotlight-card.skill .spotlight-art,
+    .spotlight-card.battle-mode .spotlight-art {
         height: clamp(190px, 44vw, 380px);
     }
 
-    .spotlight-card.skill .spotlight-name {
+    .spotlight-card.skill .spotlight-name,
+    .spotlight-card.battle-mode .spotlight-name {
         font-size: clamp(18px, 4.6vw, 30px);
     }
 
-    .spotlight-card.skill .spotlight-sub {
+    .spotlight-card.skill .spotlight-sub,
+    .spotlight-card.battle-mode .spotlight-sub {
         font-size: clamp(12px, 3.2vw, 18px);
     }
 }
@@ -1189,45 +1387,73 @@ button:disabled {
     background: linear-gradient(180deg, #eefbff 0%, #d7f3ff 100%);
 }
 
-.character-icon.char-chizuru {
-    background-image: url("assets/images/character-icons-sheet.png");
-    background-size: 300% 200%;
+.character-icon.char-chizuru,
+.start-char-portrait.char-chizuru {
+    background-image: url("assets/images/character-icons/chizuru-icons.png");
+    background-size: 380% auto;
 }
 
-.character-icon.char-chizuru.face-normal { background-position: 0% 0%; }
-.character-icon.char-chizuru.face-happy { background-position: 50% 0%; }
-.character-icon.char-chizuru.face-worried { background-position: 100% 0%; }
-
-.character-icon.char-mai {
-    background-image: url("assets/images/character-icons-sheet.png");
-    background-size: 300% 200%;
+.character-icon.char-mai,
+.start-char-portrait.char-mai {
+    background-image: url("assets/images/character-icons/mai-icons.png");
+    background-size: 380% auto;
 }
-
-.character-icon.char-mai.face-normal { background-position: 0% 100%; }
-.character-icon.char-mai.face-happy { background-position: 50% 100%; }
-.character-icon.char-mai.face-worried { background-position: 100% 100%; }
 
 .character-icon.char-takumi,
 .start-char-portrait.char-takumi {
-    background-image: url("assets/images/characters/takumi-alpha.png");
-    background-size: 314% auto;
+    background-image: url("assets/images/character-icons/takumi-icons.png");
+    background-size: 380% auto;
 }
 
 .character-icon.char-akatsuki,
 .start-char-portrait.char-akatsuki {
-    background-image: url("assets/images/characters/akatsuki-alpha.png");
-    background-size: 314% auto;
+    background-image: url("assets/images/character-icons/akatsuki-icons.png");
+    background-size: 380% auto;
 }
 
+.character-icon.char-chizuru.face-normal,
+.start-char-portrait.char-chizuru { background-position: calc(0% - 14px) 38%; }
+.character-icon.char-chizuru.face-happy { background-position: calc(50% - 8px) 38%; }
+.character-icon.char-chizuru.face-worried { background-position: calc(100% - 2px) 38%; }
+
+.character-icon.char-mai.face-normal,
+.start-char-portrait.char-mai { background-position: calc(0% - 14px) 38%; }
+.character-icon.char-mai.face-happy { background-position: calc(50% - 8px) 38%; }
+.character-icon.char-mai.face-worried { background-position: calc(100% - 2px) 38%; }
+
 .character-icon.char-takumi.face-normal,
-.start-char-portrait.char-takumi { background-position: calc(0% - 6px) 24%; }
-.character-icon.char-takumi.face-happy { background-position: calc(50% - 6px) 24%; }
-.character-icon.char-takumi.face-worried { background-position: calc(100% - 6px) 24%; }
+.start-char-portrait.char-takumi { background-position: calc(0% - 14px) 32%; }
+.character-icon.char-takumi.face-happy { background-position: calc(50% - 8px) 32%; }
+.character-icon.char-takumi.face-worried { background-position: calc(100% - 2px) 32%; }
 
 .character-icon.char-akatsuki.face-normal,
-.start-char-portrait.char-akatsuki { background-position: calc(0% - 7px) 22%; }
-.character-icon.char-akatsuki.face-happy { background-position: calc(50% - 7px) 22%; }
-.character-icon.char-akatsuki.face-worried { background-position: calc(100% - 7px) 22%; }
+.start-char-portrait.char-akatsuki { background-position: calc(0% - 14px) 32%; }
+.character-icon.char-akatsuki.face-happy { background-position: calc(50% - 8px) 32%; }
+.character-icon.char-akatsuki.face-worried { background-position: calc(100% - 2px) 32%; }
+
+.character-icon.battle-mode-chef.char-chizuru {
+    background-image: url("assets/images/battle-mode-icons/chizuru-battle-mode-icon.png");
+    background-size: 196% auto;
+    background-position: 49% 9%;
+}
+
+.character-icon.battle-mode-chef.char-mai {
+    background-image: url("assets/images/battle-mode-icons/mai-battle-mode-icon.png");
+    background-size: 196% auto;
+    background-position: 49% 9%;
+}
+
+.character-icon.battle-mode-chef.char-takumi {
+    background-image: url("assets/images/battle-mode-icons/takumi-battle-mode-icon.png");
+    background-size: 206% auto;
+    background-position: 50% 8%;
+}
+
+.character-icon.battle-mode-chef.char-akatsuki {
+    background-image: url("assets/images/battle-mode-icons/akatsuki-battle-mode-icon.png");
+    background-size: 202% auto;
+    background-position: 50% 8%;
+}
 
 .pack-card {
     border-color: #4cb5cc;
@@ -1586,18 +1812,6 @@ button:disabled {
     box-shadow: 0 5px 14px rgba(0, 0, 0, 0.32);
 }
 
-.start-char-portrait.char-chizuru {
-    background-image: url("assets/images/character-icons-sheet.png");
-    background-size: 300% 200%;
-    background-position: 0% 0%;
-}
-
-.start-char-portrait.char-mai {
-    background-image: url("assets/images/character-icons-sheet.png");
-    background-size: 300% 200%;
-    background-position: 0% 100%;
-}
-
 .start-char-name {
     font-size: 12px;
     font-weight: 900;
@@ -1717,35 +1931,33 @@ button:disabled {
     box-shadow: 0 8px 22px rgba(0,0,0,0.28);
     opacity: 0;
     filter: saturate(1.08);
-    animation: start-menu-card-fade var(--duration, 10.5s) ease-in-out infinite;
+    animation: start-menu-card-fade var(--duration, 6.2s) ease-in-out 1 both;
     animation-delay: var(--delay, 0s);
 }
 
 .menu-floating-card.rare-glow {
     border-color: rgba(255, 238, 170, 0.95);
     box-shadow:
-        0 0 0 1px rgba(255, 246, 200, 0.82),
-        0 0 16px rgba(255, 223, 130, 0.72),
-        0 0 34px rgba(255, 201, 88, 0.62);
-    filter: saturate(1.2) brightness(1.08);
-    animation:
-        start-menu-card-fade var(--duration, 10.5s) ease-in-out infinite,
-        start-menu-card-glow 4.8s ease-in-out infinite;
+        0 0 0 1px rgba(255, 246, 200, 0.62),
+        0 0 10px rgba(255, 223, 130, 0.48),
+        0 0 18px rgba(255, 201, 88, 0.35);
+    filter: saturate(1.14) brightness(1.04);
+    animation: start-menu-card-fade var(--duration, 6.2s) ease-in-out 1 both;
 }
 
 @keyframes start-menu-card-fade {
     0% {
-        transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(calc(var(--scale, 1) * 0.92));
+        transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(calc(var(--scale, 1) * 0.96));
         opacity: 0;
     }
-    24% {
-        opacity: 0.95;
+    8% {
+        opacity: 0.84;
     }
-    72% {
-        opacity: 0.82;
+    88% {
+        opacity: 0.84;
     }
     100% {
-        transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(calc(var(--scale, 1) * 1.03));
+        transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(calc(var(--scale, 1) * 1.01));
         opacity: 0;
     }
 }
@@ -2330,6 +2542,216 @@ button:disabled {
     font-size: 12px;
     color: #d8ecff;
     text-align: center;
+}
+
+.story-hud-panel {
+    position: fixed;
+    top: 78px;
+    right: 16px;
+    z-index: 5400;
+    width: min(320px, 42vw);
+    border-radius: 12px;
+    border: 1px solid rgba(176, 223, 255, 0.38);
+    background: linear-gradient(180deg, rgba(8, 24, 66, 0.94) 0%, rgba(7, 19, 56, 0.96) 100%);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    color: #e8f6ff;
+}
+
+.story-hud-title {
+    font-size: 14px;
+    font-weight: 900;
+    color: #ffe49b;
+    margin-bottom: 4px;
+}
+
+.story-hud-note {
+    font-size: 11px;
+    line-height: 1.45;
+    color: #cfe8ff;
+    margin-bottom: 7px;
+}
+
+.story-hud-objectives {
+    display: grid;
+    gap: 5px;
+}
+
+.story-hud-item {
+    border-radius: 8px;
+    border: 1px solid rgba(165, 216, 255, 0.26);
+    background: rgba(255, 255, 255, 0.07);
+    padding: 6px 8px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.story-hud-item.done {
+    border-color: rgba(255, 218, 128, 0.58);
+    background: linear-gradient(180deg, rgba(255, 215, 126, 0.22) 0%, rgba(55, 153, 235, 0.2) 100%);
+    color: #ffefc0;
+}
+
+.story-episode-list {
+    display: grid;
+    gap: 8px;
+    max-height: min(52vh, 390px);
+    overflow-y: auto;
+    padding-right: 3px;
+}
+
+.story-episode-card {
+    border-radius: 12px;
+    border: 1px solid rgba(168, 214, 255, 0.24);
+    background: rgba(4, 15, 44, 0.58);
+    padding: 10px;
+    display: grid;
+    gap: 6px;
+    text-align: left;
+}
+
+.story-episode-card.locked {
+    opacity: 0.7;
+}
+
+.story-episode-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffeab0;
+}
+
+.story-episode-summary {
+    font-size: 11px;
+    line-height: 1.45;
+    color: #d7ebff;
+}
+
+.story-episode-meta {
+    font-size: 10px;
+    color: #90ccff;
+    font-weight: 800;
+}
+
+.story-episode-start {
+    border: 1px solid rgba(170, 228, 255, 0.34);
+    border-radius: 10px;
+    background: rgba(65, 165, 255, 0.24);
+    color: #eaf6ff;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 900;
+    justify-self: start;
+}
+
+.story-episode-start:disabled {
+    opacity: 0.7;
+}
+
+.story-dialogue-panel {
+    border-radius: 12px;
+    border: 1px solid rgba(168, 214, 255, 0.26);
+    background: linear-gradient(180deg, rgba(8, 24, 64, 0.86) 0%, rgba(5, 16, 45, 0.92) 100%);
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.story-dialogue-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.story-speaker-icon {
+    width: 66px;
+    height: 66px;
+    border-radius: 12px;
+    border: 1px solid rgba(214, 240, 255, 0.38);
+    background-color: rgba(8, 25, 62, 0.82);
+    background-repeat: no-repeat;
+    background-size: 360% auto;
+    background-position: calc(0% - 14px) 32%;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
+.story-speaker-meta {
+    min-width: 0;
+}
+
+.story-speaker-name {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffe8a8;
+}
+
+.story-line-progress {
+    margin-top: 1px;
+    font-size: 10px;
+    color: #9fd7ff;
+    font-weight: 800;
+}
+
+.story-dialogue-text {
+    border-radius: 10px;
+    border: 1px solid rgba(168, 214, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #ecf8ff;
+    text-align: left;
+    min-height: 74px;
+}
+
+.story-battle-guide {
+    border-radius: 12px;
+    border: 1px solid rgba(168, 214, 255, 0.22);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+    text-align: left;
+}
+
+.story-battle-guide-title {
+    font-size: 12px;
+    font-weight: 900;
+    color: #ffe9ad;
+}
+
+.story-objective-note {
+    font-size: 11px;
+    color: #d8ecff;
+    line-height: 1.45;
+}
+
+.story-objective-list {
+    display: grid;
+    gap: 6px;
+}
+
+.story-objective-item {
+    border-radius: 8px;
+    border: 1px solid rgba(168, 214, 255, 0.22);
+    background: rgba(4, 15, 44, 0.5);
+    padding: 7px 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #dff2ff;
+}
+
+.story-objective-item.done {
+    border-color: rgba(255, 218, 128, 0.58);
+    background: linear-gradient(180deg, rgba(255, 215, 126, 0.22) 0%, rgba(55, 153, 235, 0.2) 100%);
+    color: #ffefc0;
+}
+
+@media (max-width: 980px) {
+    .story-hud-panel {
+        width: min(320px, 86vw);
+        top: 72px;
+        right: 8px;
+    }
 }
 
 /* ===== usability patch: 2026-04-12 ===== */

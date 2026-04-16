@@ -87,6 +87,10 @@ async function cpuTurn() {
         if (GameState.gameEnded) return;
     }
 
+    if (typeof triggerBattleModeDiscardPickupAfterDrawForCpu === 'function') {
+        triggerBattleModeDiscardPickupAfterDrawForCpu('cpu');
+    }
+
     GameState.currentPhase = 'メインフェイズ';
     setCPUStatus('CPU行動選択中...');
     updateUI();
@@ -230,6 +234,9 @@ async function cpuTurn() {
     await cpuPause(400);
 
     drawUntilTargetHand(player);
+    if (typeof triggerBattleModeDiscardPickupAfterDrawForPlayer === 'function') {
+        triggerBattleModeDiscardPickupAfterDrawForPlayer('player');
+    }
     addLog('あなたのドローフェイズです。手札を補充しました。');
     playSfx('turnStart');
 

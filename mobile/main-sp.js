@@ -1,6 +1,7 @@
 ﻿let bgmStarted = false;
 let resultOverlayTimer = null;
 let spotlightTimer = null;
+let spotlightHideAt = 0;
 let gameStartedOnce = false;
 
 let selectedStartCharacter = 'chizuru';
@@ -12,12 +13,25 @@ let startTitleTimer = null;
 let startMenuFloatTimer = null;
 let selectedGalleryType = 'characters';
 let startCpuSetupStep = 1;
+const START_MENU_CARD_VISIBLE_MS = 5000;
+const START_MENU_CARD_FADE_MS = 600;
+const START_MENU_CARD_CYCLE_MS = START_MENU_CARD_VISIBLE_MS + (START_MENU_CARD_FADE_MS * 2);
 const SPOTLIGHT_DISPLAY_MS = 2000;
+const BATTLE_MODE_TEXT_STEP1_MS = 1000;
+const BATTLE_MODE_TEXT_STEP2_MS = 2000;
+const BATTLE_MODE_CUTIN_IMAGE_MS = 3000;
 const SKILL_CUTIN_IMAGE_PATHS = {
     chizuru: '../assets/images/skill-cutins/chizuru-skill-cutin.png',
     mai: '../assets/images/skill-cutins/mai-skill-cutin.png',
     takumi: '../assets/images/skill-cutins/takumi-skill-cutin.png',
     akatsuki: '../assets/images/skill-cutins/akatsuki-skill-cutin.png'
+};
+
+const BATTLE_MODE_CUTIN_IMAGE_PATHS = {
+    chizuru: '../assets/images/battle-mode-cutins/chizuru-battle-mode-cutin.png',
+    mai: '../assets/images/battle-mode-cutins/mai-battle-mode-cutin.png',
+    takumi: '../assets/images/battle-mode-cutins/takumi-battle-mode-cutin.png',
+    akatsuki: '../assets/images/battle-mode-cutins/akatsuki-battle-mode-cutin.png'
 };
 
 const START_CHARACTER_OPTIONS = [
@@ -38,6 +52,7 @@ const START_STAGE_IDS = [
     'start-title-stage',
     'start-menu-stage',
     'start-cpu-setup-stage',
+    'start-story-stage',
     'start-rules-stage',
     'start-gallery-stage',
     'start-friend-stage',
@@ -144,7 +159,7 @@ function applyBattleSkillSetup() {
         cpu.extraEventUsesRemainingThisTurn = 0;
     }
 
-    addLog(`スキル選択: あなた「${playerSkill?.name || 'なし'}」 / CPU「${cpuSkill?.name || 'なし'}」`);
+    addLog(`スキル選択: あなた「${playerSkill?.name || 'なし'}」 / 相手「？？？」`);
 }
 
 function getOpponentLabelText() {
@@ -464,18 +479,17 @@ function spawnMenuFloatingCard() {
     const card = document.createElement('span');
     card.className = 'menu-floating-card';
 
-    const durationSec = 9.2 + Math.random() * 5.2;
-    const delaySec = Math.random() * 8.0;
-    const xPercent = 6 + Math.random() * 88;
-    const yPercent = 8 + Math.random() * 78;
-    const rotDeg = Math.round(-12 + Math.random() * 24);
-    const scaleValue = (0.98 + Math.random() * 0.18).toFixed(2);
-    const isRareGlow = Math.random() < 0.15;
+    const durationSec = START_MENU_CARD_CYCLE_MS / 1000;
+    const xPercent = 12 + Math.random() * 76;
+    const yPercent = 16 + Math.random() * 64;
+    const rotDeg = Math.round(-8 + Math.random() * 16);
+    const scaleValue = (1.00 + Math.random() * 0.08).toFixed(2);
+    const isRareGlow = Math.random() < 0.10;
 
     card.style.left = `${xPercent.toFixed(2)}%`;
     card.style.top = `${yPercent.toFixed(2)}%`;
     card.style.setProperty('--duration', `${durationSec.toFixed(2)}s`);
-    card.style.setProperty('--delay', `${delaySec.toFixed(2)}s`);
+    card.style.setProperty('--delay', '0s');
     card.style.setProperty('--rot', `${rotDeg}deg`);
     card.style.setProperty('--scale', scaleValue);
     card.style.backgroundImage = `url("${pool[Math.floor(Math.random() * pool.length)]}")`;
@@ -490,18 +504,12 @@ function startMenuFloatingBackground() {
     if (startMenuFloatTimer) return;
 
     layer.innerHTML = '';
-    for (let i = 0; i < 10; i++) {
-        spawnMenuFloatingCard();
-    }
+    spawnMenuFloatingCard();
 
     startMenuFloatTimer = setInterval(() => {
-        const cards = layer.querySelectorAll('.menu-floating-card');
-        if (cards.length > 0) {
-            const victim = cards[Math.floor(Math.random() * cards.length)];
-            victim.remove();
-        }
+        layer.innerHTML = '';
         spawnMenuFloatingCard();
-    }, 2600);
+    }, START_MENU_CARD_CYCLE_MS);
 }
 
 function stopMenuFloatingBackground() {
@@ -953,6 +961,7 @@ function setupStartOverlay() {
     const msg = document.getElementById('start-turn-message');
     const battleMsg = document.getElementById('start-battle-message');
     const menuCpuButton = document.getElementById('menu-cpu-button');
+    const menuStoryButton = document.getElementById('menu-story-button');
     const menuFriendButton = document.getElementById('menu-friend-button');
     const menuOnlineButton = document.getElementById('menu-online-button');
     const menuCoinButton = document.getElementById('menu-coin-button');
@@ -962,6 +971,7 @@ function setupStartOverlay() {
     const menuHomeButton = document.getElementById('menu-home-button');
     const backMenuButton = document.getElementById('start-back-menu-button');
     const rulesBackButton = document.getElementById('start-rules-back-button');
+    const storyBackButton = document.getElementById('start-story-back-button');
     const galleryBackButton = document.getElementById('start-gallery-back-button');
     const friendBackButton = document.getElementById('start-friend-back-button');
     const coinBackButton = document.getElementById('start-coin-back-button');
@@ -1232,6 +1242,16 @@ function setupStartOverlay() {
         });
     }
 
+    if (menuStoryButton) {
+        menuStoryButton.addEventListener('click', () => {
+            setStartMenuMessage('');
+            showStartStage('start-story-stage');
+            if (typeof window.openStoryStage === 'function') {
+                window.openStoryStage();
+            }
+        });
+    }
+
     if (menuFriendButton) {
         menuFriendButton.addEventListener('click', () => {
             setStartMenuMessage('');
@@ -1296,6 +1316,12 @@ function setupStartOverlay() {
 
     if (rulesBackButton) {
         rulesBackButton.addEventListener('click', () => {
+            openMenuStage();
+        });
+    }
+
+    if (storyBackButton) {
+        storyBackButton.addEventListener('click', () => {
             openMenuStage();
         });
     }
@@ -1587,7 +1613,18 @@ function getSkillCutinImagePathForSide(side) {
     return SKILL_CUTIN_IMAGE_PATHS[characterId] || SKILL_CUTIN_IMAGE_PATHS.chizuru;
 }
 
-function showSpotlightCard({ badge, name, sub, imagePath, kind }) {
+function getBattleModeCutinImagePathForSide(side) {
+    const characterId = getCharacterIdForSide(side);
+    return BATTLE_MODE_CUTIN_IMAGE_PATHS[characterId] || BATTLE_MODE_CUTIN_IMAGE_PATHS.chizuru;
+}
+
+function resolveSpotlightDisplayMs(durationMs) {
+    const parsed = Number(durationMs);
+    if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed);
+    return SPOTLIGHT_DISPLAY_MS;
+}
+
+function showSpotlightCard({ badge, name, sub, imagePath, kind, durationMs }) {
     const overlay = document.getElementById('spotlight-overlay');
     const badgeEl = document.getElementById('spotlight-badge');
     const cardEl = document.getElementById('spotlight-card');
@@ -1603,10 +1640,14 @@ function showSpotlightCard({ badge, name, sub, imagePath, kind }) {
     }
 
     const cardKind = kind || 'recipe';
-    overlay.classList.remove('spotlight-skill');
-    overlay.classList.toggle('spotlight-skill', cardKind === 'skill');
+    const isBattleModeLike = cardKind === 'battle-mode' || cardKind === 'battle-mode-text';
+    const isSkillLike = cardKind === 'skill' || isBattleModeLike;
+    const waitMs = resolveSpotlightDisplayMs(durationMs);
+    overlay.classList.remove('spotlight-skill', 'spotlight-battle-mode');
+    overlay.classList.toggle('spotlight-skill', isSkillLike);
+    overlay.classList.toggle('spotlight-battle-mode', isBattleModeLike);
     overlay.classList.remove('hidden');
-    cardEl.classList.remove('event', 'recipe', 'pack', 'skill');
+    cardEl.classList.remove('event', 'recipe', 'pack', 'skill', 'battle-mode', 'battle-mode-text');
     cardEl.classList.add(cardKind);
 
     badgeEl.textContent = badge || '';
@@ -1614,9 +1655,10 @@ function showSpotlightCard({ badge, name, sub, imagePath, kind }) {
     subEl.textContent = sub || '';
     artEl.style.backgroundImage = imagePath ? `url("${imagePath}")` : 'none';
 
+    spotlightHideAt = Date.now() + waitMs;
     spotlightTimer = setTimeout(() => {
         hideSpotlightCard();
-    }, SPOTLIGHT_DISPLAY_MS);
+    }, waitMs);
 }
 
 function hideSpotlightCard() {
@@ -1624,7 +1666,8 @@ function hideSpotlightCard() {
     if (!overlay) return;
 
     overlay.classList.add('hidden');
-    overlay.classList.remove('spotlight-skill');
+    overlay.classList.remove('spotlight-skill', 'spotlight-battle-mode');
+    spotlightHideAt = 0;
 
     if (spotlightTimer) {
         clearTimeout(spotlightTimer);
@@ -1633,9 +1676,10 @@ function hideSpotlightCard() {
 }
 
 function showSpotlightCardAsync(config) {
+    const waitMs = resolveSpotlightDisplayMs(config?.durationMs);
     showSpotlightCard(config);
     return new Promise(resolve => {
-        setTimeout(() => resolve(), SPOTLIGHT_DISPLAY_MS);
+        setTimeout(() => resolve(), waitMs);
     });
 }
 
@@ -1685,6 +1729,47 @@ function showSpotlightSkillCutinAsync(side, skill) {
         imagePath,
         kind: 'skill'
     });
+}
+
+async function playBattleALaCarteModeCutinSequence(side) {
+    const safeSide = side === 'cpu' ? 'cpu' : 'player';
+    const imagePath = getBattleModeCutinImagePathForSide(safeSide);
+    const badge = 'BATTLE A LA CARTE MODE';
+
+    await showSpotlightCardAsync({
+        badge,
+        name: '潜在覚醒！',
+        sub: '',
+        imagePath: null,
+        kind: 'battle-mode-text',
+        durationMs: BATTLE_MODE_TEXT_STEP1_MS
+    });
+
+    await showSpotlightCardAsync({
+        badge,
+        name: 'すべての食材に感謝！',
+        sub: '',
+        imagePath: null,
+        kind: 'battle-mode-text',
+        durationMs: BATTLE_MODE_TEXT_STEP2_MS
+    });
+
+    await showSpotlightCardAsync({
+        badge,
+        name: 'バトルアラカルトモード！！',
+        sub: '',
+        imagePath,
+        kind: 'battle-mode',
+        durationMs: BATTLE_MODE_CUTIN_IMAGE_MS
+    });
+}
+
+function showBattleALaCarteModeCutin(side) {
+    playBattleALaCarteModeCutinSequence(side).catch(() => {});
+}
+
+function showBattleALaCarteModeCutinAsync(side) {
+    return playBattleALaCarteModeCutinSequence(side);
 }
 
 function showSpotlightRecipeCard(recipe) {
@@ -1744,6 +1829,10 @@ function isSpotlightVisible() {
     return !!overlay && !overlay.classList.contains('hidden');
 }
 
+function getSpotlightRemainingMs() {
+    return Math.max(0, spotlightHideAt - Date.now());
+}
+
 function endGame(winner) {
     if (GameState.gameEnded) return;
     GameState.gameEnded = true;
@@ -1786,13 +1875,17 @@ function endGame(winner) {
     if (typeof playSfx === 'function') playSfx('gameEnd');
     updateUI();
 
-    const showDelayMs = isSpotlightVisible() ? 2100 : 0;
+    const showDelayMs = isSpotlightVisible() ? Math.max(100, getSpotlightRemainingMs() + 100) : 0;
     setTimeout(() => {
         showResultOverlay(buildWinnerText(winner), winner === 'player' ? 'win' : 'lose');
         resultOverlayTimer = setTimeout(() => {
             hideResultOverlay();
         }, 2500);
     }, showDelayMs);
+
+    if (typeof window.handleStoryBattleEnded === 'function') {
+        window.handleStoryBattleEnded(winner);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', setupStartOverlay);
@@ -1812,9 +1905,12 @@ window.showSpotlightEventCard = showSpotlightEventCard;
 window.showSpotlightEventCardAsync = showSpotlightEventCardAsync;
 window.showSpotlightSkillCutin = showSpotlightSkillCutin;
 window.showSpotlightSkillCutinAsync = showSpotlightSkillCutinAsync;
+window.showBattleALaCarteModeCutin = showBattleALaCarteModeCutin;
+window.showBattleALaCarteModeCutinAsync = showBattleALaCarteModeCutinAsync;
 window.showSpotlightRecipeCard = showSpotlightRecipeCard;
 window.showSpotlightRecipeCardAsync = showSpotlightRecipeCardAsync;
 window.showSpotlightPackCard = showSpotlightPackCard;
 window.showSpotlightPackCardAsync = showSpotlightPackCardAsync;
 window.__battleSafeStartGame = safeStartGame;
+window.__showStartStage = showStartStage;
 window.getOpponentLabelText = getOpponentLabelText;

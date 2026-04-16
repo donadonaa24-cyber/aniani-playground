@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>Battle a la carte - Smartphone Field UI</title>
-    <link rel="stylesheet" href="style-sp.css?v=20260414d">
+    <link rel="stylesheet" href="style-sp.css?v=20260417c">
 </head>
 <body>
     <div id="game-container" class="mobile-field-ui">
@@ -23,6 +23,11 @@
         </header>
 
         <div id="discard-banner" class="discard-banner hidden"></div>
+        <div id="story-hud-panel" class="story-hud-panel hidden">
+            <div id="story-hud-title" class="story-hud-title">ストーリーモード</div>
+            <div id="story-hud-note" class="story-hud-note"></div>
+            <div id="story-hud-objectives" class="story-hud-objectives"></div>
+        </div>
 
         <main class="duel-field">
             <section class="field-side cpu-side">
@@ -347,6 +352,7 @@
 
                     <div class="start-menu-buttons">
                         <button id="menu-cpu-button" class="start-main-button">料理開始（CPU戦）</button>
+                        <button id="menu-story-button" class="start-main-button">ストーリーモード（チュートリアル）</button>
                         <button id="menu-friend-button" class="start-menu-button">料理開始（フレンド戦）</button>
                         <button id="menu-online-button" class="start-menu-button">オンライン対戦</button>
                         <button id="menu-coin-button" class="start-menu-button">コイン交換所</button>
@@ -408,6 +414,40 @@
                         <button id="start-turn-card-right" class="start-turn-card">カードB</button>
                     </div>
                     <div id="start-battle-message" class="start-battle-message"></div>
+                </div>
+            </div>
+
+            <div id="start-story-stage" class="start-stage hidden">
+                <h2 class="start-section-title">ストーリーモード</h2>
+                <p id="story-stage-subtitle" class="start-subtitle">初心者向けチュートリアル（全3話）</p>
+
+                <div id="story-episode-list" class="story-episode-list"></div>
+
+                <div id="story-dialogue-panel" class="story-dialogue-panel hidden">
+                    <div class="story-dialogue-header">
+                        <span id="story-speaker-icon" class="story-speaker-icon start-char-portrait char-mai"></span>
+                        <div class="story-speaker-meta">
+                            <div id="story-speaker-name" class="story-speaker-name">舞依</div>
+                            <div id="story-line-progress" class="story-line-progress">1 / 1</div>
+                        </div>
+                    </div>
+                    <div id="story-dialogue-text" class="story-dialogue-text"></div>
+                </div>
+
+                <div id="story-battle-guide" class="story-battle-guide hidden">
+                    <div class="story-battle-guide-title">チュートリアル目標</div>
+                    <div id="story-objective-note" class="story-objective-note"></div>
+                    <div id="story-objective-list" class="story-objective-list"></div>
+                </div>
+
+                <p id="story-stage-message" class="start-menu-message"></p>
+
+                <div class="start-stage-footer">
+                    <div class="start-setup-actions">
+                        <button id="story-primary-button" class="start-main-button hidden">次へ</button>
+                        <button id="story-secondary-button" class="start-sub-button hidden">もう一度</button>
+                    </div>
+                    <button id="start-story-back-button" class="start-sub-button wide">メニューへ戻る</button>
                 </div>
             </div>
 
@@ -532,22 +572,29 @@
         </div>
     </div>
 
-    <script src="cards-sp.js?v=20260414d"></script>
-    <script src="state-sp.js?v=20260414d"></script>
-    <script src="../profile.js?v=20260414d"></script>
-    <script src="rules-sp.js?v=20260414d"></script>
-    <script src="player-sp.js?v=20260414d"></script>
-    <script src="cpu-sp.js?v=20260414d"></script>
-    <script src="render-sp.js?v=20260414d"></script>
-    <script src="audio-sp.js?v=20260414d"></script>
+    <script src="cards-sp.js?v=20260417c"></script>
+    <script src="state-sp.js?v=20260417c"></script>
+    <script src="../profile.js?v=20260417c"></script>
+    <script src="rules-sp.js?v=20260417c"></script>
+    <script src="player-sp.js?v=20260417c"></script>
+    <script src="cpu-sp.js?v=20260417c"></script>
+    <script src="render-sp.js?v=20260417c"></script>
+    <script src="audio-sp.js?v=20260417c"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="../firebase-config.js?v=20260414d"></script>
-    <script src="../friend-battle-firebase.js?v=20260414d"></script>
-    <script src="main-sp.js?v=20260414d"></script>
+    <script src="../firebase-config.js?v=20260417c"></script>
+    <script src="../friend-battle-firebase.js?v=20260417c"></script>
+    <script src="main-sp.js?v=20260417c"></script>
+    <script src="../story-mode.js?v=20260417c"></script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 

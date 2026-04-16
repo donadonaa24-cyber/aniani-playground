@@ -13,6 +13,9 @@
         cookedRecipes: [],
         cookedMeatTypes: [],
         recipesCookedThisTurn: 0,
+        battleALaCarteModeActive: false,
+        battleALaCarteModeBonusDrawUsedThisTurn: false,
+        battleALaCarteModeDiscardPickupUsedThisTurn: false,
         startedTurnBehindThisTurn: false,
         selectedSkillKey: null,
         skillUseCounts: {}
@@ -74,7 +77,7 @@ const SKILL_DEFINITIONS = [
     {
         key: 'tasteThief',
         name: '味見泥棒',
-        condition: '自分の得点が9点未満',
+        condition: '自分の得点が0点で、相手が1点以上',
         effect: 'イベント1枚を捨てる。相手-1点、自分+1点。',
         maxUses: 2,
         requiresEventDiscard: true
@@ -132,6 +135,16 @@ function ensurePlayerSkillState(player) {
         player.extraEventUsesRemainingThisTurn = 0;
     } else {
         player.extraEventUsesRemainingThisTurn = Math.max(0, Math.floor(Number(player.extraEventUsesRemainingThisTurn)));
+    }
+
+    if (typeof player.battleALaCarteModeActive !== 'boolean') {
+        player.battleALaCarteModeActive = false;
+    }
+    if (typeof player.battleALaCarteModeBonusDrawUsedThisTurn !== 'boolean') {
+        player.battleALaCarteModeBonusDrawUsedThisTurn = false;
+    }
+    if (typeof player.battleALaCarteModeDiscardPickupUsedThisTurn !== 'boolean') {
+        player.battleALaCarteModeDiscardPickupUsedThisTurn = false;
     }
 }
 
@@ -221,6 +234,9 @@ function resetPlayerState(player) {
     player.cookedRecipes = [];
     player.cookedMeatTypes = [];
     player.recipesCookedThisTurn = 0;
+    player.battleALaCarteModeActive = false;
+    player.battleALaCarteModeBonusDrawUsedThisTurn = false;
+    player.battleALaCarteModeDiscardPickupUsedThisTurn = false;
     player.startedTurnBehindThisTurn = false;
     player.selectedSkillKey = null;
     player.skillUseCounts = {};
@@ -255,6 +271,8 @@ function resetUiState() {
 function markTurnStartStatus(currentPlayer, opponentPlayer) {
     ensurePlayerSkillState(currentPlayer);
     currentPlayer.recipesCookedThisTurn = 0;
+    currentPlayer.battleALaCarteModeBonusDrawUsedThisTurn = false;
+    currentPlayer.battleALaCarteModeDiscardPickupUsedThisTurn = false;
     currentPlayer.startedTurnBehindThisTurn = currentPlayer.score < opponentPlayer.score;
     currentPlayer.extraEventUsesRemainingThisTurn = 0;
 }

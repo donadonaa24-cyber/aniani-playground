@@ -439,8 +439,8 @@ function getSkillActivationStatusForSide(side) {
             break;
 
         case 'tasteThief':
-            if (selfPlayer.score >= 9) {
-                return { ok: false, reason: '条件: 自分9点未満。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
+            if (!(selfPlayer.score === 0 && enemyPlayer.score >= 1)) {
+                return { ok: false, reason: '条件: 自分0点かつ相手1点以上。', side: safeSide, skill, selfPlayer, enemyPlayer, used, maxUses };
             }
             break;
 
@@ -1220,6 +1220,21 @@ function confirmEventSelection() {
     const selfPlayer = context.actor === 'player' ? player : cpu;
     const enemyPlayer = context.actor === 'player' ? cpu : player;
 
+    if (context.battleModeDiscardPickup === true) {
+        if (GameState.selectedTargetIds.length < context.minSelect || GameState.selectedTargetIds.length > context.maxSelect) {
+            addLog(`選択枚数が不正です（${context.minSelect}〜${context.maxSelect}枚）。`);
+            return;
+        }
+        if (typeof resolveBattleModeDiscardPickupSelection === 'function') {
+            resolveBattleModeDiscardPickupSelection(context, [...GameState.selectedTargetIds]);
+        }
+        GameState.selectionMode = null;
+        GameState.pendingEventContext = null;
+        GameState.selectedTargetIds = [];
+        updateUI();
+        return;
+    }
+
     if (context.eventName === '物々交換' && context.step === 1) {
         if (GameState.selectedTargetIds.length !== 1) {
             addLog('受け取るカードを1枚選択してください。');
@@ -1284,6 +1299,16 @@ function cancelEventSelection() {
     }
 
     const context = GameState.pendingEventContext;
+    if (context && context.battleModeDiscardPickup === true) {
+        if (typeof cancelBattleModeDiscardPickupSelection === 'function') {
+            cancelBattleModeDiscardPickupSelection(context);
+        }
+        GameState.selectionMode = null;
+        GameState.pendingEventContext = null;
+        GameState.selectedTargetIds = [];
+        updateUI();
+        return;
+    }
     if (context && context.source === 'opened-cards' && context.openedCards) {
         context.openedCards.forEach(card => moveCardToDiscard(card));
     }
@@ -1359,6 +1384,11 @@ function pushSpecialEventDishHistory(player, dishName) {
     player.recipesCookedThisTurn = (player.recipesCookedThisTurn || 0) + 1;
     if (player === GameState.players.player && typeof recordDishCooked === 'function') {
         recordDishCooked(1, dishName);
+    }
+
+    const ownerKey = player === GameState.players.cpu ? 'cpu' : 'player';
+    if (typeof processBattleALaCarteModeAfterDish === 'function') {
+        processBattleALaCarteModeAfterDish(player, 3, dishName, ownerKey);
     }
 }
 
@@ -1744,6 +1774,9 @@ function finishPlayerTurn() {
         cpu.knifeUsedThisTurn = false;
         markTurnStartStatus(cpu, player);
         drawUntilTargetHand(cpu);
+        if (typeof triggerBattleModeDiscardPickupAfterDrawForCpu === 'function') {
+            triggerBattleModeDiscardPickupAfterDrawForCpu('cpu');
+        }
 
         GameState.currentPhase = 'メインフェイズ';
         if (typeof setCPUStatus === 'function') setCPUStatus('フレンドのターンです');

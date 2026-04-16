@@ -623,6 +623,13 @@ function renderInfoOverlay() {
             '・料理の達人: 鶏肉・豚肉・牛肉・魚を使う料理をそれぞれ1つ以上作り、合計7点以上で即勝利',
             '・満腹マスター: ターン開始時に点数で負けている状態から、その1ターン中に3つ以上料理を完成すると即勝利'
         ].join('<br>');
+        const battleMode = [
+            '・この試合で「通常料理」を5個完成すると「Battle à la carte Mode」に突入します',
+            '・「緊急料理」「創作料理」は5個カウントに含まれません',
+            '・Mode中は自分のメインフェイズに1回、1点料理完成時に追加で1ドローできます',
+            '・Mode中はドローフェイズ後、毎ターン1回だけ捨て札から好きな材料カード1枚を手札に回収できます',
+            '・Mode効果は試合終了まで継続します'
+        ].join('<br>');
         const flow = 'ドローフェイズ → 料理＆セット＆イベント発動フェイズ → エンドフェイズ → 手札調整フェイズ';
         const skillDefs = typeof getSkillDefinitions === 'function' ? getSkillDefinitions() : [];
         const skillHtml = Array.isArray(skillDefs) && skillDefs.length > 0
@@ -631,7 +638,7 @@ function renderInfoOverlay() {
                 return `<div class="reference-item"><div class="reference-title">${escapeHtml(skill.name || 'スキル')}</div><div>条件: ${escapeHtml(skill.condition || 'なし')}</div><div>効果: ${escapeHtml(skill.effect || 'なし')}</div><div>使用回数: ${maxUses}回</div></div>`;
             }).join('')
             : '<div>スキル情報はまだありません。</div>';
-        content.innerHTML = `<div class="info-rule-block"><div class="info-rule-title">フェイズ進行</div><div>${flow}</div></div><div class="info-rule-block"><div class="info-rule-title">かんたんルール</div><div>${s}</div></div><div class="info-rule-block"><div class="info-rule-title">詳細ルール</div><div>${d}</div></div><div class="info-rule-block"><div class="info-rule-title">特殊勝利条件</div><div>${sp}</div></div><div class="info-rule-block"><div class="info-rule-title">スキル一覧</div><div>${skillHtml}</div></div>`;
+        content.innerHTML = `<div class="info-rule-block"><div class="info-rule-title">フェイズ進行</div><div>${flow}</div></div><div class="info-rule-block"><div class="info-rule-title">かんたんルール</div><div>${s}</div></div><div class="info-rule-block"><div class="info-rule-title">詳細ルール</div><div>${d}</div></div><div class="info-rule-block"><div class="info-rule-title">特殊勝利条件</div><div>${sp}</div></div><div class="info-rule-block"><div class="info-rule-title">Battle à la carte Mode</div><div>${battleMode}</div></div><div class="info-rule-block"><div class="info-rule-title">スキル一覧</div><div>${skillHtml}</div></div>`;
         return;
     }
 
@@ -781,6 +788,11 @@ function applyCharacterSkins() {
 
     playerIcon.classList.add(`char-${ids.player || 'chizuru'}`);
     cpuIcon.classList.add(`char-${ids.cpu || 'mai'}`);
+
+    const playerModeOn = !!GameState?.players?.player?.battleALaCarteModeActive;
+    const cpuModeOn = !!GameState?.players?.cpu?.battleALaCarteModeActive;
+    playerIcon.classList.toggle('battle-mode-chef', playerModeOn);
+    cpuIcon.classList.toggle('battle-mode-chef', cpuModeOn);
 }
 
 function createCardTextBlock(card, cardEl) {
@@ -1546,16 +1558,12 @@ function renderSkillHud() {
     const playerSkill = typeof getSelectedSkillDefinitionForSide === 'function'
         ? getSelectedSkillDefinitionForSide('player')
         : null;
-    const cpuSkill = typeof getSelectedSkillDefinitionForSide === 'function'
-        ? getSelectedSkillDefinitionForSide('cpu')
-        : null;
     const playerState = GameState.players.player;
-    const cpuState = GameState.players.cpu;
 
     safeSetText('player-skill-name', playerSkill ? `スキル: ${playerSkill.name}` : 'スキル: 未選択');
-    safeSetText('cpu-skill-name', cpuSkill ? `スキル: ${cpuSkill.name}` : 'スキル: 未選択');
+    safeSetText('cpu-skill-name', 'スキル: ？？？');
     safeSetText('player-skill-state', formatSkillUsageText(playerState, playerSkill));
-    safeSetText('cpu-skill-state', formatSkillUsageText(cpuState, cpuSkill));
+    safeSetText('cpu-skill-state', '状態: 不明');
 
     const button = byId('player-skill-button');
     if (!button) return;

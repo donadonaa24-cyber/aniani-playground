@@ -13,6 +13,8 @@ let startTitleTimer = null;
 let startMenuFloatTimer = null;
 let selectedGalleryType = 'characters';
 let startCpuSetupStep = 1;
+let webViewportFitBound = false;
+let webViewportFitRaf = null;
 const START_MENU_CARD_VISIBLE_MS = 5000;
 const START_MENU_CARD_FADE_MS = 600;
 const START_MENU_CARD_CYCLE_MS = START_MENU_CARD_VISIBLE_MS + (START_MENU_CARD_FADE_MS * 2);
@@ -59,6 +61,57 @@ const START_STAGE_IDS = [
     'start-coin-stage',
     'start-user-stage'
 ];
+
+function applyWebViewportFit() {
+    const container = document.getElementById('game-container');
+    if (!container) return;
+    if (container.classList.contains('mobile-field-ui')) return;
+
+    const overlay = document.getElementById('start-overlay');
+    const inBattleScreen = !overlay || overlay.classList.contains('hidden');
+    if (document.body) {
+        document.body.classList.toggle('web-battle-fixed', inBattleScreen);
+    }
+
+    if (!inBattleScreen) {
+        container.style.setProperty('--web-fit-scale', '1');
+        return;
+    }
+
+    container.style.setProperty('--web-fit-scale', '1');
+    const naturalWidth = Math.max(container.scrollWidth || 0, container.offsetWidth || 0, 1);
+    const naturalHeight = Math.max(container.scrollHeight || 0, container.offsetHeight || 0, 1);
+    const viewportWidth = Math.max((window.innerWidth || 0) - 4, 1);
+    const viewportHeight = Math.max((window.innerHeight || 0) - 4, 1);
+    const fittedScale = Math.min(1, viewportWidth / naturalWidth, viewportHeight / naturalHeight);
+    container.style.setProperty('--web-fit-scale', String(fittedScale));
+}
+
+function scheduleWebViewportFit() {
+    if (webViewportFitRaf && typeof window.cancelAnimationFrame === 'function') {
+        window.cancelAnimationFrame(webViewportFitRaf);
+        webViewportFitRaf = null;
+    }
+
+    const run = () => {
+        webViewportFitRaf = null;
+        applyWebViewportFit();
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+        webViewportFitRaf = window.requestAnimationFrame(run);
+    } else {
+        setTimeout(run, 16);
+    }
+}
+
+function setupWebViewportFitOnce() {
+    if (webViewportFitBound) return;
+    webViewportFitBound = true;
+    window.addEventListener('resize', scheduleWebViewportFit);
+    window.addEventListener('orientationchange', scheduleWebViewportFit);
+    scheduleWebViewportFit();
+}
 
 function getStartCharacterOptionById(id) {
     return START_CHARACTER_OPTIONS.find(option => option.id === id) || null;
@@ -425,6 +478,7 @@ function showStartStage(activeId) {
     } else {
         stopMenuFloatingBackground();
     }
+    scheduleWebViewportFit();
 }
 
 function setStartMenuMessage(text) {
@@ -896,6 +950,7 @@ function beginMatchByRole(role) {
 
     const overlay = document.getElementById('start-overlay');
     if (overlay) overlay.classList.add('hidden');
+    scheduleWebViewportFit();
 
     if (role === '先攻') {
         GameState.currentTurn = 'player';
@@ -947,9 +1002,11 @@ function onTurnCardSelected(side) {
 }
 
 function setupStartOverlay() {
+    setupWebViewportFitOnce();
     const overlay = document.getElementById('start-overlay');
     if (!overlay) {
         safeStartGame();
+        scheduleWebViewportFit();
         return;
     }
 

@@ -1,8 +1,12 @@
+html,
 body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     font-family: sans-serif;
     background: #fff8ef;
     color: #333;
+    overflow-x: hidden;
 }
 
 #game-container {
@@ -14,6 +18,20 @@ body {
     isolation: isolate;
     --bg-design-image: none;
     --bg-design-opacity: 0.2;
+    --web-fit-scale: 1;
+}
+
+body.web-battle-fixed {
+    overflow: hidden;
+}
+
+body.web-battle-fixed #game-container {
+    width: min(100vw, 1400px);
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    transform-origin: top center;
+    transform: scale(var(--web-fit-scale, 1));
 }
 
 .top-bar {
@@ -1433,26 +1451,26 @@ button:disabled {
 
 .character-icon.battle-mode-chef.char-chizuru {
     background-image: url("assets/images/battle-mode-icons/chizuru-battle-mode-icon.png");
-    background-size: 196% auto;
-    background-position: 49% 9%;
+    background-size: 308% auto;
+    background-position: 50% 19%;
 }
 
 .character-icon.battle-mode-chef.char-mai {
     background-image: url("assets/images/battle-mode-icons/mai-battle-mode-icon.png");
-    background-size: 196% auto;
-    background-position: 49% 9%;
+    background-size: 308% auto;
+    background-position: 50% 19%;
 }
 
 .character-icon.battle-mode-chef.char-takumi {
     background-image: url("assets/images/battle-mode-icons/takumi-battle-mode-icon.png");
-    background-size: 206% auto;
-    background-position: 50% 8%;
+    background-size: 320% auto;
+    background-position: 50% 18%;
 }
 
 .character-icon.battle-mode-chef.char-akatsuki {
     background-image: url("assets/images/battle-mode-icons/akatsuki-battle-mode-icon.png");
-    background-size: 202% auto;
-    background-position: 50% 8%;
+    background-size: 316% auto;
+    background-position: 50% 18%;
 }
 
 .pack-card {

@@ -3,6 +3,13 @@ let eventBookRendered = false;
 let packBookRendered = false;
 let renderEventsBound = false;
 const realtimeLogHistory = [];
+const imageLoadCache = new Map();
+let gameplayImagePreloadStarted = false;
+let uiRenderInProgress = false;
+let uiRenderQueued = false;
+let uiRenderFrameRequested = false;
+let lastUiRenderAt = 0;
+const renderSectionSignatureCache = Object.create(null);
 const HORIZONTAL_SCROLL_ROW_IDS = [
     'player-hand-mixed',
     'cpu-hand-mixed',
@@ -68,6 +75,14 @@ const EVENT_IMAGE_MAP = {
 function byId(id) { return document.getElementById(id); }
 function safeSetText(id, text) { const el = byId(id); if (el) el.textContent = text; }
 
+function shouldSkipSectionRender(sectionKey, signature) {
+    const key = String(sectionKey || '');
+    const normalized = String(signature || '');
+    if (renderSectionSignatureCache[key] === normalized) return true;
+    renderSectionSignatureCache[key] = normalized;
+    return false;
+}
+
 function getIngredientImagePath(cardName) {
     const fileName = INGREDIENT_IMAGE_MAP[cardName];
     return fileName ? `assets/images/cards/${fileName}` : null;
@@ -87,6 +102,118 @@ function getPackImagePath(packKey) {
     const def = packDefinitions.find(item => item.key === packKey);
     const fileName = def?.imageFile;
     return fileName ? `assets/images/packs/${fileName}` : null;
+}
+
+function ensureImageCacheEntry(path) {
+    if (!path || typeof path !== 'string') return null;
+
+    const cached = imageLoadCache.get(path);
+    if (cached) return cached;
+
+    const entry = {
+        status: 'loading',
+        listeners: []
+    };
+    imageLoadCache.set(path, entry);
+
+    const img = new Image();
+    try { img.decoding = 'async'; } catch (_) {}
+
+    img.onload = () => {
+        entry.status = 'loaded';
+        const listeners = entry.listeners.splice(0);
+        listeners.forEach(listener => {
+            try { listener(true); } catch (_) {}
+        });
+    };
+
+    img.onerror = () => {
+        entry.status = 'error';
+        const listeners = entry.listeners.splice(0);
+        listeners.forEach(listener => {
+            try { listener(false); } catch (_) {}
+        });
+    };
+
+    img.src = path;
+    return entry;
+}
+
+function getImageLoadStatus(path) {
+    const entry = ensureImageCacheEntry(path);
+    return entry ? entry.status : 'error';
+}
+
+function onImageLoadSettled(path, listener) {
+    const entry = ensureImageCacheEntry(path);
+    if (!entry) {
+        listener(false);
+        return;
+    }
+    if (entry.status === 'loaded') {
+        listener(true);
+        return;
+    }
+    if (entry.status === 'error') {
+        listener(false);
+        return;
+    }
+    entry.listeners.push(listener);
+}
+
+function scheduleGameplayImagePreload() {
+    if (gameplayImagePreloadStarted) return;
+    gameplayImagePreloadStarted = true;
+
+    const ingredientPaths = Object.keys(INGREDIENT_IMAGE_MAP)
+        .map(name => getIngredientImagePath(name))
+        .filter(Boolean);
+    const eventPaths = Object.keys(EVENT_IMAGE_MAP)
+        .map(name => getEventImagePath(name))
+        .filter(Boolean);
+    const recipePaths = Object.keys(RECIPE_IMAGE_MAP)
+        .map(name => getRecipeImagePath(name))
+        .filter(Boolean);
+    const packPaths = (Array.isArray(packDefinitions) ? packDefinitions : [])
+        .map(def => getPackImagePath(def?.key))
+        .filter(Boolean);
+    const skillCutinPaths = ['chizuru', 'mai', 'takumi', 'akatsuki']
+        .map(id => `assets/images/skill-cutins/${id}-skill-cutin.png`);
+    const battleModeCutinPaths = ['chizuru', 'mai', 'takumi', 'akatsuki']
+        .map(id => `assets/images/battle-mode-cutins/${id}-battle-mode-cutin.png`);
+
+    const queue = Array.from(new Set([
+        'assets/images/card-back.png',
+        ...ingredientPaths,
+        ...eventPaths,
+        ...recipePaths,
+        ...packPaths,
+        ...skillCutinPaths,
+        ...battleModeCutinPaths
+    ]));
+
+    let index = 0;
+    const preloadChunk = () => {
+        let loadedInThisChunk = 0;
+        while (index < queue.length && loadedInThisChunk < 2) {
+            ensureImageCacheEntry(queue[index]);
+            index += 1;
+            loadedInThisChunk += 1;
+        }
+        if (index >= queue.length) return;
+
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(preloadChunk, { timeout: 500 });
+        } else {
+            setTimeout(preloadChunk, 180);
+        }
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(preloadChunk, { timeout: 300 });
+    } else {
+        setTimeout(preloadChunk, 120);
+    }
 }
 
 function getBackgroundDesignCatalogSafe() {
@@ -820,15 +947,27 @@ function createImageCard(card, cardEl, imagePath, fallbackClassName = '') {
     cardEl.appendChild(art);
     cardEl.appendChild(namePlate);
 
-    const img = new Image();
-    img.onload = () => { cardEl.classList.add('has-image'); };
-    img.onerror = () => {
+    const applyFallback = () => {
+        if (cardEl.dataset.imageFallbackApplied === '1') return;
+        cardEl.dataset.imageFallbackApplied = '1';
         cardEl.innerHTML = '';
         cardEl.classList.remove('has-image');
         if (fallbackClassName) cardEl.className = `card ${fallbackClassName}`;
         createCardTextBlock(card, cardEl);
     };
-    img.src = imagePath;
+
+    const status = getImageLoadStatus(imagePath);
+    if (status === 'error') {
+        applyFallback();
+        return;
+    }
+
+    cardEl.classList.add('has-image');
+    if (status === 'loading') {
+        onImageLoadSettled(imagePath, ok => {
+            if (!ok) applyFallback();
+        });
+    }
 }
 
 function createFaceCard(card, extraClass) {
@@ -869,13 +1008,22 @@ function createBackCard(titleText, descText) {
 function renderPlayerMixedHand() {
     const container = byId('player-hand-mixed');
     if (!container) return;
-    container.innerHTML = '';
 
     const player = GameState.players.player;
     const cards = [
         ...player.hand.map(card => ({ ...card, zoneType: 'ingredient' })),
         ...player.events.map(card => ({ ...card, zoneType: 'event' }))
     ];
+    const signature = [
+        cards.map(card => `${card.id}:${card.type}:${card.name}`).join('|'),
+        GameState.selectionMode || '',
+        (GameState.selectedCardIds || []).join(','),
+        GameState.currentTurn || '',
+        GameState.gameEnded ? '1' : '0'
+    ].join('::');
+    if (shouldSkipSectionRender('player-hand-mixed', signature)) return;
+
+    container.innerHTML = '';
 
     if (cards.length === 0) { container.textContent = '手札なし'; return; }
 
@@ -900,9 +1048,17 @@ function renderPlayerMixedHand() {
 function renderPlayerSet() {
     const container = byId('player-set');
     if (!container) return;
-    container.innerHTML = '';
 
     const player = GameState.players.player;
+    const signature = [
+        player.set.map(card => `${card.id}:${card.name}:${card.trapLocked === true ? 1 : 0}:${card.blockedByTrap === true ? 1 : 0}`).join('|'),
+        GameState.selectionMode || '',
+        GameState.gameEnded ? '1' : '0'
+    ].join('::');
+    if (shouldSkipSectionRender('player-set', signature)) return;
+
+    container.innerHTML = '';
+
     if (player.set.length === 0) { container.textContent = 'セットなし'; return; }
 
     player.set.forEach(card => {
@@ -922,10 +1078,13 @@ function renderPlayerSet() {
 function renderCpuMixedHand() {
     const container = byId('cpu-hand-mixed');
     if (!container) return;
-    container.innerHTML = '';
 
     const cpu = GameState.players.cpu;
     const total = cpu.hand.length + cpu.events.length;
+    const signature = `${cpu.hand.length}:${cpu.events.length}`;
+    if (shouldSkipSectionRender('cpu-hand-mixed', signature)) return;
+
+    container.innerHTML = '';
 
     if (total === 0) { container.textContent = 'なし'; return; }
     for (let i = 0; i < total; i++) container.appendChild(createBackCard('CPU', '手札'));
@@ -934,9 +1093,15 @@ function renderCpuMixedHand() {
 function renderCpuSet() {
     const container = byId('cpu-set');
     if (!container) return;
-    container.innerHTML = '';
 
     const cpu = GameState.players.cpu;
+    const signature = cpu.set
+        .map(card => `${card.id}:${card.name}:${card.trapLocked === true ? 1 : 0}:${card.blockedByTrap === true ? 1 : 0}`)
+        .join('|');
+    if (shouldSkipSectionRender('cpu-set', signature)) return;
+
+    container.innerHTML = '';
+
     if (cpu.set.length === 0) { container.textContent = 'セットなし'; return; }
     cpu.set.forEach(card => {
         const isTrap = card.trapLocked === true || card.blockedByTrap === true;
@@ -954,6 +1119,10 @@ function renderCpuSet() {
 
 function renderPacks(player, container) {
     if (!container) return;
+    const sectionKey = `packs:${container.id || 'unknown'}`;
+    const signature = player.packs.map(pack => `${pack.key}:${pack.name}`).join('|');
+    if (shouldSkipSectionRender(sectionKey, signature)) return;
+
     container.innerHTML = '';
     if (player.packs.length === 0) { container.textContent = 'なし'; return; }
 
@@ -1022,9 +1191,16 @@ function renderDishSummaries() { renderLatestDishFor('player'); renderLatestDish
 function renderLatestDishFor(ownerKey) {
     const container = byId(ownerKey === 'player' ? 'player-latest-dish' : 'cpu-latest-dish');
     if (!container) return;
-    container.innerHTML = '';
 
     const p = GameState.players[ownerKey];
+    const latest = Array.isArray(p.cookedRecipes) && p.cookedRecipes.length > 0 ? p.cookedRecipes[0] : null;
+    const signature = latest
+        ? `${latest.name}:${latest.points}:${latest.id || ''}`
+        : 'empty';
+    if (shouldSkipSectionRender(`latest-dish:${ownerKey}`, signature)) return;
+
+    container.innerHTML = '';
+
     if (!p.cookedRecipes || p.cookedRecipes.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'latest-dish-empty';
@@ -1693,9 +1869,13 @@ function renderDiscardButton() {
 function renderRealtimeLog() {
     const container = byId('realtime-log-list');
     if (!container) return;
-    container.innerHTML = '';
 
     const lines = realtimeLogHistory.slice(0, 5);
+    const signature = lines.join('\n');
+    if (shouldSkipSectionRender('realtime-log-list', signature)) return;
+
+    container.innerHTML = '';
+
     if (lines.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'realtime-log-entry';
@@ -1750,68 +1930,125 @@ function setCPUStatus(text) { const el = byId('cpu-status'); if (el) el.textCont
 function enablePlayerControls() { updateUI(); }
 function disablePlayerControls() { updateUI(); }
 
-function updateUI() {
-    ensureUiState();
-    ensureGameSettings();
-    applyBackgroundTheme(GameState.settings.backgroundTheme);
-    applyBackgroundDesign(GameState.settings.backgroundDesign);
-    bindRenderEventsOnce();
+function requestDeferredUIRender() {
+    if (uiRenderFrameRequested) return;
+    uiRenderFrameRequested = true;
 
-    const names = GameState.characterNames || { player: '千鶴', cpu: '舞依' };
-    safeSetText('player-hud-name', names.player || '千鶴');
-    safeSetText('cpu-hud-name', names.cpu || '舞依');
+    const run = () => {
+        uiRenderFrameRequested = false;
+        if (!uiRenderQueued) return;
+        uiRenderQueued = false;
+        performUIRender();
+    };
 
-    safeSetText('player-side-score', String(GameState.players.player.score));
-    safeSetText('cpu-side-score', String(GameState.players.cpu.score));
-    safeSetText('deck-count', String(GameState.deck.length));
-    safeSetText('discard-count', String(GameState.discard.length));
-
-    const opponentLabel = typeof window.getOpponentLabelText === 'function'
-        ? window.getOpponentLabelText()
-        : 'CPU';
-    safeSetText('turn-indicator', 'ターン: ' + (
-        GameState.currentTurn === 'player' ? 'プレイヤー' :
-        GameState.currentTurn === 'cpu' ? opponentLabel :
-        'ゲーム終了'
-    ));
-
-    safeSetText('phase-indicator', 'フェイズ: ' + GameState.currentPhase);
-
-    applyCharacterSkins();
-    updateCharacterFaces();
-    renderPlayerMixedHand();
-    renderPlayerSet();
-    renderCpuMixedHand();
-    renderCpuSet();
-    renderPacks(GameState.players.player, byId('player-packs'));
-    renderPacks(GameState.players.cpu, byId('cpu-packs'));
-    renderCandidateRecipes();
-    renderSkillHud();
-    renderShopButtons();
-    renderDiscardButton();
-    renderDishSummaries();
-    renderDishHistoryPanel();
-    renderRealtimeLog();
-    renderSelectionPanel();
-    renderSetConfirmPanel();
-    renderPackConfirmPanel();
-    renderEventConfirmPanel();
-    renderSetViewPanel();
-    renderIngredientActionPanel();
-    renderSkillConfirmPanel();
-    renderPileConfirmPanel();
-    renderPileViewPanel();
-    renderEndTurnConfirmPanel();
-    renderReferenceBooks();
-    renderInfoOverlay();
-
-    if (GameState.selectionMode !== 'discard') hideDiscardBanner();
-    if (typeof window.__onGameStateUpdated === 'function') {
-        window.__onGameStateUpdated();
+    if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(run);
+    } else {
+        setTimeout(run, 16);
     }
 }
 
+function performUIRender() {
+    if (uiRenderInProgress) {
+        uiRenderQueued = true;
+        requestDeferredUIRender();
+        return;
+    }
+    uiRenderInProgress = true;
+
+    try {
+        scheduleGameplayImagePreload();
+        ensureUiState();
+        ensureGameSettings();
+        applyBackgroundTheme(GameState.settings.backgroundTheme);
+        applyBackgroundDesign(GameState.settings.backgroundDesign);
+        bindRenderEventsOnce();
+
+        const names = GameState.characterNames || { player: '千鶴', cpu: '舞依' };
+        safeSetText('player-hud-name', names.player || '千鶴');
+        safeSetText('cpu-hud-name', names.cpu || '舞依');
+
+        safeSetText('player-side-score', String(GameState.players.player.score));
+        safeSetText('cpu-side-score', String(GameState.players.cpu.score));
+        safeSetText('deck-count', String(GameState.deck.length));
+        safeSetText('discard-count', String(GameState.discard.length));
+
+        const opponentLabel = typeof window.getOpponentLabelText === 'function'
+            ? window.getOpponentLabelText()
+            : 'CPU';
+        safeSetText('turn-indicator', 'ターン: ' + (
+            GameState.currentTurn === 'player' ? 'プレイヤー' :
+            GameState.currentTurn === 'cpu' ? opponentLabel :
+            'ゲーム終了'
+        ));
+
+        safeSetText('phase-indicator', 'フェイズ: ' + GameState.currentPhase);
+
+        applyCharacterSkins();
+        updateCharacterFaces();
+        renderPlayerMixedHand();
+        renderPlayerSet();
+        renderCpuMixedHand();
+        renderCpuSet();
+        renderPacks(GameState.players.player, byId('player-packs'));
+        renderPacks(GameState.players.cpu, byId('cpu-packs'));
+        renderCandidateRecipes();
+        renderSkillHud();
+        renderShopButtons();
+        renderDiscardButton();
+        renderDishSummaries();
+        renderDishHistoryPanel();
+        renderRealtimeLog();
+        renderSelectionPanel();
+        renderSetConfirmPanel();
+        renderPackConfirmPanel();
+        renderEventConfirmPanel();
+        renderSetViewPanel();
+        renderIngredientActionPanel();
+        renderSkillConfirmPanel();
+        renderPileConfirmPanel();
+        renderPileViewPanel();
+        renderEndTurnConfirmPanel();
+        renderReferenceBooks();
+        renderInfoOverlay();
+
+        if (GameState.selectionMode !== 'discard') hideDiscardBanner();
+        if (typeof window.__onGameStateUpdated === 'function') {
+            window.__onGameStateUpdated();
+        }
+    } finally {
+        uiRenderInProgress = false;
+        lastUiRenderAt = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+            ? performance.now()
+            : Date.now();
+        if (uiRenderQueued) requestDeferredUIRender();
+    }
+}
+
+function updateUI(forceImmediate = false) {
+    if (forceImmediate === true) {
+        uiRenderQueued = false;
+        uiRenderFrameRequested = false;
+        performUIRender();
+        return;
+    }
+
+    const now = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+        ? performance.now()
+        : Date.now();
+    const renderTooSoon = (now - lastUiRenderAt) < 14;
+
+    if (uiRenderInProgress || renderTooSoon) {
+        uiRenderQueued = true;
+        requestDeferredUIRender();
+        return;
+    }
+
+    performUIRender();
+}
+
 window.updateUI = updateUI;
+window.updateUIImmediate = () => updateUI(true);
 window.addLog = addLog;
 window.setCPUStatus = setCPUStatus;
 window.enablePlayerControls = enablePlayerControls;

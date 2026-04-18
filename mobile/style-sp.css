@@ -236,35 +236,34 @@ body {
 
 .character-icon.battle-mode-chef {
     position: relative;
-    overflow: visible;
-    filter: saturate(1.12) contrast(1.06) brightness(1.04)
-        drop-shadow(0 0 3px rgba(255, 218, 140, 0.62))
-        drop-shadow(0 0 7px rgba(255, 176, 56, 0.4));
+    overflow: hidden;
+    border-radius: 50%;
+    border: 1.3px solid rgba(255, 234, 177, 0.58);
+    filter: none;
     background-repeat: no-repeat;
     background-color: transparent;
-    animation: mobile-battle-mode-icon-glow 2.8s ease-in-out infinite;
+    animation: none;
+    box-shadow: 0 0 0 1px rgba(255, 244, 210, 0.34), 0 2px 7px rgba(0, 0, 0, 0.22);
 }
 
 .character-icon.battle-mode-chef::before,
 .character-icon.battle-mode-chef::after {
-    content: '';
-    position: absolute;
-    pointer-events: none;
-    border-radius: 999px;
+    content: none;
+    display: none;
 }
 
 .character-icon.battle-mode-chef::before {
-    inset: -14%;
-    background: conic-gradient(from 0deg, rgba(255, 238, 181, 0.03), rgba(255, 178, 62, 0.2), rgba(255, 238, 181, 0.03));
-    filter: blur(4px);
-    animation: mobile-battle-mode-icon-halo-spin 4.9s linear infinite;
+    inset: auto;
+    background: none;
+    filter: none;
+    animation: none;
 }
 
 .character-icon.battle-mode-chef::after {
-    inset: -6%;
-    border: 1.1px solid rgba(255, 233, 174, 0.54);
-    box-shadow: 0 0 4px rgba(255, 218, 132, 0.44);
-    animation: mobile-battle-mode-icon-halo-pulse 1.75s ease-in-out infinite;
+    inset: auto;
+    border: none;
+    box-shadow: none;
+    animation: none;
 }
 
 @keyframes mobile-battle-mode-icon-glow {
@@ -338,26 +337,26 @@ body {
 
 .character-icon.battle-mode-chef.char-chizuru {
     background-image: url("../assets/images/battle-mode-icons/chizuru-battle-mode-icon.png");
-    background-size: 308% auto;
-    background-position: 50% 19%;
+    background-size: 368% auto;
+    background-position: 50% 16%;
 }
 
 .character-icon.battle-mode-chef.char-mai {
     background-image: url("../assets/images/battle-mode-icons/mai-battle-mode-icon.png");
-    background-size: 308% auto;
-    background-position: 50% 19%;
+    background-size: 368% auto;
+    background-position: 50% 16%;
 }
 
 .character-icon.battle-mode-chef.char-takumi {
     background-image: url("../assets/images/battle-mode-icons/takumi-battle-mode-icon.png");
-    background-size: 320% auto;
-    background-position: 50% 18%;
+    background-size: 384% auto;
+    background-position: 50% 15%;
 }
 
 .character-icon.battle-mode-chef.char-akatsuki {
     background-image: url("../assets/images/battle-mode-icons/akatsuki-battle-mode-icon.png");
-    background-size: 316% auto;
-    background-position: 50% 18%;
+    background-size: 384% auto;
+    background-position: 50% 15%;
 }
 
 .hud-info {

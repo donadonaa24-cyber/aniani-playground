@@ -29,7 +29,8 @@ function createGameSettings() {
         backgroundTheme: 'default',
         backgroundDesign: 'default',
         bgmEnabled: true,
-        bgmTrack: 'default'
+        bgmTrack: 'default',
+        bgmVolume: 0.8
     };
 }
 

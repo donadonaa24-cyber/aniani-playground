@@ -1,23 +1,153 @@
 const BGM_TRACKS = {
-    default: { label: '通常', src: 'assets/audio/bgm.mp3' },
-    variantA: { label: 'バリエーションA（仮）', src: 'assets/audio/bgm.mp3' }
+    default: { label: '1', src: 'assets/audio/bgm.mp3' },
+    miracle: { label: '2', src: 'assets/audio/bgm-miracle.mp3' },
+    skyHigh: { label: '3', src: 'assets/audio/bgm-sky-high-refrain.mp3' },
+    code241: { label: '4', src: 'assets/audio/bgm-code241-2.mp3' }
 };
+
+const LEGACY_BGM_TRACK_ALIAS = {
+    variantA: 'miracle'
+};
+
+const CONTEXT_BGM_TRACKS = {
+    title: 'assets/audio/title-screen.mp3',
+    story: 'assets/audio/story-dialogue.mp3',
+    battleMode: 'assets/audio/battle-mode.mp3',
+    result: 'assets/audio/match-result.mp3'
+};
+
+const BASE_BGM_VOLUME = {
+    battle: 0.5,
+    title: 0.42,
+    story: 0.4,
+    battleMode: 0.56,
+    result: 0.46
+};
+
+const DEFAULT_BGM_VOLUME = 0.8;
 
 const AudioManager = {
     isUnlocked: false,
-    bgm: null,
     bgmEnabled: true,
+    bgmVolume: DEFAULT_BGM_VOLUME,
     currentBgmTrack: 'default',
+    activeBgmKey: null,
+    lastRequestedBgmKey: 'battle:default',
+    battleModeLocked: false,
+    bgmPlayers: {},
     sounds: {}
 };
 
-function createBgmAudio(trackKey) {
-    const track = BGM_TRACKS[trackKey] || BGM_TRACKS.default;
-    const audio = new Audio(track.src);
+function clampBgmVolume(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return DEFAULT_BGM_VOLUME;
+    return Math.max(0, Math.min(1, num));
+}
+
+function normalizeTrackKey(trackKey) {
+    const raw = String(trackKey || 'default').trim();
+    const aliased = LEGACY_BGM_TRACK_ALIAS[raw] || raw;
+    return BGM_TRACKS[aliased] ? aliased : 'default';
+}
+
+function getBattleBgmKey(trackKey) {
+    return `battle:${normalizeTrackKey(trackKey)}`;
+}
+
+function getBaseVolumeByKey(key) {
+    if (String(key || '').startsWith('battle:')) return BASE_BGM_VOLUME.battle;
+    return BASE_BGM_VOLUME[key] || BASE_BGM_VOLUME.battle;
+}
+
+function createLoopAudio(src, baseVolume) {
+    const audio = new Audio(src);
     audio.loop = true;
     audio.preload = 'auto';
-    audio.volume = 0.35;
+    audio.__baseVolume = Number.isFinite(Number(baseVolume)) ? Number(baseVolume) : BASE_BGM_VOLUME.battle;
+    audio.volume = Math.max(0, Math.min(1, audio.__baseVolume * AudioManager.bgmVolume));
     return audio;
+}
+
+function createBgmPlayers() {
+    const players = {};
+    Object.entries(BGM_TRACKS).forEach(([key, track]) => {
+        const playerKey = getBattleBgmKey(key);
+        players[playerKey] = createLoopAudio(track.src, getBaseVolumeByKey(playerKey));
+    });
+    Object.entries(CONTEXT_BGM_TRACKS).forEach(([contextKey, src]) => {
+        players[contextKey] = createLoopAudio(src, getBaseVolumeByKey(contextKey));
+    });
+    return players;
+}
+
+function getBgmPlayerByKey(key) {
+    return AudioManager.bgmPlayers[key] || null;
+}
+
+function ensureBgmPlayersReady() {
+    if (Object.keys(AudioManager.bgmPlayers).length > 0) return;
+    AudioManager.bgmPlayers = createBgmPlayers();
+    applyBgmVolumeToAll();
+}
+
+function applyBgmVolumeToAll() {
+    if (Object.keys(AudioManager.bgmPlayers).length === 0) return;
+    const volume = clampBgmVolume(AudioManager.bgmVolume);
+    AudioManager.bgmVolume = volume;
+    Object.values(AudioManager.bgmPlayers).forEach(audio => {
+        if (!audio) return;
+        const base = Number.isFinite(Number(audio.__baseVolume))
+            ? Number(audio.__baseVolume)
+            : BASE_BGM_VOLUME.battle;
+        audio.volume = Math.max(0, Math.min(1, base * volume));
+    });
+}
+
+function stopAllBgm() {
+    ensureBgmPlayersReady();
+    Object.values(AudioManager.bgmPlayers).forEach(audio => {
+        try {
+            audio.pause();
+            audio.currentTime = 0;
+        } catch (_) {}
+    });
+    AudioManager.activeBgmKey = null;
+}
+
+function resolvePlaybackKey(requestedKey) {
+    if (!AudioManager.battleModeLocked) return requestedKey;
+    if (requestedKey === 'battleMode') return requestedKey;
+    if (requestedKey === 'title' || requestedKey === 'story' || requestedKey === 'result') return requestedKey;
+    if (String(requestedKey || '').startsWith('battle:')) return 'battleMode';
+    return requestedKey;
+}
+
+function playBgmByKey(key) {
+    ensureBgmPlayersReady();
+    AudioManager.lastRequestedBgmKey = key;
+    if (!AudioManager.bgmEnabled) return;
+
+    const targetKey = resolvePlaybackKey(key);
+    const player = getBgmPlayerByKey(targetKey);
+    if (!player) return;
+
+    if (AudioManager.activeBgmKey !== targetKey) {
+        Object.entries(AudioManager.bgmPlayers).forEach(([playerKey, audio]) => {
+            if (!audio) return;
+            try {
+                if (playerKey === targetKey) return;
+                audio.pause();
+                audio.currentTime = 0;
+            } catch (_) {}
+        });
+        try {
+            player.currentTime = 0;
+        } catch (_) {}
+    }
+
+    AudioManager.activeBgmKey = targetKey;
+    if (!player.paused) return;
+    player.play().catch(() => {});
 }
 
 function setupAudio() {
@@ -28,47 +158,79 @@ function setupAudio() {
         cook: new Audio('assets/audio/cook.mp3')
     };
 
-    AudioManager.bgm = createBgmAudio(AudioManager.currentBgmTrack);
+    stopAllBgm();
+    AudioManager.bgmPlayers = createBgmPlayers();
+    AudioManager.currentBgmTrack = normalizeTrackKey(AudioManager.currentBgmTrack);
+    AudioManager.lastRequestedBgmKey = getBattleBgmKey(AudioManager.currentBgmTrack);
+    AudioManager.battleModeLocked = false;
+    applyBgmVolumeToAll();
 
     Object.values(AudioManager.sounds).forEach(audio => {
         audio.preload = 'auto';
-        audio.volume = 0.7;
+        audio.volume = 0.72;
     });
 }
 
 function unlockAudio() {
     if (AudioManager.isUnlocked) return;
+    ensureBgmPlayersReady();
     AudioManager.isUnlocked = true;
 
-    if (AudioManager.bgm) {
-        AudioManager.bgm.play().then(() => {
-            AudioManager.bgm.pause();
-            AudioManager.bgm.currentTime = 0;
+    const warmupRequested = AudioManager.lastRequestedBgmKey || getBattleBgmKey(AudioManager.currentBgmTrack);
+    const warmupKey = resolvePlaybackKey(warmupRequested);
+    const warmup = getBgmPlayerByKey(warmupKey);
+    if (warmup) {
+        warmup.play().then(() => {
+            warmup.pause();
+            warmup.currentTime = 0;
         }).catch(() => {});
     }
 }
 
+function setBattleModeBgmLocked(locked) {
+    AudioManager.battleModeLocked = !!locked;
+    if (!AudioManager.bgmEnabled) return;
+    if (AudioManager.battleModeLocked) {
+        playBgmByKey('battleMode');
+    }
+}
+
 function playBGM() {
-    if (!AudioManager.bgm || !AudioManager.bgmEnabled) return;
-    AudioManager.bgm.currentTime = 0;
-    AudioManager.bgm.play().catch(() => {});
+    playBgmByKey(getBattleBgmKey(AudioManager.currentBgmTrack));
+}
+
+function playTitleBGM() {
+    AudioManager.battleModeLocked = false;
+    playBgmByKey('title');
+}
+
+function playStoryBGM() {
+    AudioManager.battleModeLocked = false;
+    playBgmByKey('story');
+}
+
+function playBattleModeBGM() {
+    setBattleModeBgmLocked(true);
+    playBgmByKey('battleMode');
+}
+
+function playResultBGM() {
+    AudioManager.battleModeLocked = false;
+    playBgmByKey('result');
 }
 
 function stopBGM() {
-    if (!AudioManager.bgm) return;
-    AudioManager.bgm.pause();
-    AudioManager.bgm.currentTime = 0;
+    stopAllBgm();
 }
 
 function setBgmEnabled(enabled) {
     AudioManager.bgmEnabled = !!enabled;
     if (!AudioManager.bgmEnabled) {
-        stopBGM();
+        stopAllBgm();
         return;
     }
-    if (AudioManager.isUnlocked && AudioManager.bgm) {
-        AudioManager.bgm.play().catch(() => {});
-    }
+    if (!AudioManager.isUnlocked) return;
+    playBgmByKey(AudioManager.lastRequestedBgmKey || getBattleBgmKey(AudioManager.currentBgmTrack));
 }
 
 function getBgmEnabled() {
@@ -76,29 +238,38 @@ function getBgmEnabled() {
 }
 
 function setBgmTrack(trackKey) {
-    if (!BGM_TRACKS[trackKey]) return false;
+    const normalized = normalizeTrackKey(trackKey);
+    if (!BGM_TRACKS[normalized]) return false;
 
-    const shouldResume = AudioManager.bgmEnabled &&
-        AudioManager.isUnlocked &&
-        !!AudioManager.bgm &&
-        !AudioManager.bgm.paused;
+    AudioManager.currentBgmTrack = normalized;
+    const nextBattleKey = getBattleBgmKey(normalized);
+    const isBattlePlaying = String(AudioManager.activeBgmKey || '').startsWith('battle:');
 
-    if (AudioManager.bgm) {
-        AudioManager.bgm.pause();
-        AudioManager.bgm.currentTime = 0;
+    if (AudioManager.battleModeLocked) {
+        AudioManager.lastRequestedBgmKey = nextBattleKey;
+        return true;
     }
 
-    AudioManager.currentBgmTrack = trackKey;
-    AudioManager.bgm = createBgmAudio(trackKey);
-
-    if (shouldResume) {
-        AudioManager.bgm.play().catch(() => {});
+    if (isBattlePlaying) {
+        playBgmByKey(nextBattleKey);
+    } else if (String(AudioManager.lastRequestedBgmKey || '').startsWith('battle:')) {
+        AudioManager.lastRequestedBgmKey = nextBattleKey;
     }
     return true;
 }
 
 function getCurrentBgmTrack() {
     return AudioManager.currentBgmTrack;
+}
+
+function setBgmVolume(volume) {
+    AudioManager.bgmVolume = clampBgmVolume(volume);
+    applyBgmVolumeToAll();
+    return AudioManager.bgmVolume;
+}
+
+function getBgmVolume() {
+    return clampBgmVolume(AudioManager.bgmVolume);
 }
 
 function getBgmTrackOptions() {
@@ -114,7 +285,7 @@ function playSfx(name) {
         sound.volume = base.volume;
         sound.play().catch(() => {});
     } catch (error) {
-        console.log(`SE再生スキップ: ${name}`);
+        console.log(`SE playback skipped: ${name}`);
     }
 }
 
@@ -126,6 +297,10 @@ function playCookBgm() {
 window.setupAudio = setupAudio;
 window.unlockAudio = unlockAudio;
 window.playBGM = playBGM;
+window.playTitleBGM = playTitleBGM;
+window.playStoryBGM = playStoryBGM;
+window.playBattleModeBGM = playBattleModeBGM;
+window.playResultBGM = playResultBGM;
 window.stopBGM = stopBGM;
 window.playSfx = playSfx;
 window.playCookBgm = playCookBgm;
@@ -133,4 +308,7 @@ window.setBgmEnabled = setBgmEnabled;
 window.getBgmEnabled = getBgmEnabled;
 window.setBgmTrack = setBgmTrack;
 window.getCurrentBgmTrack = getCurrentBgmTrack;
+window.setBgmVolume = setBgmVolume;
+window.getBgmVolume = getBgmVolume;
+window.setBattleModeBgmLocked = setBattleModeBgmLocked;
 window.getBgmTrackOptions = getBgmTrackOptions;

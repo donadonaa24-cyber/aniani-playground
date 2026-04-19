@@ -1011,3 +1011,155 @@
 キャッシュ対策:
 - `web.html` / `mobile/mobile.html` の読込バージョン更新
   - `v=20260418h` → `v=20260418i`
+
+2026-04-19
+-----------------
+目的:
+- フォルダ内にあるBGM（`assets/audio/bgm.mp3`）を、対戦開始時点で確実に再生する。
+
+変更点:
+- `main.js`
+  - `onTurnCardSelected()` で、先攻/後攻カード選択直後に
+    - `safeStartGame()`
+    - `unlockAudio()`
+    - `startBgmOnce()`
+    を実行するよう修正。
+  - `beginMatchByRole()` 冒頭にも `unlockAudio()` + `startBgmOnce()` を追加し、開始時の取りこぼしを防止。
+  - `window.__battleStartBgmOnce` を公開し、他モードからも同じBGM開始処理を呼べるよう統一。
+
+- `mobile/main-sp.js`
+  - Web版と同じ修正を適用。
+  - 対戦開始導線（先攻/後攻カード選択）でBGMが起動するよう統一。
+  - `window.__battleStartBgmOnce` を公開。
+
+- `story-mode.js`
+  - `setupStoryBattle()` で `window.__battleStartBgmOnce()` を呼び、チュートリアル対戦でもBGM開始。
+
+- `friend-battle-firebase.js`
+  - `ensureRuntimeStarted()` で `window.__battleStartBgmOnce()` を呼び、フレンド戦開始時のBGM起動を追加。
+
+キャッシュ対策:
+- `web.html` / `mobile/mobile.html` のCSS/JS読込クエリを更新
+  - `v=20260418i` → `v=20260419a`
+
+2026-04-19
+-----------------
+目的:
+- Web版で「エンドフェイズの捨て札案内」が捨てる操作の邪魔になる問題を解消。
+- BGMが鳴らない/小さい問題を再調整。
+
+変更点:
+- `style.css`
+  - Web版 `discard-banner` を中央固定から上部配置へ変更。
+    - `position: fixed` → `position: absolute`
+    - `top: 76px`（Web固定表示時は `top: 84px`）
+    - サイズを少し縮小し、パルスアニメーションを停止。
+  - これにより、手札選択や「捨てる」ボタン付近と重ならない配置へ調整。
+
+- `audio.js` / `mobile/audio-sp.js`
+  - BGM初期音量を微増。
+    - `0.35` → `0.45`
+  - `playBGM()` を調整し、再生中に毎回先頭へ戻さないよう修正（再生安定化）。
+
+- `main.js` / `mobile/main-sp.js`
+  - `startBgmOnce()` を再調整。
+    - 初回のみ BGMをONにして開始。
+    - 2回目以降も `playBGM()` を呼び、再生失敗後の再試行を可能化。
+  - スタートメニューの主要導線（CPU/ストーリー/フレンド）クリック時に `unlockAudio()` を先行実行し、ブラウザ制限でBGM開始が失敗しにくいよう改善。
+
+キャッシュ対策:
+- `web.html` / `mobile/mobile.html` の読込クエリを更新
+  - `v=20260419a` → `v=20260419b`
+
+2026-04-19
+-----------------
+目的:
+- BGMを場面ごとに追加し、タイトル/ストーリー会話/バトルアラカルト/対戦終了後で切り替わるようにする。
+- 対戦中BGMの選択肢を増やし、設定画面から変更できるようにする。
+
+追加した音源（`assets/audio`）:
+- `battle-mode.mp3`（バトルアラカルトモード）
+- `story-dialogue.mp3`（ストーリー会話）
+- `title-screen.mp3`（タイトル/メニュー）
+- `match-result.mp3`（対戦終了後）
+- `bgm-miracle.mp3`（対戦中BGM候補）
+- `bgm-sky-high-refrain.mp3`（対戦中BGM候補）
+- `bgm-code241-2.mp3`（対戦中BGM候補）
+
+変更点:
+- `audio.js` / `mobile/audio-sp.js`
+  - BGM管理を拡張し、場面別再生APIを追加:
+    - `playTitleBGM()`
+    - `playStoryBGM()`
+    - `playBattleModeBGM()`
+    - `playResultBGM()`
+  - 対戦中BGMの選択肢を4曲化:
+    - `Normal` / `Miracle` / `Sky High Refrain` / `Code.241_2`
+  - 旧キー `variantA` を互換エイリアスとして吸収（既存設定の読み込み対策）。
+  - BGMは「現在の場面」1系統のみ再生されるよう統一（切替時に他を停止）。
+
+- `main.js` / `mobile/main-sp.js`
+  - `showStartStage()` で `start-title-stage` / `start-menu-stage` 表示時に `playTitleBGM()` を呼ぶよう追加。
+  - `endGame()` で `playResultBGM()` を呼ぶよう変更（未対応環境のみ `stopBGM()` にフォールバック）。
+  - 初回タップ時に `unlockAudio()` + `playTitleBGM()` を実行する導線を追加（ブラウザの自動再生制限対策）。
+
+- `rules.js` / `mobile/rules-sp.js`
+  - Battle à la carte Mode 発動時に `playBattleModeBGM()` を呼ぶよう追加。
+
+- `story-mode.js`
+  - ストーリー画面（選択/導入会話/終了会話）で `playStoryBGM()` を呼ぶよう追加。
+
+- `render.js` / `mobile/render-sp.js`
+  - `applyRuntimeSettings()` でBGMトラック設定適用後に `getCurrentBgmTrack()` で正規化キーへ同期。
+
+キャッシュ対策:
+- `web.html` / `mobile/mobile.html` の読込クエリを更新
+  - `v=20260419b` → `v=20260419c`
+
+2026-04-19
+-----------------
+目的:
+- 設定画面にBGM音量スライダーを追加する。
+- Battle à la carte Mode発動後、対戦終了まで専用BGMを継続再生する。
+- 背景デザインの見え方を約10%濃く調整する。
+- 設定画面のBGM名表示を数字にする。
+- ストーリー第3話の玉ねぎ不足感と、カード総枚数不変の要件を満たす。
+
+変更点:
+- `audio.js` / `mobile/audio-sp.js`
+  - 対戦BGMのラベルを `1` / `2` / `3` / `4` に変更。
+  - BGM音量APIを追加:
+    - `setBgmVolume()`
+    - `getBgmVolume()`
+  - Battle à la carte Mode用のBGMロックを追加:
+    - `setBattleModeBgmLocked(true)` 中は通常対戦BGMへ戻らず、専用BGMを維持。
+    - `endGame()` 側でロック解除して結果BGMへ遷移。
+  - ループ音源ごとのベース音量を整理し、スライダー連動で全BGMに反映。
+
+- `render.js` / `mobile/render-sp.js`
+  - 設定の `bgmVolume` を読み書きする処理を追加。
+  - 設定オーバーレイのサウンド欄に音量スライダーを追加。
+  - 入力中はリアルタイム反映、確定時にログ出力するよう調整。
+
+- `state.js` / `mobile/state-sp.js`
+  - 設定の初期値に `bgmVolume: 0.8` を追加。
+
+- `main.js` / `mobile/main-sp.js`
+  - ゲーム開始時にBattle Mode BGMロックを明示的に解除。
+  - `endGame()` でロック解除後に結果BGMを再生。
+
+- `rules.js` / `mobile/rules-sp.js`
+  - Battle à la carte Mode突入時にBGMロックを有効化。
+
+- `story-mode.js`
+  - `takeCard()` の「不足時に新規カード生成」を廃止。
+    - これにより、ストーリー初期化で総枚数が増える挙動を防止。
+  - 第3話のプレイヤー初期手札に `たまねぎ` を追加。
+
+- `style.css` / `mobile/style-sp.css`
+  - 背景デザインの透過率を調整（約10%濃く表示）。
+  - 設定用のスライダー表示スタイルを追加。
+
+キャッシュ対策:
+- `web.html` / `mobile/mobile.html` の読込クエリを更新
+  - `v=20260419c` → `v=20260419d`

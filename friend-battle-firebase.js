@@ -280,6 +280,9 @@
             window.initGame();
             if (typeof window.updateUI === 'function') window.updateUI();
         }
+        if (typeof window.__battleStartBgmOnce === 'function') {
+            window.__battleStartBgmOnce();
+        }
         state.runtimeStarted = true;
     }
 

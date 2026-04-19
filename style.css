@@ -17,7 +17,7 @@ body {
     position: relative;
     isolation: isolate;
     --bg-design-image: none;
-    --bg-design-opacity: 0.2;
+    --bg-design-opacity: 0.3;
     --web-fit-scale: 1;
 }
 
@@ -68,25 +68,25 @@ body.web-battle-fixed #game-container {
 }
 
 .discard-banner {
-    position: fixed;
+    position: absolute;
     left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9400;
+    top: 76px;
+    transform: translateX(-50%);
+    z-index: 3400;
     width: min(92vw, 560px);
-    padding: 14px 18px;
+    padding: 10px 14px;
     border-radius: 14px;
     background: rgba(255, 246, 220, 0.96);
     border: 3px solid #e2ad35;
     color: #8a4c00;
     text-align: center;
-    font-size: clamp(19px, 2vw, 28px);
+    font-size: clamp(15px, 1.6vw, 22px);
     font-weight: 900;
     line-height: 1.45;
     letter-spacing: 0.2px;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
     pointer-events: none;
-    animation: discardBannerPulse 1.6s ease-in-out infinite;
+    animation: none;
 }
 
 @keyframes discardBannerPulse {
@@ -102,6 +102,11 @@ body.web-battle-fixed #game-container {
         transform: translate(-50%, -50%) scale(1);
         box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
     }
+}
+
+body.web-battle-fixed .discard-banner {
+    top: 84px;
+    width: min(90vw, 620px);
 }
 
 .hidden {
@@ -1636,6 +1641,26 @@ button:disabled {
 
 .settings-select:disabled {
     opacity: 0.55;
+}
+
+.settings-range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.settings-range {
+    flex: 1;
+    accent-color: #2a5ea8;
+}
+
+.settings-range-value {
+    min-width: 46px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 900;
+    color: #6a3e16;
 }
 
 .settings-reset-button {

@@ -305,6 +305,12 @@ function processBattleALaCarteModeAfterDish(player, dishPoints, dishName, ownerK
         player.battleALaCarteModeDiscardPickupUsedThisTurn = false;
         addLog(`${ownerLabel}は Battle à la carte Mode に突入した！`);
         addLog('Mode効果: 1点料理で追加ドロー（メインフェイズで毎ターン1回）＋ドローフェイズ後に捨て札の材料1枚を回収（毎ターン1回）。');
+        if (typeof window.setBattleModeBgmLocked === 'function') {
+            window.setBattleModeBgmLocked(true);
+        }
+        if (typeof window.playBattleModeBGM === 'function') {
+            window.playBattleModeBGM();
+        }
         if (typeof window.showBattleALaCarteModeCutin === 'function') {
             setTimeout(() => {
                 window.showBattleALaCarteModeCutin(safeOwnerKey);

@@ -184,6 +184,12 @@
         if (el) el.textContent = text || '';
     }
 
+    function playStorySceneBgm() {
+        if (typeof window.playStoryBGM === 'function') {
+            window.playStoryBGM();
+        }
+    }
+
     function setHudVisible(visible) {
         const el = byId('story-hud-panel');
         if (el) el.classList.toggle('hidden', !visible);
@@ -306,6 +312,7 @@
         const overlay = byId('start-overlay');
         if (overlay) overlay.classList.remove('hidden');
         showStartStage('start-story-stage');
+        playStorySceneBgm();
 
         S.phase = 'select';
         S.episodeId = null;
@@ -357,21 +364,42 @@
         return id;
     }
 
-    function makeFallbackCard(gs, type, name) {
-        const card = { id: getNextCardId(gs), type, name };
-        if (type === 'event') {
-            const defs = Array.isArray(window.eventDefinitions) ? window.eventDefinitions : [];
-            const def = defs.find(d => d.name === name);
-            card.description = def?.description || '';
-        }
-        return card;
+    function removeCardFromZoneByName(zone, type, name) {
+        if (!Array.isArray(zone)) return null;
+        const idx = zone.findIndex(card => card && card.type === type && card.name === name);
+        if (idx < 0) return null;
+        return zone.splice(idx, 1)[0];
     }
 
     function takeCard(gs, type, name) {
         if (!Array.isArray(gs?.deck)) gs.deck = [];
-        const idx = gs.deck.findIndex(card => card && card.type === type && card.name === name);
-        if (idx >= 0) return gs.deck.splice(idx, 1)[0];
-        return makeFallbackCard(gs, type, name);
+        const fromDeck = removeCardFromZoneByName(gs.deck, type, name);
+        if (fromDeck) return fromDeck;
+
+        const zones = [
+            gs?.discard,
+            gs?.players?.player?.hand,
+            gs?.players?.player?.events,
+            gs?.players?.player?.set,
+            gs?.players?.cpu?.hand,
+            gs?.players?.cpu?.events,
+            gs?.players?.cpu?.set
+        ];
+
+        for (const zone of zones) {
+            const card = removeCardFromZoneByName(zone, type, name);
+            if (card) return card;
+        }
+
+        console.warn(`[story-mode] card not found: ${type}:${name}`);
+        return null;
+    }
+
+    function pushCardsSafe(targetZone, cards) {
+        if (!Array.isArray(targetZone) || !Array.isArray(cards)) return;
+        cards.forEach(card => {
+            if (card) targetZone.push(card);
+        });
     }
 
     function resetPlayerFlags(player) {
@@ -415,6 +443,7 @@
 
     function setupStoryBattle(ep) {
         if (typeof window.__battleSafeStartGame === 'function') window.__battleSafeStartGame();
+        if (typeof window.__battleStartBgmOnce === 'function') window.__battleStartBgmOnce();
         if (typeof window.initGame === 'function') window.initGame();
 
         const gs = window.GameState;
@@ -474,34 +503,49 @@
         gs.currentPhase = 'メインフェイズ';
 
         if (ep.id === 'episode1') {
-            p.hand.push(takeCard(gs, 'ingredient', 'ごはん'), takeCard(gs, 'ingredient', 'のり'), takeCard(gs, 'ingredient', '卵'), takeCard(gs, 'ingredient', 'にんじん'));
-            p.events.push(takeCard(gs, 'event', '爆買い'), takeCard(gs, 'event', 'ゴミ収集車'));
-            c.hand.push(takeCard(gs, 'ingredient', '豚肉'), takeCard(gs, 'ingredient', '大根'));
-            c.events.push(takeCard(gs, 'event', 'やっぱやめた'));
+            pushCardsSafe(p.hand, [
+                takeCard(gs, 'ingredient', 'ごはん'),
+                takeCard(gs, 'ingredient', 'のり'),
+                takeCard(gs, 'ingredient', '卵'),
+                takeCard(gs, 'ingredient', 'にんじん')
+            ]);
+            pushCardsSafe(p.events, [
+                takeCard(gs, 'event', '爆買い'),
+                takeCard(gs, 'event', 'ゴミ収集車')
+            ]);
+            pushCardsSafe(c.hand, [
+                takeCard(gs, 'ingredient', '豚肉'),
+                takeCard(gs, 'ingredient', '大根')
+            ]);
+            pushCardsSafe(c.events, [takeCard(gs, 'event', 'やっぱやめた')]);
             p.score = 0;
             c.score = 0;
         } else if (ep.id === 'episode2') {
-            p.hand.push(takeCard(gs, 'ingredient', 'ごはん'), takeCard(gs, 'ingredient', 'のり'));
-            p.events.push(takeCard(gs, 'event', '爆買い'));
-            c.hand.push(takeCard(gs, 'ingredient', '牛肉'));
-            c.events.push(takeCard(gs, 'event', 'やっぱやめた'));
+            pushCardsSafe(p.hand, [
+                takeCard(gs, 'ingredient', 'ごはん'),
+                takeCard(gs, 'ingredient', 'のり')
+            ]);
+            pushCardsSafe(p.events, [takeCard(gs, 'event', '爆買い')]);
+            pushCardsSafe(c.hand, [takeCard(gs, 'ingredient', '牛肉')]);
+            pushCardsSafe(c.events, [takeCard(gs, 'event', 'やっぱやめた')]);
             p.score = 9;
             c.score = 8;
         } else if (ep.id === 'episode3') {
             // 中盤から再開: CPUが1点リード、プレイヤーは通常料理4品済みであと1品でMode
-            p.hand.push(
+            pushCardsSafe(p.hand, [
                 takeCard(gs, 'ingredient', 'ごはん'),
                 takeCard(gs, 'ingredient', 'のり'),
-                takeCard(gs, 'ingredient', 'キャベツ')
-            );
-            p.events.push(takeCard(gs, 'event', 'やり直し'));
-            c.hand.push(
+                takeCard(gs, 'ingredient', 'キャベツ'),
+                takeCard(gs, 'ingredient', 'たまねぎ')
+            ]);
+            pushCardsSafe(p.events, [takeCard(gs, 'event', 'やり直し')]);
+            pushCardsSafe(c.hand, [
                 takeCard(gs, 'ingredient', '牛肉'),
                 takeCard(gs, 'ingredient', 'たまねぎ'),
                 takeCard(gs, 'ingredient', 'じゃがいも'),
                 takeCard(gs, 'ingredient', 'にんじん')
-            );
-            c.events.push(takeCard(gs, 'event', '爆買い'));
+            ]);
+            pushCardsSafe(c.events, [takeCard(gs, 'event', '爆買い')]);
 
             p.score = 4;
             c.score = 5;
@@ -729,6 +773,7 @@
         const ep = getEpisode(episodeId);
         if (!ep || !ep.implemented) return setStoryMessage('この話は後日実装予定です。');
         if (!isUnlocked(ep)) return setStoryMessage('前の話をクリアすると解放されます。');
+        playStorySceneBgm();
 
         S.phase = 'pre';
         S.episodeId = ep.id;
@@ -782,6 +827,7 @@
     function beginPost(episodeId, winner) {
         const ep = getEpisode(episodeId);
         if (!ep) return openSelection('');
+        playStorySceneBgm();
 
         S.phase = 'post';
         S.episodeId = ep.id;

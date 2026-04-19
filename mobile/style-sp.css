@@ -25,7 +25,7 @@ body {
     overflow: hidden;
     isolation: isolate;
     --bg-design-image: none;
-    --bg-design-opacity: 0.18;
+    --bg-design-opacity: 0.28;
     background:
         radial-gradient(circle at center, rgba(50,120,255,0.18) 0%, rgba(3,14,45,0.08) 45%, rgba(1,7,22,0.92) 100%),
         linear-gradient(180deg, #0d2d7a 0%, #071a49 55%, #041130 100%);
@@ -1099,6 +1099,26 @@ body {
 
 .settings-select:disabled {
     opacity: 0.55;
+}
+
+.settings-range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.settings-range {
+    flex: 1;
+    accent-color: #6ec4ff;
+}
+
+.settings-range-value {
+    min-width: 46px;
+    text-align: right;
+    font-size: 10px;
+    font-weight: 900;
+    color: #d9ecff;
 }
 
 .settings-reset-button {

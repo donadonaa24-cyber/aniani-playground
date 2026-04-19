@@ -352,7 +352,15 @@ function ensureGameSettings() {
     if (typeof GameState.settings.backgroundDesign === 'undefined') GameState.settings.backgroundDesign = 'default';
     if (typeof GameState.settings.bgmEnabled === 'undefined') GameState.settings.bgmEnabled = true;
     if (typeof GameState.settings.bgmTrack === 'undefined') GameState.settings.bgmTrack = 'default';
+    if (typeof GameState.settings.bgmVolume === 'undefined') GameState.settings.bgmVolume = 0.8;
+    GameState.settings.bgmVolume = clampBgmVolumeSetting(GameState.settings.bgmVolume);
     return GameState.settings;
+}
+
+function clampBgmVolumeSetting(value) {
+    const volume = Number(value);
+    if (!Number.isFinite(volume)) return 0.8;
+    return Math.max(0, Math.min(1, volume));
 }
 
 function applyBackgroundTheme(themeKey) {
@@ -385,8 +393,17 @@ function applyRuntimeSettings() {
     applyBackgroundTheme(settings.backgroundTheme);
     applyBackgroundDesign(settings.backgroundDesign);
 
+    if (typeof setBgmVolume === 'function') {
+        setBgmVolume(clampBgmVolumeSetting(settings.bgmVolume));
+        if (typeof getBgmVolume === 'function') {
+            settings.bgmVolume = clampBgmVolumeSetting(getBgmVolume());
+        }
+    }
     if (typeof setBgmTrack === 'function') {
         setBgmTrack(settings.bgmTrack || 'default');
+        if (typeof getCurrentBgmTrack === 'function') {
+            settings.bgmTrack = getCurrentBgmTrack() || 'default';
+        }
     }
     if (typeof setBgmEnabled === 'function') {
         setBgmEnabled(settings.bgmEnabled !== false);
@@ -420,6 +437,8 @@ function bindSettingsOverlayControls() {
     const bgDesignSelect = byId('settings-bg-design');
     const bgmEnabledSelect = byId('settings-bgm-enabled');
     const bgmTrackSelect = byId('settings-bgm-track');
+    const bgmVolumeRange = byId('settings-bgm-volume');
+    const bgmVolumeValue = byId('settings-bgm-volume-value');
 
     if (resetButton) {
         resetButton.addEventListener('click', () => {
@@ -552,6 +571,35 @@ function bindSettingsOverlayControls() {
             }
             settings.bgmTrack = selected;
             addLog('設定: BGMタイプを変更しました。');
+            updateUI();
+        });
+    }
+
+    if (bgmVolumeRange) {
+        const syncVolumeDisplay = () => {
+            const percent = Math.round(clampBgmVolumeSetting(settings.bgmVolume) * 100);
+            bgmVolumeRange.value = String(percent);
+            if (bgmVolumeValue) bgmVolumeValue.textContent = `${percent}%`;
+        };
+
+        syncVolumeDisplay();
+
+        const applyVolume = (withLog) => {
+            const percent = Math.max(0, Math.min(100, Number(bgmVolumeRange.value)));
+            let nextVolume = clampBgmVolumeSetting(percent / 100);
+            if (typeof setBgmVolume === 'function') {
+                nextVolume = clampBgmVolumeSetting(setBgmVolume(nextVolume));
+            }
+            settings.bgmVolume = nextVolume;
+            if (bgmVolumeValue) bgmVolumeValue.textContent = `${Math.round(nextVolume * 100)}%`;
+            if (withLog) {
+                addLog(`設定: BGM音量を${Math.round(nextVolume * 100)}%に変更しました。`);
+            }
+        };
+
+        bgmVolumeRange.addEventListener('input', () => applyVolume(false));
+        bgmVolumeRange.addEventListener('change', () => {
+            applyVolume(true);
             updateUI();
         });
     }
@@ -802,6 +850,7 @@ function renderInfoOverlay() {
         const bgmTrackOptions = getBgmTrackOptionsSafe()
             .map(item => `<option value="${escapeHtml(item.key)}"${item.key === settings.bgmTrack ? ' selected' : ''}>${escapeHtml(item.label)}</option>`)
             .join('');
+        const bgmVolumePercent = Math.round(clampBgmVolumeSetting(settings.bgmVolume) * 100);
         const personalityOptions = (typeof getCpuPersonalityOptions === 'function' ? getCpuPersonalityOptions() : [{ key: 'default', label: '標準' }])
             .map(item => `<option value="${escapeHtml(item.key)}"${item.key === (typeof normalizeCpuPersonalityKey === 'function' ? normalizeCpuPersonalityKey(settings.cpuPersonality) : (settings.cpuPersonality || 'default')) ? ' selected' : ''}>${escapeHtml(item.label)}</option>`)
             .join('');
@@ -860,7 +909,12 @@ function renderInfoOverlay() {
 
                     <label class="settings-label" for="settings-bgm-track">BGM切り替え</label>
                     <select id="settings-bgm-track" class="settings-select">${bgmTrackOptions}</select>
-                    <div class="settings-note">今後フリー音源を追加し、選択肢を増やせるようにしてあります。</div>
+                    <label class="settings-label" for="settings-bgm-volume">BGM音量</label>
+                    <div class="settings-range-row">
+                        <input id="settings-bgm-volume" class="settings-range" type="range" min="0" max="100" step="1" value="${bgmVolumePercent}">
+                        <div id="settings-bgm-volume-value" class="settings-range-value">${bgmVolumePercent}%</div>
+                    </div>
+                    <div class="settings-note">0%で無音、100%で最大です。</div>
                 </div>
             </div>
         `;

@@ -13,6 +13,7 @@ let startTitleTimer = null;
 let startMenuFloatTimer = null;
 let selectedGalleryType = 'characters';
 let startCpuSetupStep = 1;
+let startOverlayAudioUnlockBound = false;
 const START_MENU_CARD_VISIBLE_MS = 5000;
 const START_MENU_CARD_FADE_MS = 600;
 const START_MENU_CARD_CYCLE_MS = START_MENU_CARD_VISIBLE_MS + (START_MENU_CARD_FADE_MS * 2);
@@ -425,6 +426,9 @@ function showStartStage(activeId) {
     } else {
         stopMenuFloatingBackground();
     }
+    if ((activeId === 'start-title-stage' || activeId === 'start-menu-stage') && typeof playTitleBGM === 'function') {
+        playTitleBGM();
+    }
 }
 
 function setStartMenuMessage(text) {
@@ -797,6 +801,7 @@ function safeStartGame() {
 
     try {
         if (typeof setupAudio === 'function') setupAudio();
+        if (typeof setBattleModeBgmLocked === 'function') setBattleModeBgmLocked(false);
     } catch (e) {
         console.warn('audio setup failed', e);
     }
@@ -834,8 +839,18 @@ function safeStartGame() {
 }
 
 function startBgmOnce() {
-    if (bgmStarted) return;
-    bgmStarted = true;
+    if (bgmStarted) {
+        if (typeof playBGM === 'function') playBGM();
+        return;
+    }
+
+    if (!bgmStarted) {
+        if (GameState && GameState.settings) {
+            GameState.settings.bgmEnabled = true;
+        }
+        if (typeof setBgmEnabled === 'function') setBgmEnabled(true);
+        bgmStarted = true;
+    }
     if (typeof playBGM === 'function') playBGM();
     if (typeof playSfx === 'function') {
         playSfx('gameStart');
@@ -886,6 +901,8 @@ function revealTurnCards(chosenSide) {
 
 function beginMatchByRole(role) {
     safeStartGame();
+    if (typeof unlockAudio === 'function') unlockAudio();
+    startBgmOnce();
     applyCharacterChoice();
     applyBattleSkillSetup();
     stopMenuFloatingBackground();
@@ -934,6 +951,9 @@ function onTurnCardSelected(side) {
     selectedTurnCard = side;
 
     revealTurnCards(side);
+    safeStartGame();
+    if (typeof unlockAudio === 'function') unlockAudio();
+    startBgmOnce();
 
     const role = turnCardRoleMap[side];
     const msg = document.getElementById('start-turn-message');
@@ -951,6 +971,14 @@ function setupStartOverlay() {
     if (!overlay) {
         safeStartGame();
         return;
+    }
+
+    if (!startOverlayAudioUnlockBound) {
+        startOverlayAudioUnlockBound = true;
+        document.addEventListener('pointerdown', () => {
+            if (typeof unlockAudio === 'function') unlockAudio();
+            if (typeof playTitleBGM === 'function') playTitleBGM();
+        }, { once: true, passive: true });
     }
 
     const charButtons = document.querySelectorAll('.start-char-button[data-character-id]');
@@ -1230,6 +1258,7 @@ function setupStartOverlay() {
 
     if (menuCpuButton) {
         menuCpuButton.addEventListener('click', () => {
+            if (typeof unlockAudio === 'function') unlockAudio();
             setStartMenuMessage('');
             resetTurnStage();
             setCharacterChoice(getPreferredStartCharacterId());
@@ -1244,6 +1273,7 @@ function setupStartOverlay() {
 
     if (menuStoryButton) {
         menuStoryButton.addEventListener('click', () => {
+            if (typeof unlockAudio === 'function') unlockAudio();
             setStartMenuMessage('');
             showStartStage('start-story-stage');
             if (typeof window.openStoryStage === 'function') {
@@ -1254,6 +1284,7 @@ function setupStartOverlay() {
 
     if (menuFriendButton) {
         menuFriendButton.addEventListener('click', () => {
+            if (typeof unlockAudio === 'function') unlockAudio();
             setStartMenuMessage('');
             setFriendRoomMessage(getFriendSetupHintMessage());
             showStartStage('start-friend-stage');
@@ -1871,7 +1902,14 @@ function endGame(winner) {
         }
     }
 
-    if (typeof stopBGM === 'function') stopBGM();
+    if (typeof setBattleModeBgmLocked === 'function') {
+        setBattleModeBgmLocked(false);
+    }
+    if (typeof playResultBGM === 'function') {
+        playResultBGM();
+    } else if (typeof stopBGM === 'function') {
+        stopBGM();
+    }
     if (typeof playSfx === 'function') playSfx('gameEnd');
     updateUI();
 
@@ -1912,5 +1950,9 @@ window.showSpotlightRecipeCardAsync = showSpotlightRecipeCardAsync;
 window.showSpotlightPackCard = showSpotlightPackCard;
 window.showSpotlightPackCardAsync = showSpotlightPackCardAsync;
 window.__battleSafeStartGame = safeStartGame;
+window.__battleStartBgmOnce = () => {
+    if (typeof unlockAudio === 'function') unlockAudio();
+    startBgmOnce();
+};
 window.__showStartStage = showStartStage;
 window.getOpponentLabelText = getOpponentLabelText;

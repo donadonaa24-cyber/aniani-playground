@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>あにあにの遊び場</title>
+    <meta name="description" content="あにあに制作ゲームのポータル。Battle a la carte / 天涯比隣 / 今後制作予定のゲームへ移動し、更新記事を管理できます。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="aniani.css?v=20260420b">
+</head>
+<body>
+    <div class="bg-glow bg-glow-a"></div>
+    <div class="bg-glow bg-glow-b"></div>
+    <div class="bg-grid"></div>
+
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="#top" aria-label="ページ先頭へ移動">
+                <span class="brand-tag">ANIANI PORTAL</span>
+                <h1>あにあにの遊び場</h1>
+            </a>
+            <nav class="header-nav">
+                <a href="#games">ゲーム一覧</a>
+                <a href="#articles">更新記事</a>
+                <a href="#roadmap">制作予定</a>
+                <a href="#about">このページについて</a>
+                <a href="../index.html">Battle公式へ</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="top">
+        <section class="hero">
+            <div class="hero-inner">
+                <p class="hero-kicker">ゲーム制作ポータル</p>
+                <h2>あにあに制作ゲームを<br>まとめて管理するホームページ</h2>
+                <p class="hero-lead">
+                    Battle a la carte、天涯比隣、そして今後制作するゲームへ素早く移動できます。
+                    さらにこのページ内で更新記事を保存して、修正内容や今後の予定を記録できます。
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="#games">ゲームをみる</a>
+                    <a class="btn btn-ghost" href="#articles">記事を書く</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="games" class="section">
+            <div class="section-heading">
+                <p class="section-label">GAMES</p>
+                <h3>ゲーム一覧ポータル</h3>
+            </div>
+
+            <div class="game-grid">
+                <article class="game-card active">
+                    <div class="game-status">公開中</div>
+                    <h4>Battle a la carte</h4>
+                    <p>公式トップ、Web版、モバイル版へ移動できます。</p>
+                    <div class="game-actions">
+                        <a class="btn btn-mini btn-primary" href="../index.html">公式トップ</a>
+                        <a class="btn btn-mini btn-ghost" href="../web.html">Web版</a>
+                        <a class="btn btn-mini btn-ghost" href="../mobile/mobile.html">モバイル版</a>
+                    </div>
+                </article>
+
+                <article class="game-card preparing">
+                    <div class="game-status">制作中</div>
+                    <h4>天涯比隣</h4>
+                    <p>現在制作中。公開後このカードからページへ移動できるようにします。</p>
+                    <div class="game-actions">
+                        <button class="btn btn-mini btn-disabled" type="button" disabled>公開準備中</button>
+                    </div>
+                </article>
+
+                <article class="game-card future">
+                    <div class="game-status">予定</div>
+                    <h4>次回作（仮）</h4>
+                    <p>今後制作する新作ゲームをここに順次追加します。</p>
+                    <div class="game-actions">
+                        <button class="btn btn-mini btn-disabled" type="button" disabled>準備中</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section id="articles" class="section section-alt">
+            <div class="section-heading">
+                <p class="section-label">ARTICLES</p>
+                <h3>更新記事ボード</h3>
+            </div>
+
+            <div class="articles-layout">
+                <article class="panel">
+                    <h4>記事一覧</h4>
+                    <p class="panel-note">このブラウザに保存されるローカル記事です。あとで編集方針を決めて拡張できます。</p>
+                    <div id="article-list" class="article-list"></div>
+                </article>
+
+                <article class="panel">
+                    <h4>記事を書く</h4>
+                    <form id="article-form" class="article-form">
+                        <label for="article-title">タイトル</label>
+                        <input id="article-title" name="title" type="text" maxlength="80" required placeholder="例: ver1.2.0 バグ修正">
+
+                        <label for="article-category">カテゴリ</label>
+                        <select id="article-category" name="category">
+                            <option value="アップデート">アップデート</option>
+                            <option value="不具合修正">不具合修正</option>
+                            <option value="制作メモ">制作メモ</option>
+                            <option value="配信予定">配信予定</option>
+                            <option value="お知らせ">お知らせ</option>
+                        </select>
+
+                        <label for="article-body">本文</label>
+                        <textarea id="article-body" name="body" rows="8" maxlength="2000" required placeholder="更新内容・修正内容・今後の予定などを入力"></textarea>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">記事を保存</button>
+                            <button class="btn btn-ghost" type="button" id="article-clear">フォームをクリア</button>
+                        </div>
+                    </form>
+                </article>
+            </div>
+        </section>
+
+        <section id="roadmap" class="section">
+            <div class="section-heading">
+                <p class="section-label">ROADMAP</p>
+                <h3>制作予定メモ</h3>
+            </div>
+
+            <div class="roadmap-board">
+                <div class="roadmap-item">
+                    <h4>公開中タイトル</h4>
+                    <p>Battle a la carte</p>
+                </div>
+                <div class="roadmap-item">
+                    <h4>制作中タイトル</h4>
+                    <p>天涯比隣</p>
+                </div>
+                <div class="roadmap-item">
+                    <h4>次の配信予定</h4>
+                    <p>新作ゲームページを順次ポータルに追加</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="section">
+            <div class="section-heading">
+                <p class="section-label">ABOUT</p>
+                <h3>このページについて</h3>
+            </div>
+            <article class="panel">
+                <p class="panel-note">
+                    このページは「Battle a la carte公式ページ」とは別の、あにあに専用ポータルです。
+                    ゲームリンク管理と更新記事の下書き保存を同じ場所で行えるようにしています。
+                </p>
+            </article>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>© あにあにの遊び場</p>
+        <a href="../index.html">Battle a la carte 公式ホームページへ戻る</a>
+    </footer>
+
+    <script src="aniani.js?v=20260420b"></script>
+</body>
+</html>

@@ -11,64 +11,64 @@
         <header class="top-bar">
             <div class="title-block">
                 <h1>Battle a la carte</h1>
-                <div id="turn-indicator">ƒ^[ƒ“: ƒvƒŒƒCƒ„[</div>
-                <div id="phase-indicator">ƒtƒFƒCƒY: ƒƒCƒ“ƒtƒFƒCƒY</div>
+                <div id="turn-indicator">ã‚¿ãƒ¼ãƒ³: ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼</div>
+                <div id="phase-indicator">ãƒ•ã‚§ã‚¤ã‚º: ãƒ¡ã‚¤ãƒ³ãƒ•ã‚§ã‚¤ã‚º</div>
                 <div id="cpu-status"></div>
                 <div id="discard-banner" class="discard-banner hidden"></div>
             </div>
 
             <div class="header-actions">
-                <button id="open-recipes-tab" class="hud-button" aria-label="—¿—ˆê——">—¿—</button>
-                <button id="open-events-tab" class="hud-button" aria-label="ƒCƒxƒ“ƒgˆê——">ƒCƒxƒ“ƒg</button>
-                <button id="open-packs-tab" class="hud-button" aria-label="‰ÁHˆê——">‰ÁH</button>
-                <button id="open-rules-tab" class="hud-button" aria-label="ƒ‹[ƒ‹">ƒ‹[ƒ‹</button>
-                <button id="open-log-tab" class="hud-button" aria-label="ƒƒO">ƒƒO</button>
-                <button id="open-settings-tab" class="hud-button" aria-label="Ý’è">Ý’è</button>
+                <button id="open-recipes-tab" class="hud-button" aria-label="æ–™ç†ä¸€è¦§">æ–™ç†</button>
+                <button id="open-events-tab" class="hud-button" aria-label="ã‚¤ãƒ™ãƒ³ãƒˆä¸€è¦§">ã‚¤ãƒ™ãƒ³ãƒˆ</button>
+                <button id="open-packs-tab" class="hud-button" aria-label="åŠ å·¥ä¸€è¦§">åŠ å·¥</button>
+                <button id="open-rules-tab" class="hud-button" aria-label="ãƒ«ãƒ¼ãƒ«">ãƒ«ãƒ¼ãƒ«</button>
+                <button id="open-log-tab" class="hud-button" aria-label="ãƒ­ã‚°">ãƒ­ã‚°</button>
+                <button id="open-settings-tab" class="hud-button" aria-label="è¨­å®š">è¨­å®š</button>
             </div>
         </header>
 
         <div id="story-hud-panel" class="story-hud-panel hidden">
-            <div id="story-hud-title" class="story-hud-title">ƒXƒg[ƒŠ[ƒ‚[ƒh</div>
+            <div id="story-hud-title" class="story-hud-title">ã‚¹ãƒˆãƒ¼ãƒªãƒ¼ãƒ¢ãƒ¼ãƒ‰</div>
             <div id="story-hud-note" class="story-hud-note"></div>
             <div id="story-hud-objectives" class="story-hud-objectives"></div>
         </div>
 
         <main class="battle-layout">
             <section class="side-panel">
-                <h2>ƒvƒŒƒCƒ„[</h2>
+                <h2>ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼</h2>
 
                 <div class="character-panel">
                     <div class="character-icon player-icon char-chizuru face-normal"></div>
                     <div class="character-name-row">
-                        <div id="player-hud-name" class="character-name">ƒvƒŒƒCƒ„[</div>
-                        <div class="side-score">Œ»Ý‚Ì“_”: <span id="player-side-score">0</span></div>
-                        <div id="player-skill-name" class="side-skill-name">ƒXƒLƒ‹: –¢‘I‘ð</div>
-                        <div id="player-skill-state" class="side-skill-state">–¢Žg—p</div>
-                        <button id="player-skill-button" class="side-skill-button">ƒXƒLƒ‹”­“®</button>
+                        <div id="player-hud-name" class="character-name">ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼</div>
+                        <div class="side-score">ç¾åœ¨ã®ç‚¹æ•°: <span id="player-side-score">0</span></div>
+                        <div id="player-skill-name" class="side-skill-name">ã‚¹ã‚­ãƒ«: æœªé¸æŠž</div>
+                        <div id="player-skill-state" class="side-skill-state">æœªä½¿ç”¨</div>
+                        <button id="player-skill-button" class="side-skill-button">ã‚¹ã‚­ãƒ«ç™ºå‹•</button>
                     </div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>ŽèŽDiÞ—¿EƒCƒxƒ“ƒgj</h3>
+                    <h3>æ‰‹æœ­ï¼ˆææ–™ãƒ»ã‚¤ãƒ™ãƒ³ãƒˆï¼‰</h3>
                     <div id="player-hand-mixed" class="card-row compact-row"></div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>ƒZƒbƒgƒJ[ƒh</h3>
+                    <h3>ã‚»ãƒƒãƒˆã‚«ãƒ¼ãƒ‰</h3>
                     <div id="player-set" class="card-row compact-row"></div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>‰ÁHƒAƒCƒeƒ€</h3>
+                    <h3>åŠ å·¥ã‚¢ã‚¤ãƒ†ãƒ </h3>
                     <div id="player-packs" class="pack-row"></div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>‰ÁHƒAƒCƒeƒ€ŒðŠ·iŠe3“_j</h3>
+                    <h3>åŠ å·¥ã‚¢ã‚¤ãƒ†ãƒ äº¤æ›ï¼ˆå„3ç‚¹ï¼‰</h3>
                     <div class="shop-buttons">
-                        <button id="buy-knife-button">ƒGƒRƒoƒbƒO</button>
-                        <button id="buy-freezer-button">—â‘ ŒÉ</button>
-                        <button id="buy-board-button">‚Ü‚È”Â</button>
+                        <button id="buy-knife-button">ã‚¨ã‚³ãƒãƒƒã‚°</button>
+                        <button id="buy-freezer-button">å†·è”µåº«</button>
+                        <button id="buy-board-button">ã¾ãªæ¿</button>
                     </div>
                 </div>
             </section>
@@ -76,149 +76,149 @@
             <section class="center-panel">
                 <div class="deck-discard-row">
                     <div id="deck-pile-button" class="pile deck-pile clickable-pile" role="button" tabindex="0">
-                        <div class="pile-title">ŽRŽD</div>
+                        <div class="pile-title">å±±æœ­</div>
                         <div class="pile-count" id="deck-count">0</div>
                     </div>
 
                     <div id="discard-pile-button" class="pile clickable-pile" role="button" tabindex="0">
-                        <div class="pile-title">ŽÌ‚ÄŽD</div>
+                        <div class="pile-title">æ¨ã¦æœ­</div>
                         <div class="pile-count" id="discard-count">0</div>
                     </div>
                 </div>
 
                 <div class="bottom-info-grid">
                     <div class="panel-box small-box candidate-recipes-panel">
-                        <h3>—¿—ì¬Œó•âˆê——</h3>
-                        <div id="candidate-recipes" class="candidate-area">—¿—ì¬ƒ{ƒ^ƒ“‚ÅŒó•â‚ª•\Ž¦‚³‚ê‚Ü‚·B</div>
+                        <h3>æ–™ç†ä½œæˆå€™è£œä¸€è¦§</h3>
+                        <div id="candidate-recipes" class="candidate-area">æ–™ç†ä½œæˆãƒœã‚¿ãƒ³ã§å€™è£œãŒè¡¨ç¤ºã•ã‚Œã¾ã™ã€‚</div>
                     </div>
 
-                    <div class="panel-box small-box" id="realtime-log-panel" role="button" tabindex="0" aria-label="ƒƒO—š—ð‚ð•\Ž¦">
-                        <h3>ƒƒO</h3>
+                    <div class="panel-box small-box" id="realtime-log-panel" role="button" tabindex="0" aria-label="ãƒ­ã‚°å±¥æ­´ã‚’è¡¨ç¤º">
+                        <h3>ãƒ­ã‚°</h3>
                         <div id="realtime-log-list" class="realtime-log-list"></div>
                     </div>
                 </div>
 
                 <div class="controls">
-                    <button id="cook-button">—¿—ì¬</button>
-                    <button id="confirm-discard-button" disabled>ŽÌ‚Ä‚é</button>
-                    <button id="end-turn-button">ƒ^[ƒ“I—¹</button>
+                    <button id="cook-button">æ–™ç†ä½œæˆ</button>
+                    <button id="confirm-discard-button" disabled>æ¨ã¦ã‚‹</button>
+                    <button id="end-turn-button">ã‚¿ãƒ¼ãƒ³çµ‚äº†</button>
                 </div>
 
                 <div class="dish-history-row">
                     <div class="panel-box dish-summary-panel">
-                        <h3>ƒvƒŒƒCƒ„[‚Ì—¿—</h3>
+                        <h3>ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®æ–™ç†</h3>
                         <div id="player-latest-dish" class="latest-dish-slot"></div>
                     </div>
 
                     <div class="panel-box dish-summary-panel">
-                        <h3>CPU‚Ì—¿—</h3>
+                        <h3>CPUã®æ–™ç†</h3>
                         <div id="cpu-latest-dish" class="latest-dish-slot"></div>
                     </div>
                 </div>
 
                 <div id="dish-history-panel" class="panel-box selection-panel hidden">
-                    <h3 id="dish-history-title">—¿——š—ð</h3>
+                    <h3 id="dish-history-title">æ–™ç†å±¥æ­´</h3>
                     <div id="dish-history-description" class="selection-description"></div>
                     <div id="dish-history-list" class="dish-history-list"></div>
                     <div class="selection-actions">
-                        <button id="dish-history-close-button">•Â‚¶‚é</button>
+                        <button id="dish-history-close-button">é–‰ã˜ã‚‹</button>
                     </div>
                 </div>
 
                 <div id="selection-panel" class="panel-box selection-panel hidden">
-                    <h3 id="selection-title">ƒCƒxƒ“ƒg‘ÎÛ‘I‘ð</h3>
+                    <h3 id="selection-title">ã‚¤ãƒ™ãƒ³ãƒˆå¯¾è±¡é¸æŠž</h3>
                     <div id="selection-description" class="selection-description"></div>
                     <div id="selection-options" class="selection-options"></div>
                     <div class="selection-actions">
-                        <button id="selection-confirm-button" disabled>Šm’è</button>
-                        <button id="selection-cancel-button">ƒLƒƒƒ“ƒZƒ‹</button>
+                        <button id="selection-confirm-button" disabled>ç¢ºå®š</button>
+                        <button id="selection-cancel-button">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
                     </div>
                 </div>
 
                 <div id="set-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3>ƒJ[ƒhƒZƒbƒgŠm”F</h3>
+                    <h3>ã‚«ãƒ¼ãƒ‰ã‚»ãƒƒãƒˆç¢ºèª</h3>
                     <div id="set-confirm-description" class="selection-description"></div>
                     <div class="selection-actions">
-                        <button id="set-confirm-yes-button">‚Í‚¢</button>
-                        <button id="set-confirm-no-button">‚¢‚¢‚¦</button>
+                        <button id="set-confirm-yes-button">ã¯ã„</button>
+                        <button id="set-confirm-no-button">ã„ã„ãˆ</button>
                     </div>
                 </div>
 
                 <div id="pack-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3>‰ÁHƒAƒCƒeƒ€ŒðŠ·Šm”F</h3>
+                    <h3>åŠ å·¥ã‚¢ã‚¤ãƒ†ãƒ äº¤æ›ç¢ºèª</h3>
                     <div id="pack-confirm-description" class="selection-description"></div>
                     <div class="selection-actions">
-                        <button id="pack-confirm-yes-button">ŒðŠ·‚·‚é</button>
-                        <button id="pack-confirm-no-button">ƒLƒƒƒ“ƒZƒ‹</button>
+                        <button id="pack-confirm-yes-button">äº¤æ›ã™ã‚‹</button>
+                        <button id="pack-confirm-no-button">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
                     </div>
                 </div>
 
                 <div id="ingredient-action-panel" class="panel-box selection-panel hidden">
-                    <h3 id="ingredient-action-title">Þ—¿ƒAƒNƒVƒ‡ƒ“</h3>
+                    <h3 id="ingredient-action-title">ææ–™ã‚¢ã‚¯ã‚·ãƒ§ãƒ³</h3>
                     <div id="ingredient-action-description" class="selection-description"></div>
                     <div id="ingredient-combo-list" class="ingredient-combo-list hidden"></div>
                     <div class="selection-actions">
-                        <button id="ingredient-action-set-button" class="hidden">ƒZƒbƒg‚·‚é</button>
-                        <button id="ingredient-action-combo-button">‘g‚Ý‡‚í‚¹</button>
-                        <button id="ingredient-action-back-button" class="hidden">–ß‚é</button>
-                        <button id="ingredient-action-close-button">•Â‚¶‚é</button>
+                        <button id="ingredient-action-set-button" class="hidden">ã‚»ãƒƒãƒˆã™ã‚‹</button>
+                        <button id="ingredient-action-combo-button">çµ„ã¿åˆã‚ã›</button>
+                        <button id="ingredient-action-back-button" class="hidden">æˆ»ã‚‹</button>
+                        <button id="ingredient-action-close-button">é–‰ã˜ã‚‹</button>
                     </div>
                 </div>
 
                 <div id="event-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3>ƒCƒxƒ“ƒgƒJ[ƒhŽg—pŠm”F</h3>
+                    <h3>ã‚¤ãƒ™ãƒ³ãƒˆã‚«ãƒ¼ãƒ‰ä½¿ç”¨ç¢ºèª</h3>
                     <div id="event-confirm-description" class="selection-description"></div>
                     <div class="selection-actions">
-                        <button id="event-confirm-yes-button">Žg—p‚·‚é</button>
-                        <button id="event-confirm-no-button">‚â‚ß‚é</button>
+                        <button id="event-confirm-yes-button">ä½¿ç”¨ã™ã‚‹</button>
+                        <button id="event-confirm-no-button">ã‚„ã‚ã‚‹</button>
                     </div>
                 </div>
 
                 <div id="skill-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3>ƒXƒLƒ‹Šm”F</h3>
-                    <div id="skill-confirm-name" class="selection-description">ƒXƒLƒ‹: -</div>
-                    <div id="skill-confirm-condition" class="selection-description">ðŒ: -</div>
-                    <div id="skill-confirm-effect" class="selection-description">Œø‰Ê: -</div>
-                    <div id="skill-confirm-usage" class="selection-description">Žg—p‰ñ”: -</div>
-                    <div id="skill-confirm-status" class="selection-description">”­“®”»’è: -</div>
+                    <h3>ã‚¹ã‚­ãƒ«ç¢ºèª</h3>
+                    <div id="skill-confirm-name" class="selection-description">ã‚¹ã‚­ãƒ«: -</div>
+                    <div id="skill-confirm-condition" class="selection-description">æ¡ä»¶: -</div>
+                    <div id="skill-confirm-effect" class="selection-description">åŠ¹æžœ: -</div>
+                    <div id="skill-confirm-usage" class="selection-description">ä½¿ç”¨å›žæ•°: -</div>
+                    <div id="skill-confirm-status" class="selection-description">ç™ºå‹•åˆ¤å®š: -</div>
                     <div class="selection-actions">
-                        <button id="skill-confirm-yes-button">‚±‚ÌƒXƒLƒ‹‚ð”­“®</button>
-                        <button id="skill-confirm-no-button">•Â‚¶‚é</button>
+                        <button id="skill-confirm-yes-button">ã“ã®ã‚¹ã‚­ãƒ«ã‚’ç™ºå‹•</button>
+                        <button id="skill-confirm-no-button">é–‰ã˜ã‚‹</button>
                     </div>
                 </div>
 
                 <div id="set-view-panel" class="panel-box selection-panel hidden">
-                    <h3>ƒZƒbƒgƒJ[ƒhŠm”F</h3>
+                    <h3>ã‚»ãƒƒãƒˆã‚«ãƒ¼ãƒ‰ç¢ºèª</h3>
                     <div id="set-view-description" class="selection-description"></div>
                     <div class="selection-actions">
-                        <button id="set-view-close-button">Šm”F‚µ‚Ä•Â‚¶‚é</button>
+                        <button id="set-view-close-button">ç¢ºèªã—ã¦é–‰ã˜ã‚‹</button>
                     </div>
                 </div>
 
                 <div id="pile-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3 id="pile-confirm-title">Šm”F</h3>
+                    <h3 id="pile-confirm-title">ç¢ºèª</h3>
                     <div id="pile-confirm-description" class="selection-description"></div>
                     <div class="selection-actions">
-                        <button id="pile-confirm-yes-button">Šm”F‚·‚é</button>
-                        <button id="pile-confirm-no-button">ƒLƒƒƒ“ƒZƒ‹</button>
+                        <button id="pile-confirm-yes-button">ç¢ºèªã™ã‚‹</button>
+                        <button id="pile-confirm-no-button">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
                     </div>
                 </div>
 
                 <div id="pile-view-panel" class="panel-box selection-panel hidden">
-                    <h3 id="pile-view-title">ˆê——</h3>
+                    <h3 id="pile-view-title">ä¸€è¦§</h3>
                     <div id="pile-view-description" class="selection-description"></div>
                     <div id="pile-view-list" class="pile-view-list"></div>
                     <div class="selection-actions">
-                        <button id="pile-view-close-button">•Â‚¶‚é</button>
+                        <button id="pile-view-close-button">é–‰ã˜ã‚‹</button>
                     </div>
                 </div>
 
                 <div id="end-turn-confirm-panel" class="panel-box selection-panel hidden">
-                    <h3>ƒ^[ƒ“I—¹Šm”F</h3>
-                    <div id="end-turn-confirm-description" class="selection-description">ƒ^[ƒ“I—¹‚ðŽÀs‚µ‚Ü‚·‚©H</div>
+                    <h3>ã‚¿ãƒ¼ãƒ³çµ‚äº†ç¢ºèª</h3>
+                    <div id="end-turn-confirm-description" class="selection-description">ã‚¿ãƒ¼ãƒ³çµ‚äº†ã‚’å®Ÿè¡Œã—ã¾ã™ã‹ï¼Ÿ</div>
                     <div class="selection-actions">
-                        <button id="end-turn-confirm-yes-button">I—¹‚·‚é</button>
-                        <button id="end-turn-confirm-no-button">ƒLƒƒƒ“ƒZƒ‹</button>
+                        <button id="end-turn-confirm-yes-button">çµ‚äº†ã™ã‚‹</button>
+                        <button id="end-turn-confirm-no-button">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
                     </div>
                 </div>
             </section>
@@ -230,24 +230,24 @@
                     <div class="character-icon cpu-icon char-mai face-normal"></div>
                     <div class="character-name-row">
                         <div id="cpu-hud-name" class="character-name">CPU</div>
-                        <div class="side-score">Œ»Ý‚Ì“_”: <span id="cpu-side-score">0</span></div>
-                        <div id="cpu-skill-name" class="side-skill-name">ƒXƒLƒ‹: –¢‘I‘ð</div>
-                        <div id="cpu-skill-state" class="side-skill-state">–¢Žg—p</div>
+                        <div class="side-score">ç¾åœ¨ã®ç‚¹æ•°: <span id="cpu-side-score">0</span></div>
+                        <div id="cpu-skill-name" class="side-skill-name">ã‚¹ã‚­ãƒ«: æœªé¸æŠž</div>
+                        <div id="cpu-skill-state" class="side-skill-state">æœªä½¿ç”¨</div>
                     </div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>CPUŽèŽDi”ñŒöŠJj</h3>
+                    <h3>CPUæ‰‹æœ­ï¼ˆéžå…¬é–‹ï¼‰</h3>
                     <div id="cpu-hand-mixed" class="card-row compact-row"></div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>CPUƒZƒbƒgi”ñŒöŠJj</h3>
+                    <h3>CPUã‚»ãƒƒãƒˆï¼ˆéžå…¬é–‹ï¼‰</h3>
                     <div id="cpu-set" class="card-row compact-row"></div>
                 </div>
 
                 <div class="panel-box">
-                    <h3>‰ÁHƒAƒCƒeƒ€</h3>
+                    <h3>åŠ å·¥ã‚¢ã‚¤ãƒ†ãƒ </h3>
                     <div id="cpu-packs" class="pack-row"></div>
                 </div>
             </section>
@@ -255,17 +255,17 @@
 
         <section class="phase-guide-layout">
             <div class="panel-box phase-guide-box">
-                <h2>ƒtƒFƒCƒYisi‚©‚ñ‚½‚ñI</h2>
-                <p class="phase-guide-flow">ƒhƒ[ƒtƒFƒCƒY ¨ —¿—EƒZƒbƒgEƒCƒxƒ“ƒg”­“®ƒtƒFƒCƒY ¨ ƒGƒ“ƒhƒtƒFƒCƒY ¨ ŽèŽD’²®ƒtƒFƒCƒY</p>
-                <div class="phase-guide-note">¦ ŠeƒtƒFƒCƒY‚ÌÚ×‚Íã•”‚Ìuƒ‹[ƒ‹vƒ{ƒ^ƒ“‚©‚çŠm”F‚Å‚«‚Ü‚·B</div>
+                <h2>ãƒ•ã‚§ã‚¤ã‚ºé€²è¡Œï¼ˆã‹ã‚“ãŸã‚“ï¼</h2>
+                <p class="phase-guide-flow">ãƒ‰ãƒ­ãƒ¼ãƒ•ã‚§ã‚¤ã‚º â†’ æ–™ç†ãƒ»ã‚»ãƒƒãƒˆãƒ»ã‚¤ãƒ™ãƒ³ãƒˆç™ºå‹•ãƒ•ã‚§ã‚¤ã‚º â†’ ã‚¨ãƒ³ãƒ‰ãƒ•ã‚§ã‚¤ã‚º â†’ æ‰‹æœ­èª¿æ•´ãƒ•ã‚§ã‚¤ã‚º</p>
+                <div class="phase-guide-note">â€» å„ãƒ•ã‚§ã‚¤ã‚ºã®è©³ç´°ã¯ä¸Šéƒ¨ã®ã€Œãƒ«ãƒ¼ãƒ«ã€ãƒœã‚¿ãƒ³ã‹ã‚‰ç¢ºèªã§ãã¾ã™ã€‚</div>
             </div>
         </section>
 
         <section id="info-overlay" class="info-overlay hidden">
             <div class="info-overlay-panel">
                 <div class="info-overlay-header">
-                    <h2 id="info-overlay-title">î•ñ</h2>
-                    <button id="info-overlay-close-button">•Â‚¶‚é</button>
+                    <h2 id="info-overlay-title">æƒ…å ±</h2>
+                    <button id="info-overlay-close-button">é–‰ã˜ã‚‹</button>
                 </div>
                 <div id="info-overlay-content" class="info-overlay-content"></div>
             </div>
@@ -273,16 +273,16 @@
     </div>
 
     <div id="result-overlay" class="result-overlay hidden">
-        <div id="result-text" class="result-text">Ÿ—˜</div>
+        <div id="result-text" class="result-text">å‹åˆ©</div>
     </div>
 
     <div id="spotlight-overlay" class="spotlight-overlay hidden">
         <div class="spotlight-card-shell">
-            <div id="spotlight-badge" class="spotlight-badge">ƒCƒxƒ“ƒgƒJ[ƒhŽg—p</div>
+            <div id="spotlight-badge" class="spotlight-badge">ã‚¤ãƒ™ãƒ³ãƒˆã‚«ãƒ¼ãƒ‰ä½¿ç”¨</div>
             <div id="spotlight-card" class="spotlight-card">
                 <div id="spotlight-art" class="spotlight-art"></div>
-                <div id="spotlight-name" class="spotlight-name">ƒJ[ƒh–¼</div>
-                <div id="spotlight-sub" class="spotlight-sub">à–¾</div>
+                <div id="spotlight-name" class="spotlight-name">ã‚«ãƒ¼ãƒ‰å</div>
+                <div id="spotlight-sub" class="spotlight-sub">èª¬æ˜Ž</div>
             </div>
         </div>
     </div>
@@ -291,25 +291,25 @@
         <div class="start-panel">
             <div id="start-title-stage" class="start-stage">
                 <h1 class="start-title">Battle a la carte</h1>
-                <p class="start-subtitle">—¿—‚ÅŸ•‰‚·‚éƒJ[ƒhƒoƒgƒ‹</p>
+                <p class="start-subtitle">æ–™ç†ã§å‹è² ã™ã‚‹ã‚«ãƒ¼ãƒ‰ãƒãƒˆãƒ«</p>
             </div>
 
             <div id="start-menu-stage" class="start-stage hidden">
                 <div id="start-menu-floating-bg" class="start-menu-floating-bg"></div>
                 <div class="start-menu-content">
                     <h1 class="start-title">Battle a la carte</h1>
-                    <p class="start-subtitle">ƒ‚[ƒh‚ð‘I‚ñ‚Å‚­‚¾‚³‚¢</p>
+                    <p class="start-subtitle">ãƒ¢ãƒ¼ãƒ‰ã‚’é¸ã‚“ã§ãã ã•ã„</p>
 
                     <div class="start-menu-buttons">
-                        <button id="menu-cpu-button" class="start-main-button">—¿—ŠJŽnICPUí</button>
-                        <button id="menu-story-button" class="start-main-button">ƒXƒg[ƒŠ[ƒ‚[ƒhiƒ`ƒ…[ƒgƒŠƒAƒ‹j</button>
-                        <button id="menu-friend-button" class="start-menu-button">—¿—ŠJŽniƒtƒŒƒ“ƒhíj</button>
-                        <button id="menu-online-button" class="start-menu-button">ƒIƒ“ƒ‰ƒCƒ“‘Îí</button>
-                        <button id="menu-coin-button" class="start-menu-button">ƒRƒCƒ“ŒðŠ·Š</button>
-                        <button id="menu-rules-button" class="start-menu-button">ƒ‹[ƒ‹ƒy[ƒW</button>
-                        <button id="menu-gallery-button" class="start-menu-button">ƒMƒƒƒ‰ƒŠ[ƒy[ƒW</button>
-                        <button id="menu-user-button" class="start-menu-button">ƒ†[ƒU[î•ñ</button>
-                        <button id="menu-home-button" class="start-menu-button home-link">ŒöŽ®ƒz[ƒ€ƒy[ƒW‚Ö–ß‚é</button>
+                        <button id="menu-cpu-button" class="start-main-button">æ–™ç†é–‹å§‹ï¼CPUæˆ¦</button>
+                        <button id="menu-story-button" class="start-main-button">ã‚¹ãƒˆãƒ¼ãƒªãƒ¼ãƒ¢ãƒ¼ãƒ‰ï¼ˆãƒãƒ¥ãƒ¼ãƒˆãƒªã‚¢ãƒ«ï¼‰</button>
+                        <button id="menu-friend-button" class="start-menu-button">æ–™ç†é–‹å§‹ï¼ˆãƒ•ãƒ¬ãƒ³ãƒ‰æˆ¦ï¼‰</button>
+                        <button id="menu-online-button" class="start-menu-button">ã‚ªãƒ³ãƒ©ã‚¤ãƒ³å¯¾æˆ¦</button>
+                        <button id="menu-coin-button" class="start-menu-button">ã‚³ã‚¤ãƒ³äº¤æ›æ‰€</button>
+                        <button id="menu-rules-button" class="start-menu-button">ãƒ«ãƒ¼ãƒ«ãƒšãƒ¼ã‚¸</button>
+                        <button id="menu-gallery-button" class="start-menu-button">ã‚®ãƒ£ãƒ©ãƒªãƒ¼ãƒšãƒ¼ã‚¸</button>
+                        <button id="menu-user-button" class="start-menu-button">ãƒ¦ãƒ¼ã‚¶ãƒ¼æƒ…å ±</button>
+                        <button id="menu-home-button" class="start-menu-button home-link">å…¬å¼ãƒ›ãƒ¼ãƒ ãƒšãƒ¼ã‚¸ã¸æˆ»ã‚‹</button>
                     </div>
 
                     <p id="start-menu-message" class="start-menu-message"></p>
@@ -317,35 +317,35 @@
             </div>
 
             <div id="start-cpu-setup-stage" class="start-stage hidden">
-                <h2 class="start-section-title">CPUíƒZƒbƒgƒAƒbƒv</h2>
-                <p id="start-cpu-setup-subtitle" class="start-subtitle">1/3 ƒLƒƒƒ‰‚ð‘I‘ð</p>
+                <h2 class="start-section-title">CPUæˆ¦ã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—</h2>
+                <p id="start-cpu-setup-subtitle" class="start-subtitle">1/3 ã‚­ãƒ£ãƒ©ã‚’é¸æŠž</p>
 
                 <div id="start-character-step" class="start-setup-step">
                     <div class="start-char-select">
                         <button class="start-char-button active" data-character-id="chizuru">
                             <span class="start-char-portrait char-chizuru"></span>
-                            <span class="start-char-name">ç’ß</span>
+                            <span class="start-char-name">åƒé¶´</span>
                         </button>
                         <button class="start-char-button" data-character-id="mai">
                             <span class="start-char-portrait char-mai"></span>
-                            <span class="start-char-name">•‘ˆË</span>
+                            <span class="start-char-name">èˆžä¾</span>
                         </button>
                         <button class="start-char-button" data-character-id="takumi">
                             <span class="start-char-portrait char-takumi"></span>
-                            <span class="start-char-name">‘ñŠC</span>
+                            <span class="start-char-name">æ‹“æµ·</span>
                         </button>
                         <button class="start-char-button" data-character-id="akatsuki">
                             <span class="start-char-portrait char-akatsuki"></span>
-                            <span class="start-char-name">‹Å</span>
+                            <span class="start-char-name">æš</span>
                         </button>
                     </div>
                 </div>
 
                 <div id="start-skill-step" class="start-setup-step hidden">
                     <div class="start-user-form">
-                        <label class="start-field-label" for="start-cpu-personality">CPU«Ši</label>
+                        <label class="start-field-label" for="start-cpu-personality">CPUæ€§æ ¼</label>
                         <select id="start-cpu-personality" class="start-select-input"></select>
-                        <label class="start-field-label">ƒoƒgƒ‹ƒXƒLƒ‹‚ð6ŒÂ‚©‚ç1‚Â‘I‘ðI</label>
+                        <label class="start-field-label">ãƒãƒˆãƒ«ã‚¹ã‚­ãƒ«ã‚’6å€‹ã‹ã‚‰1ã¤é¸æŠžï¼</label>
                         <div id="start-skill-list" class="start-skill-list"></div>
                         <div id="start-skill-detail" class="start-skill-detail"></div>
                         <p id="start-skill-message" class="start-menu-message"></p>
@@ -353,23 +353,23 @@
                 </div>
 
                 <div class="start-setup-actions">
-                    <button id="start-back-menu-button" class="start-sub-button">ƒƒjƒ…[‚Ö–ß‚é</button>
-                    <button id="start-setup-button" class="start-main-button">ŽŸ‚ÖiƒXƒLƒ‹‘I‘ðj</button>
+                    <button id="start-back-menu-button" class="start-sub-button">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
+                    <button id="start-setup-button" class="start-main-button">æ¬¡ã¸ï¼ˆã‚¹ã‚­ãƒ«é¸æŠžï¼‰</button>
                 </div>
 
                 <div id="start-turn-stage" class="start-turn-stage hidden">
-                    <p id="start-turn-message" class="start-turn-message">ƒJ[ƒh‚ð1–‡‘I‚ñ‚Å‚­‚¾‚³‚¢</p>
+                    <p id="start-turn-message" class="start-turn-message">ã‚«ãƒ¼ãƒ‰ã‚’1æžšé¸ã‚“ã§ãã ã•ã„</p>
                     <div class="start-turn-cards">
-                        <button id="start-turn-card-left" class="start-turn-card">ƒJ[ƒhA</button>
-                        <button id="start-turn-card-right" class="start-turn-card">ƒJ[ƒhB</button>
+                        <button id="start-turn-card-left" class="start-turn-card">ã‚«ãƒ¼ãƒ‰A</button>
+                        <button id="start-turn-card-right" class="start-turn-card">ã‚«ãƒ¼ãƒ‰B</button>
                     </div>
                     <div id="start-battle-message" class="start-battle-message"></div>
                 </div>
             </div>
 
             <div id="start-story-stage" class="start-stage hidden">
-                <h2 class="start-section-title">ƒXƒg[ƒŠ[ƒ‚[ƒh</h2>
-                <p id="story-stage-subtitle" class="start-subtitle">‰SŽÒŒü‚¯ƒ`ƒ…[ƒgƒŠƒAƒ‹i‘S3˜bj</p>
+                <h2 class="start-section-title">ã‚¹ãƒˆãƒ¼ãƒªãƒ¼ãƒ¢ãƒ¼ãƒ‰</h2>
+                <p id="story-stage-subtitle" class="start-subtitle">åˆå¿ƒè€…å‘ã‘ãƒãƒ¥ãƒ¼ãƒˆãƒªã‚¢ãƒ«ï¼ˆå…¨3è©±ï¼‰</p>
 
                 <div id="story-episode-list" class="story-episode-list"></div>
 
@@ -377,7 +377,7 @@
                     <div class="story-dialogue-header">
                         <span id="story-speaker-icon" class="story-speaker-icon start-char-portrait char-mai"></span>
                         <div class="story-speaker-meta">
-                            <div id="story-speaker-name" class="story-speaker-name">•‘ˆË</div>
+                            <div id="story-speaker-name" class="story-speaker-name">èˆžä¾</div>
                             <div id="story-line-progress" class="story-line-progress">1 / 1</div>
                         </div>
                     </div>
@@ -385,7 +385,7 @@
                 </div>
 
                 <div id="story-battle-guide" class="story-battle-guide hidden">
-                    <div class="story-battle-guide-title">ƒ`ƒ…[ƒgƒŠƒAƒ‹–Ú•W</div>
+                    <div class="story-battle-guide-title">ãƒãƒ¥ãƒ¼ãƒˆãƒªã‚¢ãƒ«ç›®æ¨™</div>
                     <div id="story-objective-note" class="story-objective-note"></div>
                     <div id="story-objective-list" class="story-objective-list"></div>
                 </div>
@@ -394,128 +394,128 @@
 
                 <div class="start-stage-footer">
                     <div class="start-setup-actions">
-                        <button id="story-primary-button" class="start-main-button hidden">ŽŸ‚Ö</button>
-                        <button id="story-secondary-button" class="start-sub-button hidden">‚à‚¤ˆê“x</button>
+                        <button id="story-primary-button" class="start-main-button hidden">æ¬¡ã¸</button>
+                        <button id="story-secondary-button" class="start-sub-button hidden">ã‚‚ã†ä¸€åº¦</button>
                     </div>
-                    <button id="start-story-back-button" class="start-sub-button wide">ƒƒjƒ…[‚Ö–ß‚é</button>
+                    <button id="start-story-back-button" class="start-sub-button wide">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
                 </div>
             </div>
 
             <div id="start-rules-stage" class="start-stage hidden">
-                <h2 class="start-section-title">ƒ‹[ƒ‹ƒy[ƒW</h2>
+                <h2 class="start-section-title">ãƒ«ãƒ¼ãƒ«ãƒšãƒ¼ã‚¸</h2>
                 <div class="start-rules-scroll">
                     <div class="start-rule-box">
-                        <h3>‚©‚ñ‚½‚ñƒ‹[ƒ‹</h3>
-                        <p>æ‚É10“_Šl“¾‚µ‚½‚çŸ—˜BƒCƒxƒ“ƒgƒJ[ƒh‚Í1ƒ^[ƒ“‚É1‰ñ‚Ü‚ÅŽg—p‚Å‚«‚Ü‚·B</p>
+                        <h3>ã‹ã‚“ãŸã‚“ãƒ«ãƒ¼ãƒ«</h3>
+                        <p>å…ˆã«10ç‚¹ç²å¾—ã—ãŸã‚‰å‹åˆ©ã€‚ã‚¤ãƒ™ãƒ³ãƒˆã‚«ãƒ¼ãƒ‰ã¯1ã‚¿ãƒ¼ãƒ³ã«1å›žã¾ã§ä½¿ç”¨ã§ãã¾ã™ã€‚</p>
                     </div>
                     <div class="start-rule-box">
-                        <h3>ŽèŽD‚ÆƒZƒbƒg</h3>
-                        <p>ŽèŽD‚ÍuÞ—¿EƒCƒxƒ“ƒgv‚Ì‡ŒvBÞ—¿ƒJ[ƒh‚ÍƒZƒbƒg‚Å‚«AƒZƒbƒgƒJ[ƒh‚à—¿—‘fÞ‚ÉŽg‚¦‚Ü‚·B</p>
+                        <h3>æ‰‹æœ­ã¨ã‚»ãƒƒãƒˆ</h3>
+                        <p>æ‰‹æœ­ã¯ã€Œææ–™ãƒ»ã‚¤ãƒ™ãƒ³ãƒˆã€ã®åˆè¨ˆã€‚ææ–™ã‚«ãƒ¼ãƒ‰ã¯ã‚»ãƒƒãƒˆã§ãã€ã‚»ãƒƒãƒˆã‚«ãƒ¼ãƒ‰ã‚‚æ–™ç†ç´ æã«ä½¿ãˆã¾ã™ã€‚</p>
                     </div>
                     <div class="start-rule-box">
-                        <h3>“ÁŽêŸ—˜</h3>
-                        <p>—¿—‚Ì’BlE–ž• ƒ}ƒXƒ^[‚È‚ÇA’Êí“¾“_ˆÈŠO‚ÌŸ—˜ðŒ‚ª‚ ‚è‚Ü‚·B</p>
+                        <h3>ç‰¹æ®Šå‹åˆ©</h3>
+                        <p>æ–™ç†ã®é”äººãƒ»æº€è…¹ãƒžã‚¹ã‚¿ãƒ¼ãªã©ã€é€šå¸¸å¾—ç‚¹ä»¥å¤–ã®å‹åˆ©æ¡ä»¶ãŒã‚ã‚Šã¾ã™ã€‚</p>
                     </div>
                     <div class="start-rule-box">
-                        <h3>ƒoƒgƒ‹ƒXƒLƒ‹ˆê——</h3>
+                        <h3>ãƒãƒˆãƒ«ã‚¹ã‚­ãƒ«ä¸€è¦§</h3>
                         <div id="start-skill-rules-list" class="start-skill-rules-list"></div>
                     </div>
                 </div>
-                <button id="start-rules-back-button" class="start-sub-button wide">ƒƒjƒ…[‚Ö–ß‚é</button>
+                <button id="start-rules-back-button" class="start-sub-button wide">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
             </div>
 
             <div id="start-gallery-stage" class="start-stage hidden">
-                <h2 class="start-section-title">ƒMƒƒƒ‰ƒŠ[ƒy[ƒW</h2>
+                <h2 class="start-section-title">ã‚®ãƒ£ãƒ©ãƒªãƒ¼ãƒšãƒ¼ã‚¸</h2>
                 <div class="start-gallery-filters">
-                    <button class="start-gallery-filter active" data-gallery-type="characters">ƒLƒƒƒ‰ƒNƒ^[ˆê——</button>
-                    <button class="start-gallery-filter" data-gallery-type="ingredients">Þ—¿ƒJ[ƒhˆê——</button>
-                    <button class="start-gallery-filter" data-gallery-type="events">ƒCƒxƒ“ƒgƒJ[ƒhˆê——</button>
-                    <button class="start-gallery-filter" data-gallery-type="recipes">—¿—ƒJ[ƒhˆê——</button>
+                    <button class="start-gallery-filter active" data-gallery-type="characters">ã‚­ãƒ£ãƒ©ã‚¯ã‚¿ãƒ¼ä¸€è¦§</button>
+                    <button class="start-gallery-filter" data-gallery-type="ingredients">ææ–™ã‚«ãƒ¼ãƒ‰ä¸€è¦§</button>
+                    <button class="start-gallery-filter" data-gallery-type="events">ã‚¤ãƒ™ãƒ³ãƒˆã‚«ãƒ¼ãƒ‰ä¸€è¦§</button>
+                    <button class="start-gallery-filter" data-gallery-type="recipes">æ–™ç†ã‚«ãƒ¼ãƒ‰ä¸€è¦§</button>
                 </div>
                 <div id="start-gallery-list" class="start-gallery-list"></div>
-                <button id="start-gallery-back-button" class="start-sub-button wide">ƒƒjƒ…[‚Ö–ß‚é</button>
+                <button id="start-gallery-back-button" class="start-sub-button wide">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
             </div>
 
             <div id="start-friend-stage" class="start-stage hidden">
-                <h2 class="start-section-title">ƒtƒŒƒ“ƒhíƒZƒbƒgƒAƒbƒv</h2>
-                <p class="start-subtitle">‡Œ¾—t‚ðŽg‚Á‚Äƒ‹[ƒ€‚ðì¬/ŽQ‰Á‚µ‚Ü‚·</p>
+                <h2 class="start-section-title">ãƒ•ãƒ¬ãƒ³ãƒ‰æˆ¦ã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—</h2>
+                <p class="start-subtitle">åˆè¨€è‘‰ã‚’ä½¿ã£ã¦ãƒ«ãƒ¼ãƒ ã‚’ä½œæˆ/å‚åŠ ã—ã¾ã™</p>
 
                 <div class="start-user-form">
-                    <label class="start-field-label" for="friend-passphrase-input">‡Œ¾—t</label>
-                    <input id="friend-passphrase-input" class="start-text-input" type="text" maxlength="40" placeholder="—á: dinner-2026">
+                    <label class="start-field-label" for="friend-passphrase-input">åˆè¨€è‘‰</label>
+                    <input id="friend-passphrase-input" class="start-text-input" type="text" maxlength="40" placeholder="ä¾‹: dinner-2026">
                 </div>
 
                 <div class="start-setup-actions">
-                    <button id="friend-create-button" class="start-main-button">ƒ‹[ƒ€ì¬</button>
-                    <button id="friend-join-button" class="start-sub-button">ƒ‹[ƒ€ŽQ‰Á</button>
+                    <button id="friend-create-button" class="start-main-button">ãƒ«ãƒ¼ãƒ ä½œæˆ</button>
+                    <button id="friend-join-button" class="start-sub-button">ãƒ«ãƒ¼ãƒ å‚åŠ </button>
                 </div>
 
                 <p id="friend-room-message" class="start-menu-message"></p>
                 <div class="start-rule-box">
-                    <h3>Ú‘±ƒƒ‚</h3>
-                    <p>FirebaseÝ’èÏ‚Ý‚È‚çƒŠƒAƒ‹ƒ^ƒCƒ€‘ÎíA–¢Ý’è‚È‚çƒ[ƒJƒ‹ŒŸØƒ‚[ƒh‚Å“®ì‚µ‚Ü‚·A</p>
+                    <h3>æŽ¥ç¶šãƒ¡ãƒ¢</h3>
+                    <p>Firebaseè¨­å®šæ¸ˆã¿ãªã‚‰ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ å¯¾æˆ¦ã€æœªè¨­å®šãªã‚‰ãƒ­ãƒ¼ã‚«ãƒ«æ¤œè¨¼ãƒ¢ãƒ¼ãƒ‰ã§å‹•ä½œã—ã¾ã™ã€</p>
                 </div>
-                <button id="start-friend-back-button" class="start-sub-button wide">ƒƒjƒ…[‚Ö–ß‚é</button>
+                <button id="start-friend-back-button" class="start-sub-button wide">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
             </div>
 
             <div id="start-coin-stage" class="start-stage hidden">
-                <h2 class="start-section-title">ƒRƒCƒ“ŒðŠ·Š</h2>
-                <p class="start-subtitle">ŠŽƒRƒCƒ“‚Å”wŒiƒfƒUƒCƒ“‚ðŒðŠ·‚Å‚«‚Ü‚·</p>
+                <h2 class="start-section-title">ã‚³ã‚¤ãƒ³äº¤æ›æ‰€</h2>
+                <p class="start-subtitle">æ‰€æŒã‚³ã‚¤ãƒ³ã§èƒŒæ™¯ãƒ‡ã‚¶ã‚¤ãƒ³ã‚’äº¤æ›ã§ãã¾ã™</p>
 
                 <div class="start-user-form">
                     <div class="start-user-stats">
-                        <div class="start-user-stat-row"><span>ŠŽƒRƒCƒ“</span><strong id="coin-coins-value">0</strong></div>
-                        <div class="start-user-stat-row"><span>Šl“¾ƒ‹[ƒ‹</span><strong id="coin-rules-value">‘Îí+2 / Ÿ—˜+4 / —¿—+1</strong></div>
+                        <div class="start-user-stat-row"><span>æ‰€æŒã‚³ã‚¤ãƒ³</span><strong id="coin-coins-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>ç²å¾—ãƒ«ãƒ¼ãƒ«</span><strong id="coin-rules-value">å¯¾æˆ¦+2 / å‹åˆ©+4 / æ–™ç†+1</strong></div>
                     </div>
 
                     <div class="start-bg-shop-wrap">
-                        <label class="start-field-label">”wŒiƒfƒUƒCƒ“ŒðŠ·iƒRƒCƒ“j</label>
+                        <label class="start-field-label">èƒŒæ™¯ãƒ‡ã‚¶ã‚¤ãƒ³äº¤æ›ï¼ˆã‚³ã‚¤ãƒ³ï¼‰</label>
                         <div id="coin-background-shop" class="start-bg-shop"></div>
                     </div>
                 </div>
                 <p id="coin-stage-message" class="start-menu-message"></p>
                 <div class="start-stage-footer">
-                    <button id="start-coin-back-button" class="start-sub-button wide">ƒƒjƒ…[‚Ö–ß‚é</button>
+                    <button id="start-coin-back-button" class="start-sub-button wide">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
                 </div>
             </div>
 
             <div id="start-user-stage" class="start-stage hidden">
-                <h2 class="start-section-title">ƒ†[ƒU[î•ñ</h2>
-                <p class="start-subtitle">–¼‘OE„‚µÝ’èE‘Îíƒf[ƒ^</p>
+                <h2 class="start-section-title">ãƒ¦ãƒ¼ã‚¶ãƒ¼æƒ…å ±</h2>
+                <p class="start-subtitle">åå‰ãƒ»æŽ¨ã—è¨­å®šãƒ»å¯¾æˆ¦ãƒ‡ãƒ¼ã‚¿</p>
 
                 <div class="start-user-form">
-                    <label class="start-field-label" for="user-name-input">ƒ†[ƒU[–¼</label>
-                    <input id="user-name-input" class="start-text-input" type="text" maxlength="24" placeholder="ƒ†[ƒU[–¼‚ð“ü—Í">
+                    <label class="start-field-label" for="user-name-input">ãƒ¦ãƒ¼ã‚¶ãƒ¼å</label>
+                    <input id="user-name-input" class="start-text-input" type="text" maxlength="24" placeholder="ãƒ¦ãƒ¼ã‚¶ãƒ¼åã‚’å…¥åŠ›">
 
-                    <label class="start-field-label" for="user-favorite-character">‚¨‹C‚É“ü‚èƒLƒƒƒ‰</label>
+                    <label class="start-field-label" for="user-favorite-character">ãŠæ°—ã«å…¥ã‚Šã‚­ãƒ£ãƒ©</label>
                     <select id="user-favorite-character" class="start-select-input">
-                        <option value="chizuru">ç’ß</option>
-                        <option value="mai">•‘ˆË</option>
-                        <option value="takumi">‘ñŠC</option>
-                        <option value="akatsuki">‹Å</option>
+                        <option value="chizuru">åƒé¶´</option>
+                        <option value="mai">èˆžä¾</option>
+                        <option value="takumi">æ‹“æµ·</option>
+                        <option value="akatsuki">æš</option>
                     </select>
 
-                    <label class="start-field-label" for="user-favorite-skill">‚¨‹C‚É“ü‚èƒXƒLƒ‹</label>
+                    <label class="start-field-label" for="user-favorite-skill">ãŠæ°—ã«å…¥ã‚Šã‚¹ã‚­ãƒ«</label>
                     <select id="user-favorite-skill" class="start-select-input"></select>
 
                     <div class="start-user-stats">
-                        <div class="start-user-stat-row"><span>‘Îí‰ñ”</span><strong id="user-matches-value">0</strong></div>
-                        <div class="start-user-stat-row"><span>Ÿ—˜”</span><strong id="user-wins-value">0</strong></div>
-                        <div class="start-user-stat-row"><span>—¿—ì¬‰ñ”</span><strong id="user-dishes-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>å¯¾æˆ¦å›žæ•°</span><strong id="user-matches-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>å‹åˆ©æ•°</span><strong id="user-wins-value">0</strong></div>
+                        <div class="start-user-stat-row"><span>æ–™ç†ä½œæˆå›žæ•°</span><strong id="user-dishes-value">0</strong></div>
                     </div>
 
                     <div class="start-user-recent-wrap">
-                        <label class="start-field-label">‚æ‚­ì‚é—¿—</label>
+                        <label class="start-field-label">ã‚ˆãä½œã‚‹æ–™ç†</label>
                         <div id="user-recent-dishes" class="start-user-recent-list"></div>
                     </div>
                 </div>
 
                 <div class="start-stage-footer">
                     <div class="start-setup-actions">
-                        <button id="user-save-button" class="start-main-button">•Û‘¶</button>
-                        <button id="user-reset-button" class="start-sub-button">‰Šú‰»</button>
+                        <button id="user-save-button" class="start-main-button">ä¿å­˜</button>
+                        <button id="user-reset-button" class="start-sub-button">åˆæœŸåŒ–</button>
                     </div>
-                    <button id="start-user-back-button" class="start-sub-button wide">ƒƒjƒ…[‚Ö–ß‚é</button>
+                    <button id="start-user-back-button" class="start-sub-button wide">ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¸æˆ»ã‚‹</button>
                 </div>
                 <p id="user-stage-message" class="start-menu-message"></p>
             </div>

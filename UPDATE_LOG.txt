@@ -1177,3 +1177,166 @@
 - `web.html` / `mobile/mobile.html` を UTF-8 で再保存。
 - 文字化け記号（`�`）がファイル内に残っていないことを確認。
 - `mobile/mobile.html` の見出し `加工アイテム効?` を `加工アイテム効果` に修正。
+
+2026-04-20
+-----------------
+目的:
+- Battle a la carte 公式とは別に、あにあに専用の新規ホームページ「**あにあにの遊び場**」を作成する。
+- Battle a la carte / 天涯比隣 / 今後予定ゲームへ移動できるポータルを用意する。
+- 更新内容をあとから追記できる記事機能の土台を作る。
+
+変更点:
+- `aniani/index.html` を新規ホームページとして再構成。
+  - 文字化けを解消し、UTF-8で全面再作成。
+  - セクション構成: ヒーロー / ゲーム一覧 / 更新記事 / 制作予定 / About。
+  - Battle a la carte への導線（公式トップ・Web版・モバイル版）を配置。
+  - 天涯比隣・次回作カードを制作中ステータスとして追加。
+
+- `aniani/aniani.js` を新規作成。
+  - 記事の追加・一覧表示・削除を実装。
+  - `localStorage` 保存に対応（キー: `aniani_articles_v1`）。
+  - 初回表示時のサンプル記事を2件追加。
+
+- `aniani/aniani.css`
+  - 記事が空のときのプレースホルダー表示（`.article-empty`）を追加。
+
+備考:
+- 新規ページURLは `aniani/index.html`。
+- 記事データはブラウザごとのローカル保存のため、端末やブラウザを変えると共有されない。
+
+2026-04-20
+-----------------
+目的:
+- 「あにあにの遊び場」内の天涯比隣導線を、指定された公開URLへ接続する。
+
+変更点:
+- `aniani/index.html`
+  - 天涯比隣カードのボタンを有効化し、以下URLへ遷移するよう変更:
+    - `https://donadonaa24-cyber.github.io/-/`
+  - 制作予定メモ内の「天涯比隣」にも同URLリンクを追加。
+
+2026-04-20
+-----------------
+目的:
+- 「あにあにの遊び場」に画像付きゲーム導線、管理者限定記事投稿、来訪者コメント、記事別コメント、外部SNSリンク、ミニゲーム（〇×）を追加する。
+- ページ説明文を第三者向けの中立表現へ調整する。
+
+変更点:
+- 画像リンク導線の追加
+  - `aniani/index.html`
+    - Battle a la carte カードに `monomono-kokan.png` を表示。
+    - 天涯比隣カードに `RIOT.png` を表示。
+  - `aniani/images/riot.png` を新規追加（`C:\Users\donad\OneDrive\デスクトップ\天涯比隣\RIOT.png` から取り込み）。
+
+- ページ文言の中立化
+  - `aniani/index.html`
+    - 「専用」などの説明を削除し、第三者向けの汎用ポータル表現へ変更。
+
+- 記事機能の管理者制限
+  - `aniani/aniani.js`
+    - 管理者ログイン（パスコード方式）を追加。
+    - 記事の投稿・削除を管理者モード時のみ有効化。
+    - 閲覧者は記事の閲覧とコメントのみ可能。
+
+- コメント機能の追加
+  - `aniani/index.html` / `aniani/aniani.js`
+    - 来訪者コメント（ゲストブック）を追加。
+    - 各記事ごとのコメント（リアクション）を追加。
+    - いずれも `localStorage` 保存。
+
+- 外部リンクの追加
+  - `aniani/index.html`
+    - X: `https://x.com/aniani_asobiba`
+    - note: `https://note.com/aniani_asobiba`
+    - Battle公式 / 天涯比隣ページ導線をリンクカード化。
+
+- ミニゲーム追加
+  - `aniani/index.html` / `aniani/aniani.js`
+    - 3x3 の〇×ゲームを実装。
+    - 勝敗判定・引き分け判定・リセットに対応。
+
+- スタイル調整
+  - `aniani/aniani.css`
+    - ゲームカード画像表示、管理者UI、コメントUI、SNSリンクカード、〇×ゲーム盤面のスタイルを追加。
+
+備考:
+- 管理者パスコードは `aniani/aniani.js` の `ADMIN_PASSCODE` で変更可能。
+- 現在のコメント/記事データはブラウザの `localStorage` 保存のため、端末間共有はされない。
+
+2026-04-21
+-----------------
+目的:
+- あにあにの遊び場に新規ミニゲーム「神経衰弱（Battle a la carte 材料カード版）」を追加する。
+- ニックネーム入力、スタート時の時間計測、クリア時停止、ランキング保存を実装する。
+
+変更点:
+- `aniani/index.html`
+  - ミニゲームセクションを拡張。
+  - 既存の〇×ゲームに加えて「神経衰弱（材料カード）」パネルを追加。
+  - 神経衰弱用UIを追加:
+    - ニックネーム入力
+    - スタート/リセットボタン
+    - ステータス表示
+    - ストップウォッチ表示
+    - ランキング表示
+
+- `aniani/aniani.css`
+  - ミニゲーム2列レイアウトを追加。
+  - 神経衰弱UIスタイルを追加:
+    - コントロール領域
+    - HUD（ステータス/タイマー）
+    - 30枚盤面グリッド
+    - カード裏表（裏面画像/表面画像）
+    - マッチ済み表示
+    - ランキング表示
+  - モバイル向けに列数を段階的に調整（6→5→4列）。
+
+- `aniani/aniani.js`
+  - 神経衰弱ロジックを追加。
+  - 使用カード:
+    - 材料カード15種類（ごはん/のり/バナナ/カレー粉/鶏肉/豚肉/牛肉/魚/牛乳/卵/キャベツ/にんじん/じゃがいも/たまねぎ/大根）
+    - 各2枚ずつ = 合計30枚
+  - 裏面画像:
+    - `assets/images/card-back.png`
+  - 仕様:
+    - スタート押下時に開始
+    - ストップウォッチ計測開始
+    - 全ペア成立で停止
+    - 記録時間をスコアとして保存
+    - ニックネームとスコアをランキングへ保存（速い順・上位20件）
+  - 保存キー追加:
+    - `aniani_memory_rankings_v1`
+
+備考:
+- 神経衰弱はニックネーム未入力だと開始しない仕様。
+- ランキングはローカル保存（端末/ブラウザ単位）。
+
+2026-04-21
+-----------------
+目的:
+- 「あにあにの遊び場」を Battle a la carte とは別リポジトリでそのまま公開できる形にする。
+
+変更点:
+- `aniani-standalone` フォルダを新規作成。
+  - 独立公開用として以下を同梱:
+    - `index.html`
+    - `aniani.css`
+    - `aniani.js`
+    - `images/riot.png`
+    - `assets/images/card-back.png`
+    - `assets/images/events/monomono-kokan.png`
+    - `assets/images/cards/*.png`（材料カード15種）
+
+- 独立運用向け修正
+  - `aniani-standalone/index.html`
+    - Battle画像パスを `assets/...` に変更。
+    - Battle関連導線を相対リンクから絶対URLに変更:
+      - `https://donadonaa24-cyber.github.io/`
+      - `https://donadonaa24-cyber.github.io/web.html`
+      - `https://donadonaa24-cyber.github.io/mobile/mobile.html`
+  - `aniani-standalone/aniani.js`
+    - 神経衰弱で使う画像パスを `assets/images/...` へ変更。
+
+- 補助ドキュメント追加
+  - `aniani-standalone/README.txt`
+    - 新規リポジトリへの配置手順を記載。

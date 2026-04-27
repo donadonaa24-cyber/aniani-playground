@@ -36,6 +36,7 @@ const BATTLE_MODE_CUTIN_IMAGE_PATHS = {
     takumi: 'assets/images/battle-mode-cutins/takumi-battle-mode-cutin.png',
     akatsuki: 'assets/images/battle-mode-cutins/akatsuki-battle-mode-cutin.png'
 };
+const STARTUP_IMAGE_CACHE_NOTICE = '\u521d\u56de\u8d77\u52d5\u6642\u306f\u753b\u50cf\u306e\u8aad\u307f\u8fbc\u307f\u306b\u6642\u9593\u304c\u304b\u304b\u308a\u3001\u8868\u793a\u304c\u9045\u308c\u308b\u5834\u5408\u304c\u3042\u308a\u307e\u3059\u3002\u5c11\u3057\u5f85\u3064\u3068\u30ad\u30e3\u30c3\u30b7\u30e5\u304c\u52b9\u3044\u3066\u8868\u793a\u3055\u308c\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3059\u3002';
 
 const START_CHARACTER_OPTIONS = [
     { id: 'chizuru', name: '千鶴' },
@@ -1152,7 +1153,7 @@ function setupStartOverlay() {
     const openMenuStage = () => {
         resetTurnStage();
         setCpuSetupStep(1);
-        setStartMenuMessage('');
+        setStartMenuMessage(STARTUP_IMAGE_CACHE_NOTICE);
         setFriendRoomMessage('');
         setCoinStageMessage('');
         setUserStageMessage('');
@@ -1638,7 +1639,7 @@ function setupStartOverlay() {
     syncStartCpuPersonalitySelect();
     renderStartSkillSelection();
     renderStartSkillRules();
-    setStartMenuMessage('');
+    setStartMenuMessage(STARTUP_IMAGE_CACHE_NOTICE);
     setFriendRoomMessage('');
     setCoinStageMessage('');
     setUserStageMessage('');

@@ -61,6 +61,266 @@ const START_STAGE_IDS = [
     'start-coin-stage',
     'start-user-stage'
 ];
+let matchExitGuardBound = false;
+let matchExitBackArmedUntil = 0;
+let matchExitBypassOnce = false;
+const MATCH_EXIT_DOUBLE_BACK_WINDOW_MS = 6000;
+const MATCH_EXIT_CONFIRM_TEXT = '対戦を途中で放棄しますか？';
+const MATCH_EXIT_SECOND_BACK_TEXT = 'もう一度「戻る」を押すと対戦を終了して前のページへ移動します。';
+const MATCH_AUTOSAVE_KEY = 'battle-a-la-carte:match-autosave:v1';
+const MATCH_AUTOSAVE_SCHEMA_VERSION = 1;
+let matchAutosaveHookBound = false;
+let matchAutosaveRestoring = false;
+
+function isMatchInBattleScreen() {
+    const overlay = document.getElementById('start-overlay');
+    return !overlay || overlay.classList.contains('hidden');
+}
+
+function isFriendBattleActive() {
+    return !!(window.FriendBattle && typeof window.FriendBattle.isActive === 'function' && window.FriendBattle.isActive());
+}
+
+function shouldGuardMatchExit() {
+    return !!(gameStartedOnce && GameState && !GameState.gameEnded && isMatchInBattleScreen());
+}
+
+function shouldAutosaveCurrentMatch() {
+    return !!(gameStartedOnce && GameState && !GameState.gameEnded && isMatchInBattleScreen() && !isFriendBattleActive());
+}
+
+function cloneForAutosave(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
+function readSavedMatch() {
+    try {
+        const raw = localStorage.getItem(MATCH_AUTOSAVE_KEY);
+        if (!raw) return null;
+
+        const payload = JSON.parse(raw);
+        if (!payload || payload.schemaVersion !== MATCH_AUTOSAVE_SCHEMA_VERSION || !payload.snapshot) {
+            localStorage.removeItem(MATCH_AUTOSAVE_KEY);
+            return null;
+        }
+        if (payload.snapshot.gameEnded) {
+            localStorage.removeItem(MATCH_AUTOSAVE_KEY);
+            return null;
+        }
+        return payload;
+    } catch (e) {
+        console.warn('failed to read match autosave', e);
+        return null;
+    }
+}
+
+function updateResumeMatchButtonVisibility() {
+    const button = document.getElementById('menu-resume-button');
+    if (!button) return;
+    const saved = readSavedMatch();
+    button.classList.toggle('hidden', !saved);
+}
+
+function clearSavedMatch() {
+    try {
+        localStorage.removeItem(MATCH_AUTOSAVE_KEY);
+    } catch (e) {
+        console.warn('failed to clear match autosave', e);
+    }
+    updateResumeMatchButtonVisibility();
+}
+
+function saveMatchSnapshot(reason) {
+    if (matchAutosaveRestoring) return;
+    if (!shouldAutosaveCurrentMatch()) return;
+
+    try {
+        const payload = {
+            schemaVersion: MATCH_AUTOSAVE_SCHEMA_VERSION,
+            savedAt: Date.now(),
+            reason: reason || 'update',
+            snapshot: cloneForAutosave(GameState)
+        };
+        localStorage.setItem(MATCH_AUTOSAVE_KEY, JSON.stringify(payload));
+        updateResumeMatchButtonVisibility();
+    } catch (e) {
+        console.warn('failed to save match autosave', e);
+    }
+}
+
+function normalizeSavedPlayerState(input, fallback) {
+    const base = fallback && typeof fallback === 'object' ? cloneForAutosave(fallback) : {};
+    const source = input && typeof input === 'object' ? input : {};
+    const merged = { ...base, ...source };
+    ['hand', 'set', 'events', 'packs', 'cookedRecipes', 'cookedMeatTypes'].forEach(key => {
+        merged[key] = Array.isArray(merged[key]) ? merged[key] : [];
+    });
+    if (!merged.skillUseCounts || typeof merged.skillUseCounts !== 'object' || Array.isArray(merged.skillUseCounts)) {
+        merged.skillUseCounts = {};
+    }
+    return merged;
+}
+
+function applySavedMatchSnapshot(snapshot) {
+    const source = cloneForAutosave(snapshot || {});
+    const nextPlayers = source.players || {};
+    GameState.deck = Array.isArray(source.deck) ? source.deck : [];
+    GameState.discard = Array.isArray(source.discard) ? source.discard : [];
+    GameState.players = {
+        player: normalizeSavedPlayerState(nextPlayers.player, GameState.players?.player),
+        cpu: normalizeSavedPlayerState(nextPlayers.cpu, GameState.players?.cpu)
+    };
+    GameState.currentTurn = source.currentTurn || 'player';
+    GameState.currentPhase = source.currentPhase || 'メインフェイズ';
+    GameState.selectionMode = source.selectionMode || null;
+    GameState.discardNeedCount = Number(source.discardNeedCount || 0);
+    GameState.selectedCardIds = Array.isArray(source.selectedCardIds) ? source.selectedCardIds : [];
+    GameState.candidateRecipes = Array.isArray(source.candidateRecipes) ? source.candidateRecipes : [];
+    GameState.gameEnded = false;
+    GameState.winner = null;
+    GameState.pendingEventContext = source.pendingEventContext || null;
+    GameState.pendingSkillContext = source.pendingSkillContext || null;
+    GameState.pendingSkillConfirm = source.pendingSkillConfirm || null;
+    GameState.selectedTargetIds = Array.isArray(source.selectedTargetIds) ? source.selectedTargetIds : [];
+    GameState.pendingSetCardId = source.pendingSetCardId || null;
+    GameState.pendingEventCardId = source.pendingEventCardId || null;
+    GameState.pendingViewSetCardId = source.pendingViewSetCardId || null;
+    GameState.pendingPackKey = source.pendingPackKey || null;
+    GameState.pendingIngredientAction = source.pendingIngredientAction || null;
+    GameState.pendingKnifeOptions = Array.isArray(source.pendingKnifeOptions) ? source.pendingKnifeOptions : [];
+    GameState.openDishHistoryFor = source.openDishHistoryFor || null;
+    GameState.specialWinReason = source.specialWinReason || null;
+    GameState.characterSides = source.characterSides || { player: 'player', cpu: 'cpu' };
+    GameState.characterIds = source.characterIds || { player: 'chizuru', cpu: 'mai' };
+    GameState.characterNames = source.characterNames || { player: '千鶴', cpu: '舞依' };
+    GameState.settings = { ...(GameState.settings || {}), ...(source.settings || {}) };
+    GameState.ui = source.ui || {
+        pileConfirmType: null,
+        pileViewType: null,
+        infoOverlayType: null
+    };
+
+    if (typeof ensureDeckExists === 'function') ensureDeckExists();
+    if (typeof ensurePlayerSkillState === 'function') {
+        ensurePlayerSkillState(GameState.players.player);
+        ensurePlayerSkillState(GameState.players.cpu);
+    }
+}
+
+function resumeSavedMatch() {
+    const saved = readSavedMatch();
+    if (!saved) {
+        setStartMenuMessage('保存された対戦はありません。');
+        updateResumeMatchButtonVisibility();
+        return;
+    }
+
+    matchAutosaveRestoring = true;
+    try {
+        safeStartGame();
+        applySavedMatchSnapshot(saved.snapshot);
+        if (typeof applyRuntimeSettings === 'function') applyRuntimeSettings();
+        if (typeof startBgmOnce === 'function') startBgmOnce();
+        stopMenuFloatingBackground();
+        if (startTitleTimer) {
+            clearTimeout(startTitleTimer);
+            startTitleTimer = null;
+        }
+
+        const overlay = document.getElementById('start-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        matchExitBackArmedUntil = 0;
+        pushMatchExitGuardHistory();
+
+        if (GameState.currentTurn === 'player') {
+            enablePlayerControls();
+        } else {
+            disablePlayerControls();
+        }
+        updateUI(true);
+        addLog('保存した対戦を再開しました。');
+    } catch (e) {
+        console.error('failed to resume saved match', e);
+        setStartMenuMessage('保存された対戦の再開に失敗しました。新しく対戦を開始してください。');
+        clearSavedMatch();
+        return;
+    } finally {
+        matchAutosaveRestoring = false;
+    }
+
+    saveMatchSnapshot('resume');
+    if (GameState.currentTurn === 'cpu' && !GameState.gameEnded && typeof cpuTurn === 'function' && !isFriendBattleActive()) {
+        setTimeout(() => {
+            if (!GameState.gameEnded && GameState.currentTurn === 'cpu') cpuTurn();
+        }, 700);
+    }
+}
+
+function setupMatchAutosaveOnce() {
+    if (matchAutosaveHookBound) return;
+    matchAutosaveHookBound = true;
+
+    const previousUpdateHook = window.__onGameStateUpdated || null;
+    window.__onGameStateUpdated = function matchAutosaveUpdateHook() {
+        if (typeof previousUpdateHook === 'function') previousUpdateHook();
+        saveMatchSnapshot('state-update');
+    };
+
+    window.addEventListener('pagehide', () => saveMatchSnapshot('pagehide'));
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveMatchSnapshot('visibility-hidden');
+    });
+}
+
+function pushMatchExitGuardHistory() {
+    try {
+        history.pushState({ __matchExitGuard: true }, '', window.location.href);
+    } catch (e) {
+        console.warn('failed to push match exit guard history', e);
+    }
+}
+
+function setupMatchExitGuardOnce() {
+    if (matchExitGuardBound) return;
+    matchExitGuardBound = true;
+
+    window.addEventListener('beforeunload', (event) => {
+        if (!shouldGuardMatchExit() || matchExitBypassOnce) return;
+        saveMatchSnapshot('beforeunload');
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    window.addEventListener('popstate', () => {
+        if (matchExitBypassOnce) {
+            matchExitBypassOnce = false;
+            return;
+        }
+
+        if (!shouldGuardMatchExit()) {
+            matchExitBackArmedUntil = 0;
+            return;
+        }
+
+        const now = Date.now();
+        if (matchExitBackArmedUntil > now) {
+            matchExitBackArmedUntil = 0;
+            saveMatchSnapshot('confirmed-back');
+            matchExitBypassOnce = true;
+            history.back();
+            return;
+        }
+
+        const confirmed = window.confirm(MATCH_EXIT_CONFIRM_TEXT);
+        pushMatchExitGuardHistory();
+        if (confirmed) {
+            matchExitBackArmedUntil = now + MATCH_EXIT_DOUBLE_BACK_WINDOW_MS;
+            window.alert(MATCH_EXIT_SECOND_BACK_TEXT);
+        } else {
+            matchExitBackArmedUntil = 0;
+        }
+    });
+}
 
 function getStartCharacterOptionById(id) {
     return START_CHARACTER_OPTIONS.find(option => option.id === id) || null;
@@ -763,6 +1023,7 @@ function bindMainEvents() {
     });
 
     bindIfExists('reset-game-button', () => {
+        clearSavedMatch();
         stopBGM();
         location.reload();
     });
@@ -911,6 +1172,8 @@ function beginMatchByRole(role) {
         clearTimeout(startTitleTimer);
         startTitleTimer = null;
     }
+    matchExitBackArmedUntil = 0;
+    pushMatchExitGuardHistory();
 
     const overlay = document.getElementById('start-overlay');
     if (overlay) overlay.classList.add('hidden');
@@ -921,6 +1184,7 @@ function beginMatchByRole(role) {
         addLog('あなたが先攻です。');
         enablePlayerControls();
         updateUI();
+        saveMatchSnapshot('match-start-player-first');
         return;
     }
 
@@ -929,6 +1193,7 @@ function beginMatchByRole(role) {
     addLog(`${getOpponentLabelText()}が先攻です。`);
     disablePlayerControls();
     updateUI();
+    saveMatchSnapshot('match-start-cpu-first');
 
     const isFriendMode = !!(window.FriendBattle && typeof window.FriendBattle.isActive === 'function' && window.FriendBattle.isActive());
     if (isFriendMode) {
@@ -968,6 +1233,8 @@ function onTurnCardSelected(side) {
 }
 
 function setupStartOverlay() {
+    setupMatchAutosaveOnce();
+    setupMatchExitGuardOnce();
     const overlay = document.getElementById('start-overlay');
     if (!overlay) {
         safeStartGame();
@@ -990,6 +1257,7 @@ function setupStartOverlay() {
     const msg = document.getElementById('start-turn-message');
     const battleMsg = document.getElementById('start-battle-message');
     const menuCpuButton = document.getElementById('menu-cpu-button');
+    const menuResumeButton = document.getElementById('menu-resume-button');
     const menuStoryButton = document.getElementById('menu-story-button');
     const menuFriendButton = document.getElementById('menu-friend-button');
     const menuOnlineButton = document.getElementById('menu-online-button');
@@ -1101,6 +1369,7 @@ function setupStartOverlay() {
         setCoinStageMessage('');
         setUserStageMessage('');
         setStartSkillMessage('');
+        updateResumeMatchButtonVisibility();
         showStartStage('start-menu-stage');
     };
 
@@ -1269,6 +1538,13 @@ function setupStartOverlay() {
             renderStartSkillSelection();
             setCpuSetupStep(1);
             showStartStage('start-cpu-setup-stage');
+        });
+    }
+
+    if (menuResumeButton) {
+        menuResumeButton.addEventListener('click', () => {
+            if (typeof unlockAudio === 'function') unlockAudio();
+            resumeSavedMatch();
         });
     }
 
@@ -1592,6 +1868,7 @@ function setupStartOverlay() {
     renderStartGallery('characters');
     resetTurnStage();
     setCpuSetupStep(1);
+    updateResumeMatchButtonVisibility();
     showStartStage('start-title-stage');
 
     if (startTitleTimer) {
@@ -1869,6 +2146,7 @@ function endGame(winner) {
     if (GameState.gameEnded) return;
     GameState.gameEnded = true;
     GameState.winner = winner || null;
+    clearSavedMatch();
     GameState.currentTurn = null;
     GameState.currentPhase = 'ゲーム終了';
     GameState.selectionMode = null;
